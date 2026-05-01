@@ -33,7 +33,7 @@ class ResponsiveTestHelper {
               const SizedBox(height: 16),
               Builder(
                 builder: (context) {
-                  final screenSize = MediaQuery.of(context).size;
+                  final screenSize = MediaQuery.sizeOf(context);
                   final isVerySmall = ResponsiveHelper.isVerySmallScreen(context);
                   final isSmall = ResponsiveHelper.isSmallScreen(context);
                   final isMobile = ResponsiveHelper.isMobile(context);

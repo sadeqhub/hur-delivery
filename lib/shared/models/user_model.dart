@@ -11,6 +11,7 @@ class UserModel {
   final double? latitude;
   final double? longitude;
   final String? fcmToken;
+  final String? city; // 'najaf' or 'mosul'
   
   // Merchant-specific fields
   final String? storeName;
@@ -19,11 +20,18 @@ class UserModel {
   final String? vehicleType;
   final bool? hasDrivingLicense;
   final bool? ownsVehicle;
+  final String? rank; // 'bronze', 'silver', 'gold'
   
   // Document URLs
   final String? idCardFrontUrl;
   final String? idCardBackUrl;
   final String? selfieWithIdUrl;
+  
+  // Walkthrough completion tracking
+  final bool merchantWalkthroughCompleted;
+  final bool driverWalkthroughCompleted;
+  final DateTime? merchantWalkthroughCompletedAt;
+  final DateTime? driverWalkthroughCompletedAt;
   
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -40,13 +48,19 @@ class UserModel {
     this.latitude,
     this.longitude,
     this.fcmToken,
+    this.city,
     this.storeName,
     this.vehicleType,
     this.hasDrivingLicense,
     this.ownsVehicle,
+    this.rank,
     this.idCardFrontUrl,
     this.idCardBackUrl,
     this.selfieWithIdUrl,
+    this.merchantWalkthroughCompleted = false,
+    this.driverWalkthroughCompleted = false,
+    this.merchantWalkthroughCompletedAt,
+    this.driverWalkthroughCompletedAt,
     required this.createdAt,
     this.updatedAt,
   });
@@ -74,13 +88,23 @@ class UserModel {
       latitude: json['latitude'] != null ? double.parse(json['latitude'].toString()) : null,
       longitude: json['longitude'] != null ? double.parse(json['longitude'].toString()) : null,
       fcmToken: json['fcm_token'] as String?,
+      city: json['city'] as String?,
       storeName: json['store_name'] as String?,
       vehicleType: json['vehicle_type'] as String?,
       hasDrivingLicense: json['has_driving_license'] as bool?,
       ownsVehicle: json['owns_vehicle'] as bool?,
+      rank: json['rank'] as String? ?? 'bronze',
       idCardFrontUrl: json['id_card_front_url'] as String?,
       idCardBackUrl: json['id_card_back_url'] as String?,
       selfieWithIdUrl: json['selfie_with_id_url'] as String?,
+      merchantWalkthroughCompleted: json['merchant_walkthrough_completed'] as bool? ?? false,
+      driverWalkthroughCompleted: json['driver_walkthrough_completed'] as bool? ?? false,
+      merchantWalkthroughCompletedAt: json['merchant_walkthrough_completed_at'] != null 
+          ? DateTime.parse(json['merchant_walkthrough_completed_at'] as String) 
+          : null,
+      driverWalkthroughCompletedAt: json['driver_walkthrough_completed_at'] != null 
+          ? DateTime.parse(json['driver_walkthrough_completed_at'] as String) 
+          : null,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
     );
@@ -99,13 +123,19 @@ class UserModel {
       'latitude': latitude,
       'longitude': longitude,
       'fcm_token': fcmToken,
+      'city': city,
       'store_name': storeName,
       'vehicle_type': vehicleType,
       'has_driving_license': hasDrivingLicense,
       'owns_vehicle': ownsVehicle,
+      'rank': rank,
       'id_card_front_url': idCardFrontUrl,
       'id_card_back_url': idCardBackUrl,
       'selfie_with_id_url': selfieWithIdUrl,
+      'merchant_walkthrough_completed': merchantWalkthroughCompleted,
+      'driver_walkthrough_completed': driverWalkthroughCompleted,
+      'merchant_walkthrough_completed_at': merchantWalkthroughCompletedAt?.toIso8601String(),
+      'driver_walkthrough_completed_at': driverWalkthroughCompletedAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -123,13 +153,19 @@ class UserModel {
     double? latitude,
     double? longitude,
     String? fcmToken,
+    String? city,
     String? storeName,
     String? vehicleType,
     bool? hasDrivingLicense,
     bool? ownsVehicle,
+    String? rank,
     String? idCardFrontUrl,
     String? idCardBackUrl,
     String? selfieWithIdUrl,
+    bool? merchantWalkthroughCompleted,
+    bool? driverWalkthroughCompleted,
+    DateTime? merchantWalkthroughCompletedAt,
+    DateTime? driverWalkthroughCompletedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -145,13 +181,19 @@ class UserModel {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       fcmToken: fcmToken ?? this.fcmToken,
+      city: city ?? this.city,
       storeName: storeName ?? this.storeName,
       vehicleType: vehicleType ?? this.vehicleType,
       hasDrivingLicense: hasDrivingLicense ?? this.hasDrivingLicense,
       ownsVehicle: ownsVehicle ?? this.ownsVehicle,
+      rank: rank ?? this.rank,
       idCardFrontUrl: idCardFrontUrl ?? this.idCardFrontUrl,
       idCardBackUrl: idCardBackUrl ?? this.idCardBackUrl,
       selfieWithIdUrl: selfieWithIdUrl ?? this.selfieWithIdUrl,
+      merchantWalkthroughCompleted: merchantWalkthroughCompleted ?? this.merchantWalkthroughCompleted,
+      driverWalkthroughCompleted: driverWalkthroughCompleted ?? this.driverWalkthroughCompleted,
+      merchantWalkthroughCompletedAt: merchantWalkthroughCompletedAt ?? this.merchantWalkthroughCompletedAt,
+      driverWalkthroughCompletedAt: driverWalkthroughCompletedAt ?? this.driverWalkthroughCompletedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'create_order_screen.dart';
-import 'create_bulk_order_screen.dart';
 import 'create_scheduled_order_screen.dart';
 import 'create_voice_order_screen.dart';
 
@@ -32,11 +31,6 @@ class _OrderCreationCarouselState extends State<OrderCreationCarousel> {
         title: loc.normalOrder,
         icon: Icons.delivery_dining_rounded,
         color: AppColors.primary,
-      ),
-      OrderCreationMode(
-        title: loc.bulkOrdersTitle,
-        icon: Icons.inventory_2_rounded,
-        color: Colors.orange.shade600,
       ),
       OrderCreationMode(
         title: loc.scheduledOrdersTitle,
@@ -87,7 +81,9 @@ class _OrderCreationCarouselState extends State<OrderCreationCarousel> {
     final modes = _getModes(context);
     return Scaffold(
       appBar: AppBar(
-        title: Row(
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: List.generate(modes.length, (index) {
@@ -130,7 +126,8 @@ class _OrderCreationCarouselState extends State<OrderCreationCarousel> {
                       const SizedBox(width: 6),
                       Text(
                         modes[index].title,
-                        style: TextStyle(
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -142,6 +139,7 @@ class _OrderCreationCarouselState extends State<OrderCreationCarousel> {
               ),
             );
           }),
+        ),
         ),
         centerTitle: true,
         leading: IconButton(
@@ -181,7 +179,6 @@ class _OrderCreationCarouselState extends State<OrderCreationCarousel> {
               onPageChanged: (page) => _onPageChanged(page, context),
               children: const [
                 CreateOrderScreen(embedded: true),
-                CreateBulkOrderScreen(embedded: true),
                 CreateScheduledOrderScreen(embedded: true),
                 CreateVoiceOrderScreen(embedded: true),
               ],

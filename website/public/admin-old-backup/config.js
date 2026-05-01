@@ -7,7 +7,7 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dG94bW1paXR6bmFnc2J1YmhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIwNzk5MTcsImV4cCI6MjA2NzY1NTkxN30.WjdQh_cvOebwL0TG0bzDLZimWCLC4YuP__jtvBD_xv0',
   
   // Mapbox Configuration (Get from: https://account.mapbox.com/access-tokens/)
-  MAPBOX_ACCESS_TOKEN: 'pk.eyJ1IjoibW9oYW1tZWRzYWRlcSIsImEiOiJjbWNybzlrYmQwcHo2MmtyMms5c3FheDgxIn0.H3pL2ByqWsDNllY8NuT-Hw',
+  MAPBOX_ACCESS_TOKEN: '',
   
   // App Configuration
   APP_NAME: 'حر - Hur Delivery',

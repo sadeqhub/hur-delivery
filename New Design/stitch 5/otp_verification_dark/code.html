@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&amp;family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface": "#f8f9fa",
+                        "tertiary-fixed": "#ffdbc8",
+                        "surface-dim": "#d9dadb",
+                        "tertiary-fixed-dim": "#ffb68a",
+                        "surface-bright": "#f8f9fa",
+                        "background": "#f8f9fa",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#6ed6df",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#3755c3",
+                        "on-background": "#191c1d",
+                        "surface-tint": "#006970",
+                        "secondary-fixed": "#dde1ff",
+                        "on-tertiary-fixed": "#321300",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "on-secondary-container": "#00217a",
+                        "on-surface-variant": "#3d494a",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#2e3132",
+                        "surface-container-low": "#f3f4f5",
+                        "surface-container-high": "#e7e8e9",
+                        "tertiary": "#8d4a19",
+                        "on-primary-container": "#f5feff",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed-dim": "#6ed6df",
+                        "outline-variant": "#bdc9ca",
+                        "primary-container": "#00818a",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#ab6230",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "surface-container": "#edeeef",
+                        "secondary-container": "#708cfd",
+                        "on-surface": "#191c1d",
+                        "primary-fixed": "#8cf2fc",
+                        "on-tertiary-fixed-variant": "#733604",
+                        "surface-variant": "#e1e3e4",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#001453",
+                        "primary": "#00666d",
+                        "inverse-on-surface": "#f0f1f2",
+                        "outline": "#6d797a",
+                        "on-tertiary-container": "#fffbff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#002022"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "tajawal": ["Tajawal", "sans-serif"],
+                        "manrope": ["Manrope", "sans-serif"],
+                        "headline": ["Tajawal"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .otp-glass {
+            background: rgba(46, 49, 50, 0.4);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-inverse-surface text-on-primary-container font-manrope min-h-screen flex flex-col items-center justify-center p-6 selection:bg-primary/30">
+<!-- Subtle Background Decor -->
+<div class="fixed inset-0 overflow-hidden -z-10">
+<div class="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-primary/5 blur-[120px]"></div>
+<div class="absolute -bottom-[10%] -left-[10%] w-[60%] h-[60%] rounded-full bg-secondary/5 blur-[120px]"></div>
+</div>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-md flex flex-col space-y-12">
+<!-- Header & Brand Identity -->
+<header class="flex flex-col items-center text-center space-y-6">
+<div class="relative">
+<!-- Iconic Representation (WhatsApp Context) -->
+<div class="w-24 h-24 rounded-[32px] bg-gradient-to-br from-primary to-primary-container flex items-center justify-center shadow-2xl shadow-primary/20">
+<span class="material-symbols-outlined text-5xl text-white" data-icon="chat_bubble" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+</div>
+<!-- Mini Pulsing Badge -->
+<div class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white dark:bg-inverse-surface flex items-center justify-center p-1 shadow-lg">
+<div class="w-full h-full bg-[#25D366] rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-white" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</div>
+<div class="space-y-3">
+<h1 class="font-tajawal text-4xl font-extrabold tracking-tight text-white">
+                    Verification
+                </h1>
+<p class="font-tajawal text-on-surface-variant text-lg px-4 leading-relaxed">
+                    Sent to <span class="text-primary-fixed font-bold tracking-wider">+964 ••• ••• 72</span> via <span class="text-white font-medium">WhatsApp</span>
+</p>
+</div>
+</header>
+<!-- OTP Input Section -->
+<section class="space-y-8">
+<div class="grid grid-cols-6 gap-3 md:gap-4">
+<!-- 6 Digit Boxes -->
+<div class="aspect-square bg-white/5 border-b-2 border-primary-fixed/20 rounded-2xl flex items-center justify-center text-3xl font-bold text-white transition-all duration-300 focus-within:border-primary-fixed focus-within:bg-white/10 group">
+<input class="w-full h-full bg-transparent border-none text-center focus:ring-0 font-tajawal" maxlength="1" placeholder="·" type="text"/>
+</div>
+<div class="aspect-square bg-white/5 border-b-2 border-primary-fixed/20 rounded-2xl flex items-center justify-center text-3xl font-bold text-white transition-all duration-300 focus-within:border-primary-fixed focus-within:bg-white/10">
+<input class="w-full h-full bg-transparent border-none text-center focus:ring-0 font-tajawal" maxlength="1" placeholder="·" type="text"/>
+</div>
+<div class="aspect-square bg-white/5 border-b-2 border-primary-fixed/20 rounded-2xl flex items-center justify-center text-3xl font-bold text-white transition-all duration-300 focus-within:border-primary-fixed focus-within:bg-white/10">
+<input class="w-full h-full bg-transparent border-none text-center focus:ring-0 font-tajawal" maxlength="1" placeholder="·" type="text"/>
+</div>
+<div class="aspect-square bg-white/5 border-b-2 border-primary-fixed/20 rounded-2xl flex items-center justify-center text-3xl font-bold text-white transition-all duration-300 focus-within:border-primary-fixed focus-within:bg-white/10">
+<input class="w-full h-full bg-transparent border-none text-center focus:ring-0 font-tajawal" maxlength="1" placeholder="·" type="text"/>
+</div>
+<div class="aspect-square bg-white/5 border-b-2 border-primary-fixed/20 rounded-2xl flex items-center justify-center text-3xl font-bold text-white transition-all duration-300 focus-within:border-primary-fixed focus-within:bg-white/10">
+<input class="w-full h-full bg-transparent border-none text-center focus:ring-0 font-tajawal" maxlength="1" placeholder="·" type="text"/>
+</div>
+<div class="aspect-square bg-white/5 border-b-2 border-primary-fixed/20 rounded-2xl flex items-center justify-center text-3xl font-bold text-white transition-all duration-300 focus-within:border-primary-fixed focus-within:bg-white/10">
+<input class="w-full h-full bg-transparent border-none text-center focus:ring-0 font-tajawal" maxlength="1" placeholder="·" type="text"/>
+</div>
+</div>
+<!-- Resend Timer -->
+<div class="flex flex-col items-center space-y-4">
+<div class="flex items-center space-x-2 px-6 py-2 rounded-full bg-white/5 text-sm font-medium">
+<span class="text-on-surface-variant">Resend code in</span>
+<span class="text-primary-fixed font-headline font-bold">00:48</span>
+</div>
+<button class="text-primary-fixed hover:text-white transition-colors font-tajawal font-medium underline underline-offset-8 decoration-primary-fixed/30 hover:decoration-white">
+                    Did not receive the code?
+                </button>
+</div>
+</section>
+<!-- CTA Action -->
+<footer class="pt-8">
+<button class="w-full group relative flex items-center justify-center bg-gradient-to-r from-primary to-primary-container text-white py-5 px-8 rounded-2xl font-tajawal font-bold text-xl shadow-xl shadow-primary/20 active:scale-[0.98] transition-all">
+<span>Confirm &amp; Continue</span>
+<span class="material-symbols-outlined ml-2 group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<p class="mt-8 text-center text-on-surface-variant/60 font-tajawal text-sm px-10">
+                By continuing, you agree to our terms and conditions of Hur Delivery service.
+            </p>
+</footer>
+</main>
+<!-- Support Link Floating -->
+<div class="fixed bottom-10 left-0 right-0 flex justify-center">
+<a class="flex items-center space-x-2 text-on-surface-variant/80 hover:text-white transition-colors bg-white/5 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/5" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="support_agent">support_agent</span>
+<span class="font-tajawal text-sm font-medium">Contact Hur Support</span>
+</a>
+</div>
+<!-- Background Elements (The "No-Line" Rule - Tonal Shifts) -->
+<div class="fixed top-0 left-0 w-full p-8 flex justify-between items-center pointer-events-none">
+<div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center pointer-events-auto cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-white" data-icon="arrow_back">arrow_back</span>
+</div>
+<div class="font-tajawal font-black tracking-tighter text-2xl text-primary-fixed opacity-40">
+            HUR
+        </div>
+</div>
+</body></html>

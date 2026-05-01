@@ -4,8 +4,6 @@ import 'package:provider/provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/localization/app_localizations.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
@@ -65,7 +63,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    return Scaffold(
+    return Theme(
+      data: ThemeData.light().copyWith(
+        primaryColor: AppColors.primary,
+      ),
+      child: Scaffold(
       backgroundColor: AppColors.primary,
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).resetPassword),
@@ -75,15 +77,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.06),
+          padding: EdgeInsets.all(MediaQuery.sizeOf(context).width * 0.06),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.08),
+                SizedBox(height: MediaQuery.sizeOf(context).height * 0.08),
                 Text(AppLocalizations.of(context).enterCodeNewPassword, style: AppTextStyles.responsiveHeading2(context).copyWith(color: Colors.white), textAlign: TextAlign.center),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.04),
+                SizedBox(height: MediaQuery.sizeOf(context).height * 0.04),
 
                 // Code field
                 Container(
@@ -103,7 +105,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     },
                   ),
                 ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                SizedBox(height: MediaQuery.sizeOf(context).height * 0.02),
 
                 // Password field
                 Container(
@@ -129,7 +131,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     },
                   ),
                 ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.03),
+                SizedBox(height: MediaQuery.sizeOf(context).height * 0.03),
 
                 SizedBox(
                   width: ResponsiveHelper.getFormElementWidth(context),
@@ -146,6 +148,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

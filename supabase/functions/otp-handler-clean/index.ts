@@ -1,9 +1,9 @@
 /**
- * Optimized OTP Handler for Hur Delivery
- * Uses third-party OTP (Otpiq) with Supabase authentication
- * 
+ * OTP Handler for Hur Delivery
+ * Uses OTPIQ directly for sending OTPs via WhatsApp
+ *
  * Flow:
- * 1. Send OTP via Otpiq
+ * 1. Send OTP via OTPIQ
  * 2. Verify OTP in database
  * 3. Create/update Supabase user with secure random password
  * 4. Return authenticated session to client
@@ -35,6 +35,32 @@ function generateSecurePassword(): string {
   return crypto.randomUUID() + crypto.randomUUID(); // 72 chars, highly secure
 }
 
+// Helper: Extract IP address from request
+function getClientIp(req: Request, body?: any): string {
+  // First, check if IP is provided in request body (for rate limiting)
+  if (body?.antiFraud?.requesterIp) {
+    return body.antiFraud.requesterIp.trim();
+  }
+  
+  // Fallback to headers
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  
+  const realIp = req.headers.get('x-real-ip');
+  if (realIp) {
+    return realIp.trim();
+  }
+  
+  const cfConnectingIp = req.headers.get('cf-connecting-ip');
+  if (cfConnectingIp) {
+    return cfConnectingIp.trim();
+  }
+  
+  return 'unknown';
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -45,7 +71,6 @@ serve(async (req) => {
     // Environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const otpiqApiKey = Deno.env.get('OTPIQ_API_KEY')!;
 
     // Create admin client (for database operations)
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
@@ -57,6 +82,9 @@ serve(async (req) => {
 
     const body = await req.json();
     const { action, phoneNumber, code, purpose = "signup" } = body;
+    
+    // Extract IP address for rate limiting
+    const requesterIp = getClientIp(req, body);
 
     if (!action) {
       return Response.json(
@@ -103,45 +131,107 @@ serve(async (req) => {
         );
       }
 
-      // Send via Otpiq
-      try {
-        const otpiqResponse = await fetch('https://api.otpiq.com/api/sms', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${otpiqApiKey}`,
-          },
-          body: JSON.stringify({
-            phoneNumber: phone,
-            smsType: 'verification',
-            provider: 'whatsapp-sms',
-            verificationCode: otpCode,
-          }),
-        });
-
-        if (!otpiqResponse.ok) {
-          const errorText = await otpiqResponse.text();
-          console.error('[otp-handler-clean] Otpiq API error:', errorText);
-          return Response.json(
-            { error: 'Failed to send OTP' },
-            { status: 500, headers: corsHeaders }
-          );
-        }
-
-        const otpiqData = await otpiqResponse.json();
-        console.log('[otp-handler-clean] ✅ OTP sent successfully via Otpiq');
-
-        return Response.json(
-          { success: true, message: 'OTP sent successfully' },
-          { status: 200, headers: corsHeaders }
-        );
-      } catch (error) {
-        console.error('[otp-handler-clean] Error sending OTP:', error);
+      // Send OTP via OTPIQ
+      const otpiqApiKey = Deno.env.get('OTPIQ_API_KEY');
+      if (!otpiqApiKey) {
+        console.error('[otp-handler-clean] OTPIQ_API_KEY not configured');
         return Response.json(
           { error: 'Failed to send OTP' },
           { status: 500, headers: corsHeaders }
         );
       }
+
+      const otpiqPayload: any = {
+        phoneNumber: phone,
+        smsType: 'verification',
+        provider: 'whatsapp-sms',
+        verificationCode: otpCode,
+      };
+      if (requesterIp && requesterIp !== 'unknown') {
+        otpiqPayload.antiFraud = { requesterIp };
+      }
+
+      const otpiqResponse = await fetch('https://api.otpiq.com/api/sms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${otpiqApiKey}`,
+        },
+        body: JSON.stringify(otpiqPayload),
+      });
+
+      if (!otpiqResponse.ok) {
+        let errorText = '';
+        let errorData: any = null;
+        try {
+          errorText = await otpiqResponse.text();
+          try { errorData = JSON.parse(errorText); } catch { /* */ }
+        } catch { errorText = 'Unknown error'; }
+
+        const errorMessage = (errorData?.message || errorData?.error || errorText || '').toLowerCase();
+        const isRateLimit = otpiqResponse.status === 429 ||
+          errorMessage.includes('rate limit') || errorMessage.includes('too many requests') ||
+          errorMessage.includes('rate_limit') || errorMessage.includes('exceeded') ||
+          errorMessage.includes('limit exceeded') || errorMessage.includes('quota exceeded');
+
+        if (isRateLimit) {
+          return Response.json(
+            { error: 'عذرًا لقد تجاوزت الحد المسموح من المحاولات. يرجى اعادة المحاولة لاحقًا.' },
+            { status: 429, headers: corsHeaders }
+          );
+        }
+
+        console.error('[otp-handler-clean] OTPIQ error:', otpiqResponse.status, errorText);
+        return Response.json(
+          { error: 'Failed to send OTP' },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      console.log('[otp-handler-clean] ✅ OTP sent successfully via OTPIQ');
+      return Response.json(
+        { success: true, message: 'OTP sent successfully' },
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    // ============================================================
+    // ACTION: CHECK_USER (Check if user exists by phone - for client-side validation)
+    // ============================================================
+    if (action === "check_user") {
+      if (!phoneNumber) {
+        return Response.json(
+          { error: 'phoneNumber is required' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      const phone = normalizePhone(phoneNumber);
+      const phoneWithPlus = phone.startsWith('+') ? phone : `+${phone}`;
+      const phoneWithoutPlus = phone.startsWith('+') ? phone.substring(1) : phone;
+
+      // Use service_role to bypass RLS
+      const { data: existingProfile, error: profileError } = await supabaseAdmin
+        .from('users')
+        .select('id, role, phone, name')
+        .or(`phone.eq.${phoneWithoutPlus},phone.eq.${phoneWithPlus}`)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('[otp-handler-clean] Error checking user:', profileError);
+        return Response.json(
+          { exists: false, error: 'Error checking user existence' },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      return Response.json(
+        {
+          exists: !!existingProfile,
+          user: existingProfile || null,
+        },
+        { status: 200, headers: corsHeaders }
+      );
     }
 
     // ============================================================
@@ -204,13 +294,16 @@ serve(async (req) => {
         .eq('id', otpRecord.id);
 
       // 3. Find existing user profile
-      // Try both with and without the + prefix
+      // Use service_role (supabaseAdmin) which bypasses RLS completely
+      // Try both with and without the + prefix to handle different formats
       const phoneWithPlus = phone.startsWith('+') ? phone : `+${phone}`;
       const phoneWithoutPlus = phone.startsWith('+') ? phone.substring(1) : phone;
       
+      // Query using service_role (bypasses RLS completely)
+      // Use OR query to check both phone formats at once
       const { data: existingProfile, error: profileError } = await supabaseAdmin
         .from('users')
-        .select('id, phone, role, name')  // ✅ Removed 'email' - it doesn't exist in users table
+        .select('id, phone, role, name')
         .or(`phone.eq.${phoneWithoutPlus},phone.eq.${phoneWithPlus}`)
         .maybeSingle();
       
@@ -406,7 +499,7 @@ serve(async (req) => {
 
     // Unknown action
     return Response.json(
-      { error: 'Invalid action. Supported actions: send, authenticate' },
+      { error: 'Invalid action. Supported actions: send, authenticate, check_user' },
       { status: 400, headers: corsHeaders }
     );
 

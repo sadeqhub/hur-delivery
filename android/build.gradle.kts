@@ -9,6 +9,19 @@ buildscript {
     }
 }
 
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+fun getSecretProperty(name: String): String {
+    return (project.findProperty(name) as String?)
+        ?: localProperties.getProperty(name)
+        ?: System.getenv(name)
+        ?: ""
+}
+
 allprojects {
     repositories {
         // Optimize repository resolution with content filtering
@@ -29,7 +42,7 @@ allprojects {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             credentials {
                 username = "mapbox"
-                password = project.findProperty("MAPBOX_SECRET_TOKEN") as String? ?: ""
+                password = getSecretProperty("MAPBOX_SECRET_TOKEN")
             }
             content {
                 includeGroup("com.mapbox.maps")

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Driver Earnings - Kinetic Sanctuary</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#edeeef",
+                    "on-secondary-fixed-variant": "#173bab",
+                    "on-tertiary-fixed-variant": "#733604",
+                    "on-primary-fixed-variant": "#004f54",
+                    "inverse-primary": "#6ed6df",
+                    "tertiary-fixed": "#ffdbc8",
+                    "surface": "#f8f9fa",
+                    "secondary": "#3755c3",
+                    "on-tertiary-fixed": "#321300",
+                    "inverse-surface": "#2e3132",
+                    "tertiary-fixed-dim": "#ffb68a",
+                    "primary-fixed": "#8cf2fc",
+                    "surface-dim": "#d9dadb",
+                    "on-primary-container": "#f5feff",
+                    "on-secondary-fixed": "#001453",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-container": "#708cfd",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "error-container": "#ffdad6",
+                    "on-tertiary": "#ffffff",
+                    "inverse-on-surface": "#f0f1f2",
+                    "surface-container-low": "#f3f4f5",
+                    "background": "#f8f9fa",
+                    "surface-container-high": "#e7e8e9",
+                    "surface-bright": "#f8f9fa",
+                    "on-background": "#191c1d",
+                    "secondary-fixed": "#dde1ff",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#006970",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-container": "#00217a",
+                    "error": "#ba1a1a",
+                    "outline": "#6d797a",
+                    "surface-variant": "#e1e3e4",
+                    "on-surface-variant": "#3d494a",
+                    "tertiary-container": "#ab6230",
+                    "outline-variant": "#bdc9ca",
+                    "on-primary-fixed": "#002022",
+                    "surface-container-highest": "#e1e3e4",
+                    "primary-container": "#00818a",
+                    "primary": "#00666d",
+                    "on-error": "#ffffff",
+                    "tertiary": "#8d4a19",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-container": "#fffbff",
+                    "primary-fixed-dim": "#6ed6df",
+                    "on-surface": "#191c1d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Tajawal", "sans-serif"],
+                    "body": ["Manrope", "sans-serif"],
+                    "label": ["Manrope", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Manrope', 'Tajawal', sans-serif; }
+        .tajawal { font-family: 'Tajawal', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl fixed top-0 w-full z-50 flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors p-2 rounded-full active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-teal-700 dark:text-teal-400" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Tajawal'] text-lg font-bold tracking-tight text-teal-700 dark:text-teal-400">Earnings</h1>
+</div>
+<button class="hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors p-2 rounded-full active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-teal-700 dark:text-teal-400" data-icon="more_vert">more_vert</span>
+</button>
+</header>
+<main class="pt-24 px-6 max-w-2xl mx-auto">
+<!-- Period Selector -->
+<nav class="flex justify-between items-center bg-surface-container-low p-1.5 rounded-2xl mb-8">
+<button class="flex-1 py-2 text-sm font-bold tajawal rounded-xl bg-primary text-white shadow-lg shadow-primary/20">Today</button>
+<button class="flex-1 py-2 text-sm font-medium tajawal rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">This Week</button>
+<button class="flex-1 py-2 text-sm font-medium tajawal rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">This Month</button>
+<button class="flex-1 py-2 text-sm font-medium tajawal rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">All Time</button>
+</nav>
+<!-- Summary Grid (Bento Style) -->
+<div class="grid grid-cols-2 gap-4 mb-8">
+<!-- Total Earned Card -->
+<div class="col-span-2 bg-surface-container-lowest p-8 rounded-[24px] shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16"></div>
+<p class="tajawal text-on-surface-variant font-medium mb-2">Total Earned</p>
+<h2 class="tajawal text-4xl font-extrabold text-primary tracking-tight">IQD 345,000</h2>
+<div class="mt-4 px-4 py-1.5 bg-primary/10 rounded-full flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-primary" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+<span class="text-primary text-xs font-bold font-label">+12% from yesterday</span>
+</div>
+</div>
+<!-- Orders Completed -->
+<div class="bg-surface-container-lowest p-6 rounded-[24px] shadow-sm">
+<div class="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-secondary" data-icon="local_shipping">local_shipping</span>
+</div>
+<h3 class="tajawal text-2xl font-bold text-on-surface">42</h3>
+<p class="tajawal text-sm text-on-surface-variant">Orders Completed</p>
+</div>
+<!-- Avg per Order -->
+<div class="bg-surface-container-lowest p-6 rounded-[24px] shadow-sm">
+<div class="w-10 h-10 bg-tertiary-container/10 rounded-xl flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-tertiary-container" data-icon="analytics">analytics</span>
+</div>
+<h3 class="tajawal text-2xl font-bold text-on-surface">8,200</h3>
+<p class="tajawal text-sm text-on-surface-variant">Average (IQD)</p>
+</div>
+</div>
+<!-- Weekly Earnings Chart -->
+<section class="bg-surface-container-lowest p-6 rounded-[24px] shadow-sm mb-8">
+<div class="flex justify-between items-center mb-6">
+<h3 class="tajawal font-bold text-on-surface">Weekly Performance</h3>
+<span class="text-xs font-bold text-on-surface-variant px-3 py-1 bg-surface-container-low rounded-full">JUNE 12-18</span>
+</div>
+<div class="flex items-end justify-between h-40 gap-2">
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[40%] group-hover:bg-primary/40 transition-colors"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">SUN</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[60%] group-hover:bg-primary/40 transition-colors"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">MON</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[85%] group-hover:bg-primary/40 transition-colors"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">TUE</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary rounded-t-lg h-full shadow-lg shadow-primary/30"></div>
+<span class="text-[10px] font-bold text-primary">WED</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[45%] group-hover:bg-primary/40 transition-colors"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">THU</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[30%] group-hover:bg-primary/40 transition-colors"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">FRI</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[20%] group-hover:bg-primary/40 transition-colors"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">SAT</span>
+</div>
+</div>
+</section>
+<!-- Rank Card -->
+<section class="mb-8 overflow-hidden rounded-[24px] bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white relative">
+<div class="absolute -right-4 -bottom-4 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
+<div class="flex items-center justify-between relative z-10">
+<div>
+<span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Current Standing</span>
+<h4 class="tajawal text-2xl font-extrabold text-slate-100">Silver Rank</h4>
+<div class="mt-2 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<p class="text-sm font-medium text-slate-300">15% Commission Rate</p>
+</div>
+</div>
+<div class="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-3xl text-primary-fixed" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+</div>
+<div class="mt-6 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-2/3"></div>
+</div>
+<p class="mt-3 text-[10px] text-slate-400 font-medium">IQD 55,000 more to reach Gold Rank</p>
+</section>
+<!-- Transaction List -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="tajawal font-bold text-lg text-on-surface">Recent Activity</h3>
+<button class="text-primary text-sm font-bold tajawal">View All</button>
+</div>
+<div class="space-y-3">
+<!-- Transaction Item -->
+<div class="bg-surface-container-lowest p-4 rounded-2xl flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-low rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="receipt_long">receipt_long</span>
+</div>
+<div>
+<h5 class="font-bold text-sm text-on-surface">Order #HD-8842</h5>
+<p class="text-xs text-on-surface-variant font-medium">Today 12:45 PM</p>
+</div>
+</div>
+<div class="text-left">
+<p class="font-bold text-teal-700 tajawal">IQD 7,500</p>
+<span class="text-[9px] font-bold uppercase text-primary/70">Settled</span>
+</div>
+</div>
+<!-- Transaction Item -->
+<div class="bg-surface-container-lowest p-4 rounded-2xl flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-low rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="receipt_long">receipt_long</span>
+</div>
+<div>
+<h5 class="font-bold text-sm text-on-surface">Order #HD-8839</h5>
+<p class="text-xs text-on-surface-variant font-medium">Today 11:15 AM</p>
+</div>
+</div>
+<div class="text-left">
+<p class="font-bold text-teal-700 tajawal">IQD 9,200</p>
+<span class="text-[9px] font-bold uppercase text-primary/70">Settled</span>
+</div>
+</div>
+<!-- Transaction Item -->
+<div class="bg-surface-container-lowest p-4 rounded-2xl flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-low rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="receipt_long">receipt_long</span>
+</div>
+<div>
+<h5 class="font-bold text-sm text-on-surface">Order #HD-8835</h5>
+<p class="text-xs text-on-surface-variant font-medium">Yesterday 6:30 PM</p>
+</div>
+</div>
+<div class="text-left">
+<p class="font-bold text-teal-700 tajawal">IQD 6,800</p>
+<span class="text-[9px] font-bold uppercase text-primary/70">Settled</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl z-50 rounded-t-3xl border-t border-white/20 shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-4 py-2 hover:text-teal-600 dark:hover:text-teal-400 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Tajawal'] text-[10px] font-bold uppercase tracking-wider mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-4 py-2 hover:text-teal-600 dark:hover:text-teal-400 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-['Tajawal'] text-[10px] font-bold uppercase tracking-wider mt-1">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-teal-600 dark:bg-teal-500 text-white rounded-2xl px-5 py-2 scale-110 -translate-y-1 shadow-lg shadow-teal-600/30" href="#">
+<span class="material-symbols-outlined" data-icon="payments" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-['Tajawal'] text-[10px] font-bold uppercase tracking-wider mt-1">Earnings</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-4 py-2 hover:text-teal-600 dark:hover:text-teal-400 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Tajawal'] text-[10px] font-bold uppercase tracking-wider mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

@@ -16,7 +16,7 @@ import { getSupportPhone } from '../config/supabase';
 const Footer = () => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
-  const [supportPhone, setSupportPhone] = useState('+964 770 123 4567');
+  const [supportPhone, setSupportPhone] = useState('+964 789 000 3093');
 
   useEffect(() => {
     // Fetch support phone from database
@@ -118,7 +118,9 @@ const Footer = () => {
             <h3 className="footer-title">{t('footer.download')}</h3>
             <div className="footer-badges">
               <motion.a
-                href="#"
+                href="https://play.google.com/store/apps/details?id=com.hur.delivery"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="badge-link"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -126,17 +128,6 @@ const Footer = () => {
                 <img 
                   src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" 
                   alt="Google Play"
-                />
-              </motion.a>
-              <motion.a
-                href="#"
-                className="badge-link"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <img 
-                  src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" 
-                  alt="App Store"
                 />
               </motion.a>
             </div>

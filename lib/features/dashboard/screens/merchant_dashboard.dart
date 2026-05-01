@@ -1,23 +1,19 @@
-import 'dart:ui';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
 import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/providers/order_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/wallet_provider.dart';
 import '../../../core/services/driver_availability_service.dart';
-import '../../../shared/widgets/primary_button.dart';
-import '../../../shared/widgets/responsive_screen_wrapper.dart';
-import '../../../shared/models/scheduled_order_model.dart';
 import '../../../core/widgets/header_notification.dart';
 import '../../orders/widgets/merchant_order_card.dart';
+import '../../../shared/widgets/skeletons.dart';
 import '../../wallet/widgets/wallet_balance_widget.dart';
 import '../../wallet/widgets/credit_limit_guard.dart';
 import '../../wallet/screens/wallet_screen.dart';
@@ -27,6 +23,9 @@ import '../../../core/providers/announcement_provider.dart';
 import '../../../core/providers/system_status_provider.dart';
 import '../../../shared/widgets/maintenance_mode_dialog.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/services/screen_visibility_tracker.dart';
+import '../../../shared/models/order_model.dart';
+import '../../../shared/widgets/empty_state.dart';
 // Removed legacy stable_order_card_manager import
 
 class MerchantDashboard extends StatefulWidget {
@@ -36,21 +35,31 @@ class MerchantDashboard extends StatefulWidget {
   State<MerchantDashboard> createState() => _MerchantDashboardState();
 }
 
-class _MerchantDashboardState extends State<MerchantDashboard> {
-  int _selectedIndex = 0;
+class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibilityMixin {
+  @override
+  String get screenName => 'merchant_dashboard';
+  
+  final int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
+        final authProvider = context.read<AuthProvider>();
+        
+        // Skip initialization in demo mode
+        if (authProvider.isDemoMode) {
+          print('ℹ️ Demo mode: Skipping dashboard initialization');
+          return;
+        }
+        
         await context.read<OrderProvider>().initialize();
         
         // Initialize system status checking
         await context.read<SystemStatusProvider>().initialize();
         
         // Initialize wallet
-        final authProvider = context.read<AuthProvider>();
         if (authProvider.user != null) {
           await context.read<WalletProvider>().initialize(authProvider.user!.id);
           
@@ -63,6 +72,17 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
             );
           }
           
+          // Check location/address guard
+          if (mounted) {
+            final user = authProvider.user!;
+            final hasAddress = user.address != null && user.address!.isNotEmpty;
+            final hasLocation = user.latitude != null && user.longitude != null;
+            
+            if (!hasAddress || !hasLocation) {
+              _showLocationGuardDialog();
+            }
+          }
+
           // Check system status and show dialog if disabled
           if (mounted) {
             final systemStatus = context.read<SystemStatusProvider>();
@@ -87,9 +107,12 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    // Check auth state - redirect if not authenticated
-    final authProvider = context.watch<AuthProvider>();
-    if (!authProvider.isAuthenticated) {
+    // Use select() so the whole dashboard only rebuilds when auth status
+    // actually changes — not on every unrelated AuthProvider notification.
+    final isAuthenticated = context.select<AuthProvider, bool>(
+        (a) => a.isAuthenticated || a.isDemoMode);
+    final authProvider = context.read<AuthProvider>();
+    if (!isAuthenticated) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           context.go('/');
@@ -107,6 +130,69 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
         title: const WalletBalanceWidget(),
         centerTitle: true,
         actions: [
+          // Connection status indicator
+          Consumer<OrderProvider>(
+            builder: (context, orderProvider, _) {
+              // Only show indicator if there's an error
+              if (orderProvider.error != null) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Tooltip(
+                    message: 'خطأ في الاتصال',
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.error, width: 1),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.cloud_off_rounded,
+                            size: 16,
+                            color: AppColors.error,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'غير متصل',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+              // Connection is healthy - show subtle green dot
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Center(
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: AppColors.success,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.success.withOpacity(0.5),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
@@ -117,14 +203,25 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
         ],
       ),
       drawer: _buildDrawer(context, authProvider),
-      body: CreditLimitGuard(
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            _OrdersTab(),
-            const WalletScreen(),
-          ],
-        ),
+      body: Builder(
+        builder: (context) {
+          // select() so only isEnabled changes trigger a body rebuild,
+          // not every wallet balance/transaction update.
+          final walletEnabled =
+              context.select<WalletProvider, bool>((w) => w.isEnabled);
+          if (!walletEnabled) {
+            return _OrdersTab();
+          }
+          return CreditLimitGuard(
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: [
+                _OrdersTab(),
+                const WalletScreen(),
+              ],
+            ),
+          );
+        },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Container(
@@ -153,6 +250,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
+              // Allow navigation to order creation screens in demo mode
               context.push('/merchant-dashboard/create-order');
             },
             borderRadius: BorderRadius.circular(32),
@@ -168,7 +266,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
           shape: const CircularNotchedRectangle(),
           notchMargin: 8.0,
           clipBehavior: Clip.antiAlias,
-          color: AppColors.primary,
+          color: context.themePrimary,
           elevation: 8,
           child: Directionality(
             textDirection: TextDirection.ltr,
@@ -187,33 +285,18 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
                       onTap: () => _openSupportChat(context),
                   ),
                 ),
+                // Spacer for FAB
+                const SizedBox(width: 40),
                 // Voice order button
                 Expanded(
                   child: _buildFooterButton(
                     icon: Icons.mic_rounded,
                     label: loc.voice,
                     isSelected: false,
-                    onTap: () => context.push('/merchant-dashboard/create-order?page=3'),
-                  ),
-                ),
-                // Spacer for FAB
-                const SizedBox(width: 40),
-                // Wallet button
-                Expanded(
-                  child: _buildFooterButton(
-                    icon: Icons.account_balance_wallet_rounded,
-                    label: loc.wallet,
-                    isSelected: _selectedIndex == 1,
-                    onTap: () => setState(() => _selectedIndex = 1),
-                  ),
-                ),
-                  // Home button
-                Expanded(
-                  child: _buildFooterButton(
-                      icon: Icons.home_rounded,
-                      label: loc.home,
-                      isSelected: _selectedIndex == 0,
-                      onTap: () => setState(() => _selectedIndex = 0),
+                    onTap: () {
+                      // Allow navigation to order creation screens in demo mode
+                      context.push('/merchant-dashboard/create-order?page=3');
+                    },
                   ),
                 ),
               ],
@@ -332,6 +415,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
     final user = authProvider.user;
     
     return Drawer(
+      backgroundColor: context.themeSurface,
       child: Column(
         children: [
           // Profile Header
@@ -500,23 +584,141 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
     required VoidCallback onTap,
     bool isDestructive = false,
   }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive ? AppColors.error : AppColors.textSecondary,
+    return Builder(
+      builder: (context) {
+        return ListTile(
+          leading: Icon(
+            icon,
+            color: isDestructive ? AppColors.error : context.themeTextSecondary,
+          ),
+          title: Text(
+            title,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: isDestructive ? AppColors.error : context.themeTextPrimary,
+            ),
+          ),
+          trailing: Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 16,
+            color: isDestructive ? AppColors.error : context.themeTextTertiary,
+          ),
+          onTap: onTap,
+        );
+      },
+    );
+  }
+
+  String _getUserFriendlyError(String error) {
+    final errorLower = error.toLowerCase();
+    
+    if (errorLower.contains('connection') || 
+        errorLower.contains('network') || 
+        errorLower.contains('timeout')) {
+      return 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
+    } else if (errorLower.contains('auth') || 
+               errorLower.contains('session') ||
+               errorLower.contains('token')) {
+      return 'انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.';
+    } else if (errorLower.contains('permission') || 
+               errorLower.contains('denied')) {
+      return 'لا تملك الصلاحية للوصول إلى هذه البيانات.';
+    } else {
+      return 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى لاحقاً.';
+    }
+  }
+
+  void _showConnectionHelpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('مساعدة في حل المشكلة'),
+        content: const SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'جرب الخطوات التالية:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 12),
+              Text('1️⃣ تأكد من اتصال الإنترنت'),
+              SizedBox(height: 8),
+              Text('2️⃣ أغلق التطبيق وأعد فتحه'),
+              SizedBox(height: 8),
+              Text('3️⃣ تحقق من تحديث التطبيق'),
+              SizedBox(height: 8),
+              Text('4️⃣ أعد تشغيل جهازك إذا استمرت المشكلة'),
+              SizedBox(height: 12),
+              Text(
+                'إذا استمرت المشكلة، تواصل مع الدعم الفني.',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('حسناً'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _openSupportChat(context);
+            },
+            child: const Text('تواصل مع الدعم'),
+          ),
+        ],
       ),
-      title: Text(
-        title,
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: isDestructive ? AppColors.error : AppColors.textPrimary,
+    );
+  }
+
+  Future<void> _showLocationGuardDialog() async {
+    final loc = AppLocalizations.of(context);
+    final isArabic = loc.isArabic;
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false, // Prevent back button
+        child: AlertDialog(
+          title: Text(isArabic ? 'الموقع مطلوب' : 'Location Required'),
+          content: Text(
+            isArabic 
+                ? 'يرجى تحديد موقع المتجر وعنوانه المكتوب للمتابعة.\nهذا يضمن وصول السائقين إليك بدقة.'
+                : 'Please set your store location and address to continue.\nThis ensures drivers can reach you accurately.'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await context.push('/merchant-dashboard/edit-profile');
+                
+                // Re-check after returning
+                if (mounted) {
+                   final authProvider = context.read<AuthProvider>();
+                   // Force refresh first
+                   await authProvider.refreshUser();
+                   
+                   final user = authProvider.user;
+                   if (user != null) {
+                      final hasAddress = user.address != null && user.address!.isNotEmpty;
+                      final hasLocation = user.latitude != null && user.longitude != null;
+                      
+                      if (!hasAddress || !hasLocation) {
+                        // Show again if still missing
+                        _showLocationGuardDialog();
+                      }
+                   }
+                }
+              },
+              child: Text(isArabic ? 'تحديث الموقع' : 'Update Location'),
+            ),
+          ],
         ),
       ),
-      trailing: Icon(
-        Icons.arrow_forward_ios_rounded,
-        size: 16,
-        color: isDestructive ? AppColors.error : AppColors.textTertiary,
-      ),
-      onTap: onTap,
     );
   }
 }
@@ -548,10 +750,13 @@ class _OrdersTabState extends State<_OrdersTab> with SingleTickerProviderStateMi
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.themeSurface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: context.themeColor(
+                  light: Colors.black.withOpacity(0.05),
+                  dark: Colors.black.withOpacity(0.3),
+                ),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -559,9 +764,9 @@ class _OrdersTabState extends State<_OrdersTab> with SingleTickerProviderStateMi
           ),
           child: TabBar(
             controller: _tabController,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textTertiary,
-            indicatorColor: AppColors.primary,
+            labelColor: context.themePrimary,
+            unselectedLabelColor: context.themeTextTertiary,
+            indicatorColor: context.themePrimary,
             indicatorWeight: 3,
             labelStyle: AppTextStyles.bodyMedium.copyWith(
               fontWeight: FontWeight.w700,
@@ -622,8 +827,11 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
       builder: (context, orderProvider, _) {
         // Store reference to provider for timer callback
         _orderProvider = orderProvider;
-        if (orderProvider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+        if (orderProvider.isLoading && orderProvider.orders.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: OrderListSkeleton(count: 4),
+          );
         }
 
         if (orderProvider.error != null) {
@@ -664,10 +872,49 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
             return b.createdAt.compareTo(a.createdAt);
           });
 
-        // Use orders directly (legacy stable order card manager removed)
-        final activeOrders = allActiveOrders;
+        // Prevent duplication: Ensure each order appears only once (even if it appears in multiple statuses)
+        // Group orders by ID and keep only the most recent one
+        final orderMap = <String, OrderModel>{};
+        for (final order in allActiveOrders) {
+          if (!orderMap.containsKey(order.id)) {
+            orderMap[order.id] = order;
+          } else {
+            // If order already exists, keep the one with the most recent update
+            final existing = orderMap[order.id]!;
+            final orderUpdatedAt = order.updatedAt;
+            final existingUpdatedAt = existing.updatedAt;
+            
+            // Handle nullable updatedAt - prefer non-null, or compare if both are non-null
+            if (orderUpdatedAt != null && existingUpdatedAt != null) {
+              if (orderUpdatedAt.isAfter(existingUpdatedAt)) {
+                orderMap[order.id] = order;
+              }
+            } else if (orderUpdatedAt != null && existingUpdatedAt == null) {
+              // Prefer order with non-null updatedAt
+              orderMap[order.id] = order;
+            }
+            // If both are null or existing has non-null, keep existing
+          }
+        }
+        
+        // Convert back to list and sort
+        final uniqueActiveOrders = orderMap.values.toList()
+          ..sort((a, b) {
+            // Sort by ready_at first (orders not ready yet come first)
+            if (a.readyAt != null && b.readyAt == null) return -1;
+            if (a.readyAt == null && b.readyAt != null) return 1;
+            if (a.readyAt != null && b.readyAt != null) {
+              return a.readyAt!.compareTo(b.readyAt!);
+            }
+            // Then by creation time
+            return b.createdAt.compareTo(a.createdAt);
+          });
 
-        if (activeOrders.isEmpty) {
+        // Use regular orders list
+        final activeOrders = uniqueActiveOrders;
+        final totalItemsCount = activeOrders.length;
+
+        if (totalItemsCount == 0) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(32.0),
@@ -678,8 +925,8 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
                   Opacity(
                     opacity: 0.15,
                     child: Container(
-                      width: MediaQuery.of(context).size.width * 0.5,
-                      height: MediaQuery.of(context).size.width * 0.5,
+                      width: MediaQuery.sizeOf(context).width * 0.5,
+                      height: MediaQuery.sizeOf(context).width * 0.5,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                       ),
@@ -695,7 +942,7 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
                             ),
                             child: Icon(
                               Icons.local_shipping_rounded,
-                              size: MediaQuery.of(context).size.width * 0.3,
+                              size: MediaQuery.sizeOf(context).width * 0.3,
                               color: AppColors.primary.withOpacity(0.3),
                             ),
                           );
@@ -725,61 +972,61 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
           onRefresh: () => orderProvider.refreshOrders(),
           child: ListView.builder(
             padding: ResponsiveHelper.getResponsivePadding(context, horizontal: 16, vertical: 16),
-            itemCount: activeOrders.length,
+            itemCount: totalItemsCount,
             itemBuilder: (context, index) {
               final order = activeOrders[index];
-              
-              // Add action buttons for rejected orders
-              if (order.status == 'rejected') {
-                return MerchantOrderCard(
-                  key: ValueKey('${order.id}_${order.status}_rejected'),
-                  order: order,
-                  actionButtons: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _cancelOrder(order.id, orderProvider),
-                            icon: const Icon(Icons.close, size: 18),
-                            label: Text(AppLocalizations.of(context).cancel),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.error,
-                              side: BorderSide(color: AppColors.error),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                
+                // Add action buttons for rejected orders
+                if (order.status == 'rejected') {
+                  return MerchantOrderCard(
+                    key: ValueKey('${order.id}_${order.status}_rejected'),
+                    order: order,
+                    actionButtons: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _cancelOrder(order.id, orderProvider),
+                              icon: const Icon(Icons.close, size: 18),
+                              label: Text(AppLocalizations.of(context).cancel),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.error,
+                                side: const BorderSide(color: AppColors.error),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: Consumer<WalletProvider>(
-                            builder: (context, walletProvider, _) {
-                              final canRepost = walletProvider.balance > walletProvider.creditLimit;
-                              return ElevatedButton.icon(
-                                onPressed: canRepost 
-                                    ? () => _repostOrder(order.id, order.deliveryFee, orderProvider)
-                                    : null,
-                                icon: const Icon(Icons.refresh, size: 18),
-                                label: Text(AppLocalizations.of(context).repostOrder),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: canRepost ? Colors.orange.shade600 : Colors.grey,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                ),
-                              );
-                            },
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: Consumer<WalletProvider>(
+                              builder: (context, walletProvider, _) {
+                                final canRepost = walletProvider.balance > walletProvider.creditLimit;
+                                return ElevatedButton.icon(
+                                  onPressed: canRepost 
+                                      ? () => _repostOrder(order.id, order.deliveryFee, orderProvider)
+                                      : null,
+                                  icon: const Icon(Icons.refresh, size: 18),
+                                  label: Text(AppLocalizations.of(context).repostOrder),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: canRepost ? Colors.orange.shade600 : Colors.grey,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  );
+                }
+                
+                return MerchantOrderCard(
+                  key: ValueKey('${order.id}_${order.status}'),
+                  order: order,
                 );
-              }
-              
-              return MerchantOrderCard(
-                key: ValueKey('${order.id}_${order.status}'),
-                order: order,
-              );
             },
           ),
         );
@@ -824,13 +1071,53 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
 
   Future<int> _checkOnlineDrivers() async {
     try {
-      final response = await Supabase.instance.client
+      // Get merchant's city
+      final merchantId = Supabase.instance.client.auth.currentUser?.id;
+      if (merchantId == null) return 0;
+      
+      final merchantCityRow = await Supabase.instance.client
+          .from('users')
+          .select('city')
+          .eq('id', merchantId)
+          .maybeSingle();
+      
+      final merchantCity = (merchantCityRow?['city'] ?? '').toString();
+      if (merchantCity.isEmpty) return 0;
+      
+      // Get online drivers in the same city (case-insensitive to handle
+      // mixed-case city values stored by different clients).
+      final onlineDrivers = await Supabase.instance.client
           .from('users')
           .select('id')
           .eq('role', 'driver')
-          .eq('is_online', true);
+          .eq('is_online', true)
+          .ilike('city', merchantCity);
       
-      return response.length;
+      if (onlineDrivers.isEmpty) return 0;
+      
+      // Get driver IDs
+      final driverIds = (onlineDrivers as List<dynamic>)
+          .map((driver) => driver['id'] as String?)
+          .whereType<String>()
+          .toList();
+      
+      // Check for active orders
+      final activeOrders = await Supabase.instance.client
+          .from('orders')
+          .select('driver_id')
+          .inFilter('driver_id', driverIds)
+          .inFilter('status', ['pending', 'assigned', 'accepted', 'on_the_way']);
+      
+      // Get drivers with active orders
+      final busyDriverIds = (activeOrders as List<dynamic>)
+          .map((order) => order['driver_id'] as String?)
+          .whereType<String>()
+          .toSet();
+      
+      // Calculate free drivers (online without active orders)
+      final freeDriverCount = driverIds.where((id) => !busyDriverIds.contains(id)).length;
+      
+      return freeDriverCount;
     } catch (e) {
       print('Error checking online drivers: $e');
       return 0;
@@ -838,6 +1125,7 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
   }
 
   Future<void> _repostOrder(String orderId, double currentFee, OrderProvider orderProvider) async {
+    final loc = AppLocalizations.of(context);
     // Check credit limit first
     final walletProvider = context.read<WalletProvider>();
     if (walletProvider.balance <= walletProvider.creditLimit) {
@@ -858,18 +1146,10 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
     );
     
     final merchantId = order.merchantId;
-    if (merchantId == null) {
-      showHeaderNotification(
-        context,
-        title: 'خطأ في البيانات',
-        message: 'لا يمكن تحديد التاجر لهذا الطلب. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
-        type: NotificationType.error,
-      );
-      return;
-    }
 
     // Check for online drivers WITHOUT active orders (repost requirement)
     final availabilityResult = await DriverAvailabilityService.checkFreeDriversOnly(
+      merchantId: merchantId,
       vehicleType: order.vehicleType ?? 'motorbike',
     );
 
@@ -880,9 +1160,15 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
           builder: (context) => AlertDialog(
             title: Row(
               children: [
-                Icon(Icons.warning, color: AppColors.warning),
+                const Icon(Icons.warning, color: AppColors.warning),
                 const SizedBox(width: 8),
-                Text(AppLocalizations.of(context).noDriversAvailableTitle),
+                Expanded(
+                  child: Text(
+                    loc.noDriversAvailable,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                ),
               ],
             ),
             content: Text(
@@ -892,7 +1178,7 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(AppLocalizations.of(context).ok),
+                child: Text(loc.ok),
               ),
             ],
           ),
@@ -906,41 +1192,68 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: ResponsiveText(AppLocalizations.of(context).repostOrderTitle, style: TextStyle(fontSize: context.rf(18))),
+        title: Row(
+          children: [
+            const Icon(Icons.replay, color: AppColors.success),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                loc.repostOrderTitle,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
+            ),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ResponsiveText(AppLocalizations.of(context).repostOrderMessage, style: TextStyle(fontSize: context.rf(16))),
+            Text(
+              loc.repostOrderMessage,
+              style: const TextStyle(fontSize: 15),
+            ),
             SizedBox(height: context.rs(12)),
             Container(
-              padding: context.rp(horizontal: 12, vertical: 12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(context.rs(8)),
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(AppLocalizations.of(context).currentFees),
+                      Flexible(
+                        child: Text(
+                          loc.currentDeliveryFee,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
-                        '${currentFee.toStringAsFixed(0)} د.ع',
+                        '${currentFee.toStringAsFixed(0)} ${loc.currencySymbol}',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
-                  const Divider(height: 16),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(AppLocalizations.of(context).newFees),
+                      Flexible(
+                        child: Text(
+                          loc.newDeliveryFee,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
-                        '${newFee.toStringAsFixed(0)} د.ع',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
+                        '${newFee.toStringAsFixed(0)} ${loc.currencySymbol}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.success,
                           fontSize: 16,
                         ),
                       ),
@@ -949,19 +1262,25 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+            Text(
+              loc.repostOrderHint,
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
+            ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context).goBack),
+            child: Text(loc.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange.shade600,
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white,
             ),
-            child: Text(AppLocalizations.of(context).repostAction),
+            child: Text(loc.repostOrderTitle),
           ),
         ],
       ),
@@ -1026,18 +1345,10 @@ class _CompletedOrdersListState extends State<_CompletedOrdersList> {
     );
     
     final merchantId = order.merchantId;
-    if (merchantId == null) {
-      showHeaderNotification(
-        context,
-        title: 'خطأ في البيانات',
-        message: 'لا يمكن تحديد التاجر لهذا الطلب. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
-        type: NotificationType.error,
-      );
-      return;
-    }
 
     // Check for online drivers WITHOUT active orders (repost requirement)
     final availabilityResult = await DriverAvailabilityService.checkFreeDriversOnly(
+      merchantId: merchantId,
       vehicleType: order.vehicleType ?? 'motorbike',
     );
 
@@ -1048,7 +1359,7 @@ class _CompletedOrdersListState extends State<_CompletedOrdersList> {
           builder: (context) => AlertDialog(
             title: Row(
               children: [
-                Icon(Icons.warning, color: AppColors.warning),
+                const Icon(Icons.warning, color: AppColors.warning),
                 const SizedBox(width: 8),
                 Text(AppLocalizations.of(context).noDriversAvailableTitle),
               ],
@@ -1111,8 +1422,11 @@ class _CompletedOrdersListState extends State<_CompletedOrdersList> {
   Widget build(BuildContext context) {
     return Consumer<OrderProvider>(
       builder: (context, orderProvider, _) {
-        if (orderProvider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+        if (orderProvider.isLoading && orderProvider.orders.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: OrderListSkeleton(count: 3),
+          );
         }
 
         // Get completed orders and sort by newest first
@@ -1123,23 +1437,11 @@ class _CompletedOrdersListState extends State<_CompletedOrdersList> {
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
         if (completedOrders.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.check_circle_outline, size: 64, color: AppColors.textTertiary),
-                const SizedBox(height: 16),
-                Builder(
-                  builder: (context) {
-                    final loc = AppLocalizations.of(context);
-                    return Text(
-                      loc.noPastOrders,
-                  style: AppTextStyles.heading3.copyWith(color: AppColors.textTertiary),
-                    );
-                  },
-                ),
-              ],
-            ),
+          return EmptyState(
+            icon: Icons.check_circle_outline,
+            title: AppLocalizations.of(context).noPastOrders,
+            subtitle: AppLocalizations.of(context).noOrdersInPeriod,
+            accentColor: AppColors.statusCompleted,
           );
         }
 
@@ -1150,58 +1452,58 @@ class _CompletedOrdersListState extends State<_CompletedOrdersList> {
             itemCount: completedOrders.length,
             itemBuilder: (context, index) {
               final order = completedOrders[index];
-              
-              // Add repost button for rejected orders in completed tab too
-              if (order.status == 'rejected') {
-                return MerchantOrderCard(
-                  key: ValueKey('${order.id}_${order.status}_rejected_completed'),
-                  order: order,
-                  actionButtons: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _cancelOrder(order.id, orderProvider),
-                            icon: const Icon(Icons.close, size: 18),
-                            label: Text(AppLocalizations.of(context).cancel),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.error,
-                              side: BorderSide(color: AppColors.error),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                
+                // Add repost button for rejected orders in completed tab too
+                if (order.status == 'rejected') {
+                  return MerchantOrderCard(
+                    key: ValueKey('${order.id}_${order.status}_rejected_completed'),
+                    order: order,
+                    actionButtons: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _cancelOrder(order.id, orderProvider),
+                              icon: const Icon(Icons.close, size: 18),
+                              label: Text(AppLocalizations.of(context).cancel),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.error,
+                                side: const BorderSide(color: AppColors.error),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: Consumer<WalletProvider>(
-                            builder: (context, walletProvider, _) {
-                              final canRepost = walletProvider.balance > walletProvider.creditLimit;
-                              return ElevatedButton.icon(
-                                onPressed: canRepost 
-                                    ? () => _repostOrder(order.id, order.deliveryFee, orderProvider)
-                                    : null,
-                                icon: const Icon(Icons.refresh, size: 18),
-                                label: Text(AppLocalizations.of(context).repostOrder),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: canRepost ? Colors.orange.shade600 : Colors.grey,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                ),
-                              );
-                            },
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: Consumer<WalletProvider>(
+                              builder: (context, walletProvider, _) {
+                                final canRepost = walletProvider.balance > walletProvider.creditLimit;
+                                return ElevatedButton.icon(
+                                  onPressed: canRepost 
+                                      ? () => _repostOrder(order.id, order.deliveryFee, orderProvider)
+                                      : null,
+                                  icon: const Icon(Icons.refresh, size: 18),
+                                  label: Text(AppLocalizations.of(context).repostOrder),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: canRepost ? Colors.orange.shade600 : Colors.grey,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  );
+                }
+                
+                return MerchantOrderCard(
+                  key: ValueKey('${order.id}_${order.status}_completed'),
+                  order: order,
                 );
-              }
-              
-              return MerchantOrderCard(
-                key: ValueKey('${order.id}_${order.status}_completed'),
-                order: order,
-              );
             },
           ),
         );
@@ -1305,25 +1607,10 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
               const SizedBox(height: 12),
               
               if (filteredOrders.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Builder(
-                      builder: (context) {
-                        final loc = AppLocalizations.of(context);
-                        return Text(
-                          loc.noOrdersInPeriod,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textTertiary,
-                      ),
-                        );
-                      },
-                    ),
-                  ),
+                EmptyState(
+                  icon: Icons.bar_chart_outlined,
+                  title: AppLocalizations.of(context).noOrdersInPeriod,
+                  accentColor: AppColors.primary,
                 )
               else
                 ...filteredOrders.take(5).map((order) => _buildRecentOrderItem(order)),
@@ -1342,8 +1629,8 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 64, color: AppColors.error),
-                    SizedBox(height: 16),
+                    const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+                    const SizedBox(height: 16),
                     Builder(
                       builder: (context) {
                         final loc = AppLocalizations.of(context);
@@ -1353,7 +1640,7 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
                         );
                       },
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       e.toString(),
                       style: AppTextStyles.bodyMedium,
@@ -1378,11 +1665,11 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
         return orders.where((o) => o.createdAt.isAfter(todayStart)).toList();
       
       case 'week':
-        final weekStart = now.subtract(Duration(days: 7));
+        final weekStart = now.subtract(const Duration(days: 7));
         return orders.where((o) => o.createdAt.isAfter(weekStart)).toList();
       
       case 'month':
-        final monthStart = now.subtract(Duration(days: 30));
+        final monthStart = now.subtract(const Duration(days: 30));
         return orders.where((o) => o.createdAt.isAfter(monthStart)).toList();
       
       default:
@@ -1401,14 +1688,16 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
     ).toList();
 
     // Calculate average delivery time
+    // Use delivery timer: starts at pickup confirmation, stops when driver reaches dropoff
     double avgDeliveryMinutes = 0;
     if (deliveredOrders.isNotEmpty) {
       double totalMinutes = 0;
       int validOrders = 0;
       
       for (var order in deliveredOrders) {
-        if (order.updatedAt != null) {
-          final duration = order.updatedAt!.difference(order.createdAt);
+        // Only use delivery timer fields - timer stops when driver reaches dropoff location
+        if (order.deliveryTimerStartedAt != null && order.deliveryTimerStoppedAt != null) {
+          final duration = order.deliveryTimerStoppedAt!.difference(order.deliveryTimerStartedAt!);
           totalMinutes += duration.inMinutes.toDouble();
           validOrders++;
         }
@@ -1815,7 +2104,7 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
                 Text(
                   '$count طلب',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.themeTextSecondary,
                   ),
                 ),
               ],
@@ -1882,7 +2171,7 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.account_balance_wallet_outlined,
                 color: Colors.white,
                 size: 28,
@@ -1995,7 +2284,7 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
                   order.customerName,
                       style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: context.themeTextPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -2022,7 +2311,7 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
               Text(
                 'المجموع الكلي (الطلب + التوصيل)',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.themeTextSecondary,
                 ),
               ),
             ],
@@ -2045,6 +2334,8 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
       case 'cancelled':
       case 'rejected':
         return AppColors.error;
+      case 'scheduled':
+        return Colors.purple.shade600;
       default:
         return AppColors.textTertiary;
     }
@@ -2064,6 +2355,8 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
       case 'cancelled':
       case 'rejected':
         return Icons.cancel;
+      case 'scheduled':
+        return Icons.schedule;
       default:
         return Icons.help;
     }
@@ -2086,6 +2379,8 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
         return loc.cancelledStatus;
       case 'rejected':
         return loc.rejectedStatus;
+      case 'scheduled':
+        return loc.scheduledStatus;
       default:
         return loc.unknownStatus;
     }
@@ -2116,7 +2411,7 @@ class _ProfileTab extends StatelessWidget {
                       CircleAvatar(
                         radius: 40,
                         backgroundColor: AppColors.primary.withOpacity(0.1),
-                        child: Icon(
+                        child: const Icon(
                           Icons.person,
                           size: 40,
                           color: AppColors.primary,
@@ -2131,7 +2426,7 @@ class _ProfileTab extends StatelessWidget {
                       Text(
                         user?.phone ?? 'غير محدد',
                         style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
+                          color: context.themeTextSecondary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -2242,7 +2537,7 @@ class _StatCard extends StatelessWidget {
             Text(
               title,
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+                color: context.themeTextSecondary,
               ),
             ),
           ],
@@ -2326,17 +2621,17 @@ class _ModernStatCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: context.themeTextPrimary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+              color: context.themeTextSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),

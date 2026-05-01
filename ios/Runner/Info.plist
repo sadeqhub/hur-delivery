@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>حر</string>
+	<string>HUR</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>hur_delivery</string>
+	<string>HUR</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -46,6 +46,17 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	
+	<!-- Background Modes: location required for iOS to show app in Location Services settings
+	     and to allow background location updates for driver tracking.
+	     remote-notification allows Firebase to wake the app for push delivery. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+		<string>remote-notification</string>
+		<string>audio</string>
+	</array>
+
 	<!-- Location Permissions -->
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs location access to track deliveries and find nearby drivers.</string>
@@ -64,6 +75,6 @@
 	
 	<!-- Mapbox Access Token -->
 	<key>MGLMapboxAccessToken</key>
-	<string>pk.eyJ1IjoibW9oYW1tZWRzYWRlcSIsImEiOiJjbWNybzlrYmQwcHo2MmtyMms5c3FheDgxIn0.H3pL2ByqWsDNllY8NuT-Hw</string>
+	<string>$(MAPBOX_ACCESS_TOKEN)</string>
 </dict>
 </plist>

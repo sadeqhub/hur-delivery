@@ -8,15 +8,14 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/utils/responsive_extensions.dart';
 import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/config/env.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../orders/screens/location_picker_screen.dart';
-import 'id_verification_review_screen.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   final String role;
@@ -47,6 +46,9 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
   // Merchant-specific fields
   String? _selectedBusinessType; // Type of business for merchants
+
+  // City selection (for both merchants and drivers)
+  String? _selectedCity; // 'najaf'
 
   // Referral source (how did they hear about us)
   String? _referralSource;
@@ -115,51 +117,69 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   void _showImagePicker(String type) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: context.themeSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => SafeArea(
-        child: Padding(
-          padding: context.rp(horizontal: 16, vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ResponsiveText(
-                AppLocalizations.of(context).selectImageSource,
-                style: AppTextStyles.heading3.responsive(context),
-              ),
-              SizedBox(height: context.rs(16)),
-              ListTile(
-                leading: Container(
-                  padding: context.rp(horizontal: 8, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.camera_alt, color: AppColors.primary),
+        child: Container(
+          color: context.themeSurface,
+          child: Padding(
+            padding: context.rp(horizontal: 16, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ResponsiveText(
+                  AppLocalizations.of(context).selectImageSource,
+                  style: AppTextStyles.heading3
+                      .copyWith(color: context.themeTextPrimary)
+                      .responsive(context),
                 ),
-                title: Text(AppLocalizations.of(context).takePhoto),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera, type);
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                SizedBox(height: context.rs(16)),
+                ListTile(
+                  tileColor: context.themeSurface,
+                  textColor: context.themeTextPrimary,
+                  iconColor: context.themeTextPrimary,
+                  leading: Container(
+                    padding: context.rp(horizontal: 8, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: context.themePrimary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.camera_alt, color: context.themePrimary),
                   ),
-                  child: Icon(Icons.photo_library, color: AppColors.secondary),
+                  title: Text(
+                    AppLocalizations.of(context).takePhoto,
+                    style: TextStyle(color: context.themeTextPrimary),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.camera, type);
+                  },
                 ),
-                title: Text(AppLocalizations.of(context).chooseFromGallery),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery, type);
-                },
-              ),
-            ],
+                ListTile(
+                  tileColor: context.themeSurface,
+                  textColor: context.themeTextPrimary,
+                  iconColor: context.themeTextPrimary,
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: context.themeSecondary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.photo_library, color: context.themeSecondary),
+                  ),
+                  title: Text(
+                    AppLocalizations.of(context).chooseFromGallery,
+                    style: TextStyle(color: context.themeTextPrimary),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.gallery, type);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -224,6 +244,17 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       return;
     }
 
+    // City validation (required for both merchants and drivers)
+    if (_selectedCity == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.cityRequired),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     // Merchant-specific validation
     if (widget.role == 'merchant') {
       if (_storeLatitude == null || _storeLongitude == null) {
@@ -273,11 +304,32 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       print('📝 Extracted name: $fullName');
       print('🆔 Extracted ID: $idNumber');
 
+      // Validate ID number format if document type is national_id
+      String? idNumberToUse = idNumber;
+      if (_selectedDocumentType == 'national_id' && idNumber != null) {
+        // Remove any non-digit characters for validation
+        final cleanedIdNumber = idNumber.replaceAll(RegExp(r'[^0-9]'), '');
+        if (cleanedIdNumber.length != 12) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('رقم الهوية الوطني يجب أن يكون 12 رقمًا بالضبط. الرقم المستخرج: $idNumber'),
+                backgroundColor: AppColors.error,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
+          return;
+        }
+        // Use cleaned version
+        idNumberToUse = cleanedIdNumber;
+      }
+
       // Step 2: Prepare registration data with AI-extracted name
       Map<String, dynamic> userData = {
         'name': fullName,
         'role': widget.role,
-        'id_number': idNumber,
+        'id_number': idNumberToUse,
         'legal_first_name': legalName['first'],
         'legal_father_name': legalName['father'],
         'legal_grandfather_name': legalName['grandfather'],
@@ -286,6 +338,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         'id_birth_date': verificationResult['id_birth_date'],
         'verification_status': 'approved', // Auto-approve if AI check passed
         'document_type': _selectedDocumentType,
+        'city': _selectedCity, // Add city to registration data
       };
 
       // Add referral source if provided
@@ -326,7 +379,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       if (success && mounted) {
         // Navigate to review screen (GoRouter) to confirm extracted data
         context.goNamed('id-verification-review', extra: {
-          'extractedData': verificationResult!,
+          'extractedData': verificationResult,
           'role': widget.role,
           'isResubmission': false,
           'idFrontFile': _idCardFront,
@@ -430,8 +483,12 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.surface,
+    return Theme(
+      data: ThemeData.light().copyWith(
+        primaryColor: AppColors.primary,
+      ),
+      child: Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Builder(
@@ -441,14 +498,13 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           },
         ),
         centerTitle: true,
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.themePrimary,
         foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () {
-            // Go back to previous screen
-            context.pop();
+            context.go('/');
           },
         ),
       ),
@@ -473,7 +529,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                               loc.completeData(_getRoleDisplayName()),
                               style: AppTextStyles.heading2
                                   .copyWith(
-                                    color: AppColors.textPrimary,
+                                    color: context.themeTextPrimary,
                                   )
                                   .responsive(context),
                               textAlign: TextAlign.center,
@@ -483,7 +539,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                               loc.pleaseFillAllRequired,
                               style: AppTextStyles.bodyMedium
                                   .copyWith(
-                                    color: AppColors.textSecondary,
+                                    color: context.themeTextSecondary,
                                     fontWeight: FontWeight.w400,
                                   )
                                   .responsive(context),
@@ -498,6 +554,22 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
               ),
 
               SizedBox(height: context.rs(32)),
+
+              // City Selection (for both merchants and drivers)
+              Builder(
+                builder: (context) {
+                  final loc = AppLocalizations.of(context);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionHeader(loc.city, Icons.location_city),
+                      SizedBox(height: context.rs(16)),
+                      _buildCityDropdown(),
+                      SizedBox(height: context.rs(24)),
+                    ],
+                  );
+                },
+              ),
 
               // Role-specific fields
               if (widget.role == 'merchant')
@@ -574,7 +646,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                       ? SizedBox(
                           width: context.ri(20),
                           height: context.ri(20),
-                          child: CircularProgressIndicator(
+                          child: const CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor:
                                 AlwaysStoppedAnimation<Color>(Colors.white),
@@ -596,14 +668,14 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     },
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: context.themePrimary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(context.rs(12)),
                     ),
                     padding: context.rp(horizontal: 20, vertical: 16),
-                    disabledBackgroundColor: AppColors.textTertiary,
+                    disabledBackgroundColor: context.themeTextTertiary,
                   ),
                 ),
               ),
@@ -612,6 +684,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -622,18 +695,33 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.blue.shade50,
+          color: context.isDarkMode 
+              ? AppColors.secondaryDark.withOpacity(0.2)
+              : Colors.blue.shade50,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.blue.shade200),
+          border: Border.all(
+            color: context.isDarkMode 
+                ? AppColors.secondaryDark.withOpacity(0.3)
+                : Colors.blue.shade200,
+          ),
         ),
         child: Row(
           children: [
-            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+            Icon(
+              Icons.info_outline, 
+              color: context.isDarkMode 
+                  ? AppColors.secondaryDark
+                  : Colors.blue.shade700, 
+              size: 20,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 AppLocalizations.of(context).fullNameExtractedAutomatically,
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                style: TextStyle(
+                  fontSize: 13, 
+                  color: context.themeTextPrimary,
+                ),
               ),
             ),
           ],
@@ -692,18 +780,33 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.blue.shade50,
+          color: context.isDarkMode 
+              ? AppColors.secondaryDark.withOpacity(0.2)
+              : Colors.blue.shade50,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.blue.shade200),
+          border: Border.all(
+            color: context.isDarkMode 
+                ? AppColors.secondaryDark.withOpacity(0.3)
+                : Colors.blue.shade200,
+          ),
         ),
         child: Row(
           children: [
-            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+            Icon(
+              Icons.info_outline, 
+              color: context.isDarkMode 
+                  ? AppColors.secondaryDark
+                  : Colors.blue.shade700, 
+              size: 20,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 AppLocalizations.of(context).nameExtractedAutomatically,
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                style: TextStyle(
+                  fontSize: 13, 
+                  color: context.themeTextPrimary,
+                ),
               ),
             ),
           ],
@@ -731,13 +834,13 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   return Text(
                     AppLocalizations.of(context).vehicleType,
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textPrimary,
+                      color: context.themeTextPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   );
                 },
               ),
-              Text(
+              const Text(
                 ' *',
                 style: TextStyle(color: AppColors.error),
               ),
@@ -747,9 +850,9 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.themeSurface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.themeBorder),
             ),
             child: Column(
               children: [
@@ -757,12 +860,12 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                 Container(
                   decoration: BoxDecoration(
                     color: _selectedVehicleType == 'motorbike'
-                        ? AppColors.primary.withOpacity(0.1)
+                          ? context.themePrimary.withOpacity(0.1)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: _selectedVehicleType == 'motorbike'
-                          ? AppColors.primary
+                            ? context.themePrimary
                           : Colors.transparent,
                       width: 2,
                     ),
@@ -773,8 +876,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         Icon(
                           Icons.two_wheeler,
                           color: _selectedVehicleType == 'motorbike'
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
+                              ? context.themePrimary
+                              : context.themeTextSecondary,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -784,7 +887,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                             return Text(
                               loc.motorbike,
                               style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
+                                color: context.themeTextPrimary,
                                 fontWeight: _selectedVehicleType == 'motorbike'
                                     ? FontWeight.w600
                                     : FontWeight.w400,
@@ -800,7 +903,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary,
+                                  color: context.themePrimary,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -823,7 +926,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         _selectedVehicleType = value!;
                       });
                     },
-                    activeColor: AppColors.primary,
+                    activeColor: context.themePrimary,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                 ),
@@ -832,12 +935,12 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                 Container(
                   decoration: BoxDecoration(
                     color: _selectedVehicleType == 'car'
-                        ? AppColors.primary.withOpacity(0.1)
+                        ? context.themePrimary.withOpacity(0.1)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: _selectedVehicleType == 'car'
-                          ? AppColors.primary
+                          ? context.themePrimary
                           : Colors.transparent,
                       width: 2,
                     ),
@@ -848,8 +951,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         Icon(
                           Icons.directions_car,
                           color: _selectedVehicleType == 'car'
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
+                              ? context.themePrimary
+                              : context.themeTextSecondary,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -858,7 +961,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                             return Text(
                               AppLocalizations.of(context).car,
                               style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
+                                color: context.themeTextPrimary,
                                 fontWeight: _selectedVehicleType == 'car'
                                     ? FontWeight.w600
                                     : FontWeight.w400,
@@ -875,7 +978,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         _selectedVehicleType = value!;
                       });
                     },
-                    activeColor: AppColors.primary,
+                    activeColor: context.themePrimary,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                 ),
@@ -884,12 +987,12 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                 Container(
                   decoration: BoxDecoration(
                     color: _selectedVehicleType == 'truck'
-                        ? AppColors.primary.withOpacity(0.1)
+                        ? context.themePrimary.withOpacity(0.1)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: _selectedVehicleType == 'truck'
-                          ? AppColors.primary
+                          ? context.themePrimary
                           : Colors.transparent,
                       width: 2,
                     ),
@@ -900,8 +1003,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         Icon(
                           Icons.local_shipping,
                           color: _selectedVehicleType == 'truck'
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
+                              ? context.themePrimary
+                              : context.themeTextSecondary,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -910,7 +1013,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                             return Text(
                               AppLocalizations.of(context).truck,
                               style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
+                                color: context.themeTextPrimary,
                                 fontWeight: _selectedVehicleType == 'truck'
                                     ? FontWeight.w600
                                     : FontWeight.w400,
@@ -927,7 +1030,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         _selectedVehicleType = value!;
                       });
                     },
-                    activeColor: AppColors.primary,
+                    activeColor: context.themePrimary,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                 ),
@@ -943,19 +1046,19 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.themeSurface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.themeBorder),
         ),
         child: Row(
           children: [
-            Icon(Icons.card_membership, color: AppColors.primary),
+            Icon(Icons.card_membership, color: context.themePrimary),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 AppLocalizations.of(context).doYouHaveLicense,
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
+                  color: context.themeTextPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -979,19 +1082,19 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.themeSurface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.themeBorder),
         ),
         child: Row(
           children: [
-            Icon(Icons.key, color: AppColors.primary),
+            Icon(Icons.key, color: context.themePrimary),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 AppLocalizations.of(context).doYouOwnVehicle,
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
+                  color: context.themeTextPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1039,10 +1142,10 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.4),
+                          color: context.themePrimary.withOpacity(0.4),
                           width: 2,
                         ),
-                        color: AppColors.primary.withOpacity(0.08),
+                        color: context.themePrimary.withOpacity(0.08),
                       ),
                       child: ClipOval(
                         child: _driverProfilePhoto != null
@@ -1052,7 +1155,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                               )
                             : Icon(
                                 Icons.person,
-                                color: AppColors.primary,
+                                color: context.themePrimary,
                                 size: avatarSize * 0.55,
                               ),
                       ),
@@ -1063,7 +1166,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: context.themePrimary,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
@@ -1086,7 +1189,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   Text(
                     'أضف صورة شخصية واضحة لسهولة تمييزك من قبل العملاء.',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.themeTextSecondary,
                     ),
                   ),
                   if (_driverProfilePhoto != null) ...[
@@ -1119,12 +1222,12 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: context.themePrimary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             icon,
-            color: AppColors.primary,
+            color: context.themePrimary,
             size: 20,
           ),
         ),
@@ -1132,7 +1235,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         Text(
           title,
           style: AppTextStyles.heading3.copyWith(
-            color: AppColors.textPrimary,
+            color: context.themeTextPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -1156,11 +1259,11 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
             Text(
               label,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: context.themeTextPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            Text(
+            const Text(
               ' *',
               style: TextStyle(color: AppColors.error),
             ),
@@ -1172,31 +1275,31 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           keyboardType: keyboardType,
           validator: validator,
           style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textPrimary,
+            color: context.themeTextPrimary,
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
+              color: context.themeTextTertiary,
             ),
-            prefixIcon: Icon(icon, color: AppColors.primary),
+            prefixIcon: Icon(icon, color: context.themePrimary),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: context.themeSurface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: context.themeBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: context.themeBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
+              borderSide: BorderSide(color: context.themePrimary, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.error),
+              borderSide: const BorderSide(color: AppColors.error),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -1221,11 +1324,11 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
             Text(
               label,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: context.themeTextPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            Text(
+            const Text(
               ' *',
               style: TextStyle(color: AppColors.error),
             ),
@@ -1234,10 +1337,10 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.themeSurface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: hasLocation ? AppColors.success : AppColors.border,
+              color: hasLocation ? AppColors.success : context.themeBorder,
               width: hasLocation ? 2 : 1,
             ),
             boxShadow: hasLocation
@@ -1264,14 +1367,14 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                       decoration: BoxDecoration(
                         color: (hasLocation
                                 ? AppColors.success
-                                : AppColors.primary)
+                              : context.themePrimary)
                             .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
                         Icons.location_on,
                         color:
-                            hasLocation ? AppColors.success : AppColors.primary,
+                            hasLocation ? AppColors.success : context.themePrimary,
                         size: 20,
                       ),
                     ),
@@ -1284,8 +1387,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                             controller.text.isEmpty ? hint : controller.text,
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: controller.text.isEmpty
-                                  ? AppColors.textTertiary
-                                  : AppColors.textPrimary,
+                                  ? context.themeTextTertiary
+                                  : context.themeTextPrimary,
                               fontWeight: controller.text.isEmpty
                                   ? FontWeight.w400
                                   : FontWeight.w600,
@@ -1308,13 +1411,93 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     Icon(
                       Icons.push_pin,
                       color:
-                          hasLocation ? AppColors.success : AppColors.primary,
+                          hasLocation ? AppColors.success : context.themePrimary,
                       size: 24,
                     ),
                   ],
                 ),
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCityDropdown() {
+    final loc = AppLocalizations.of(context);
+    final cityOptions = [
+      {'value': 'najaf', 'label': '🏛️ ${loc.najaf} / Najaf'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              loc.city,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: context.themeTextPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Text(
+              ' *',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: context.themeSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.themeBorder),
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedCity,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: context.themeTextPrimary,
+            ),
+            decoration: InputDecoration(
+              labelText: loc.selectCity,
+              labelStyle: TextStyle(color: context.themeTextSecondary),
+              hintText: loc.selectCity,
+              hintStyle: TextStyle(color: context.themeTextTertiary),
+              prefixIcon: Icon(Icons.location_city, color: context.themePrimary),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            items: [
+              DropdownMenuItem<String>(
+                value: null,
+                child: Text(
+                  loc.selectCity,
+                  style: TextStyle(color: context.themeTextTertiary),
+                ),
+              ),
+              ...cityOptions.map((option) => DropdownMenuItem<String>(
+                    value: option['value'],
+                    child: Text(
+                      option['label']!,
+                      style: TextStyle(color: context.themeTextPrimary),
+                    ),
+                  )),
+            ],
+            onChanged: (value) {
+              setState(() {
+                _selectedCity = value;
+              });
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return loc.cityRequired;
+              }
+              return null;
+            },
+            dropdownColor: context.themeSurface,
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ],
@@ -1338,17 +1521,22 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.themeSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.themeBorder),
       ),
       child: DropdownButtonFormField<String>(
         value: _referralSource,
         isExpanded: true,
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: context.themeTextPrimary,
+        ),
         decoration: InputDecoration(
           labelText: AppLocalizations.of(context).howDidYouHearHur,
+          labelStyle: TextStyle(color: context.themeTextSecondary),
           hintText: AppLocalizations.of(context).optional,
-          prefixIcon: const Icon(Icons.campaign, color: AppColors.primary),
+          hintStyle: TextStyle(color: context.themeTextTertiary),
+          prefixIcon: Icon(Icons.campaign, color: context.themePrimary),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
@@ -1357,7 +1545,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
             value: null,
             child: Text(
               AppLocalizations.of(context).optional,
-              style: const TextStyle(color: AppColors.textTertiary),
+              style: TextStyle(color: context.themeTextTertiary),
             ),
           ),
           ...referralOptions.map((option) => DropdownMenuItem<String>(
@@ -1366,6 +1554,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   option['label']!,
                   overflow: TextOverflow.visible,
                   softWrap: true,
+                  style: TextStyle(color: context.themeTextPrimary),
                 ),
               )),
         ],
@@ -1374,7 +1563,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
             _referralSource = value;
           });
         },
-        dropdownColor: Colors.white,
+        dropdownColor: context.themeSurface,
         borderRadius: BorderRadius.circular(12),
       ),
     );
@@ -1389,16 +1578,21 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.themeSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.themeBorder),
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedDocumentType,
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: context.themeTextPrimary,
+        ),
         decoration: InputDecoration(
           labelText: AppLocalizations.of(context).documentType,
+          labelStyle: TextStyle(color: context.themeTextSecondary),
           hintText: AppLocalizations.of(context).selectDocumentType,
-          prefixIcon: const Icon(Icons.badge, color: AppColors.primary),
+          hintStyle: TextStyle(color: context.themeTextTertiary),
+          prefixIcon: Icon(Icons.badge, color: context.themePrimary),
           border: InputBorder.none,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -1406,7 +1600,10 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         items: documentTypes
             .map((type) => DropdownMenuItem<String>(
                   value: type['value'],
-                  child: Text(type['label']!),
+                  child: Text(
+                    type['label']!,
+                    style: TextStyle(color: context.themeTextPrimary),
+                  ),
                 ))
             .toList(),
         onChanged: (value) {
@@ -1420,7 +1617,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           }
           return null;
         },
-        dropdownColor: Colors.white,
+        dropdownColor: context.themeSurface,
         borderRadius: BorderRadius.circular(12),
       ),
     );
@@ -1441,31 +1638,39 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.themeSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.themeBorder),
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedBusinessType,
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: context.themeTextPrimary,
+        ),
         decoration: InputDecoration(
           labelText: 'نوع النشاط التجاري',
+          labelStyle: TextStyle(color: context.themeTextSecondary),
           hintText: 'ما نوع عملك؟',
-          prefixIcon: const Icon(Icons.business, color: AppColors.primary),
+          hintStyle: TextStyle(color: context.themeTextTertiary),
+          prefixIcon: Icon(Icons.business, color: context.themePrimary),
           border: InputBorder.none,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
         items: [
-          const DropdownMenuItem<String>(
+          DropdownMenuItem<String>(
             value: null,
             child: Text(
               'اختر نوع النشاط التجاري',
-              style: TextStyle(color: AppColors.textTertiary),
+              style: TextStyle(color: context.themeTextTertiary),
             ),
           ),
           ...businessTypes.map((type) => DropdownMenuItem<String>(
                 value: type['value'],
-                child: Text(type['label']!),
+                child: Text(
+                  type['label']!,
+                  style: TextStyle(color: context.themeTextPrimary),
+                ),
               )),
         ],
         onChanged: (value) {
@@ -1479,7 +1684,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           }
           return null;
         },
-        dropdownColor: Colors.white,
+        dropdownColor: context.themeSurface,
         borderRadius: BorderRadius.circular(12),
       ),
     );
@@ -1527,10 +1732,10 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.themeSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: file != null ? AppColors.success : AppColors.border,
+          color: file != null ? AppColors.success : context.themeBorder,
           width: file != null ? 2 : 1,
         ),
         boxShadow: file != null
@@ -1559,7 +1764,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   decoration: BoxDecoration(
                     color: file != null
                         ? AppColors.success.withOpacity(0.1)
-                        : AppColors.primary.withOpacity(0.1),
+                        : context.themePrimary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: file != null
@@ -1572,7 +1777,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         )
                       : Icon(
                           icon,
-                          color: AppColors.primary,
+                          color: context.themePrimary,
                           size: 30,
                         ),
                 ),
@@ -1587,7 +1792,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                             child: Text(
                               title,
                               style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
+                                color: context.themeTextPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -1617,7 +1822,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         style: AppTextStyles.bodySmall.copyWith(
                           color: file != null
                               ? AppColors.success
-                              : AppColors.textTertiary,
+                              : context.themeTextTertiary,
                           fontWeight:
                               file != null ? FontWeight.w600 : FontWeight.w400,
                         ),
@@ -1627,13 +1832,13 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                 ),
                 Icon(
                   file != null ? Icons.check_circle : Icons.cloud_upload,
-                  color: file != null ? AppColors.success : AppColors.primary,
+                  color: file != null ? AppColors.success : context.themePrimary,
                   size: 24,
                 ),
               ],
-            ),
           ),
         ),
+      ),
       ),
     );
   }

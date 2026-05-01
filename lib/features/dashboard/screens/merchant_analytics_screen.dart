@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/localization/app_localizations.dart';
-import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/providers/order_provider.dart';
 import '../../../shared/models/order_model.dart';
 
@@ -18,17 +16,19 @@ class MerchantAnalyticsScreen extends StatefulWidget {
 
 class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
   String _selectedTimePeriod = 'all'; // all, today, week, month
-  String _selectedStatus = 'all'; // all, delivered, cancelled, rejected
+  final String _selectedStatus = 'all'; // all, delivered, cancelled, rejected
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الإحصائيات'),
+        title: Text(AppLocalizations.of(context).statsTitle),
         centerTitle: true,
       ),
       body: Consumer<OrderProvider>(
         builder: (context, orderProvider, _) {
+          final loc = AppLocalizations.of(context);
+
           // Filter orders by time period
           final filteredByTime = _filterOrdersByTimePeriod(orderProvider.orders);
           
@@ -41,7 +41,7 @@ class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
           final stats = _calculateStatistics(filteredByTime);
 
           return Container(
-            color: AppColors.surfaceVariant,
+            color: context.themeBackground,
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -83,29 +83,29 @@ class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
                   
                   // Revenue Statistics
                   Text(
-                    'إحصائيات الإيرادات',
+                    loc.revenueStatsTitle,
                     style: AppTextStyles.heading3,
                   ),
                   const SizedBox(height: 12),
-                  _buildRevenueCard('إجمالي الطلبات', stats['totalRevenue'], Icons.attach_money, AppColors.success),
+                  _buildRevenueCard(loc.totalOrdersTitle, stats['totalRevenue'], Icons.attach_money, AppColors.success),
                   const SizedBox(height: 12),
-                  _buildRevenueCard('رسوم التوصيل', stats['totalDeliveryFees'], Icons.delivery_dining, AppColors.primary),
+                  _buildRevenueCard(loc.deliveryFees, stats['totalDeliveryFees'], Icons.delivery_dining, AppColors.primary),
                   const SizedBox(height: 12),
-                  _buildRevenueCard('متوسط قيمة الطلب', stats['avgOrderValue'], Icons.analytics, AppColors.warning),
+                  _buildRevenueCard(loc.avgOrderValue, stats['avgOrderValue'], Icons.analytics, AppColors.warning),
                   
                   const SizedBox(height: 20),
                   
                   // Performance Metrics
                   Text(
-                    'مقاييس الأداء',
+                    loc.performanceMetrics,
                     style: AppTextStyles.heading3,
                   ),
                   const SizedBox(height: 12),
-                  _buildMetricCard('متوسط وقت التوصيل', '${stats['avgDeliveryTime']} دقيقة', Icons.timer, AppColors.primary),
+                  _buildMetricCard(loc.avgDeliveryTime, '${stats['avgDeliveryTime']} ${loc.minutes}', Icons.timer, AppColors.primary),
                   const SizedBox(height: 12),
-                  _buildMetricCard('معدل الإكمال', '${stats['completionRate']}%', Icons.trending_up, AppColors.success),
+                  _buildMetricCard(loc.completionRate, '${stats['completionRate']}%', Icons.trending_up, AppColors.success),
                   const SizedBox(height: 12),
-                  _buildMetricCard('معدل الإلغاء', '${stats['cancellationRate']}%', Icons.trending_down, AppColors.error),
+                  _buildMetricCard(loc.cancellationRate, '${stats['cancellationRate']}%', Icons.trending_down, AppColors.error),
                   
                   const SizedBox(height: 24),
                 ],
@@ -127,28 +127,33 @@ class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
           _selectedTimePeriod = value;
         });
       },
-      selectedColor: AppColors.primary,
+      selectedColor: context.themePrimary,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.textPrimary,
+        color: isSelected ? Colors.white : context.themeTextPrimary,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
     );
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return Builder(
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.themeSurface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: context.themeColor(
+                  light: Colors.grey.shade200,
+                  dark: Colors.black.withOpacity(0.3),
+                ),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
       child: Row(
         children: [
           Container(
@@ -164,7 +169,7 @@ class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                Text(title, style: AppTextStyles.bodyMedium.copyWith(color: context.themeTextSecondary)),
                 const SizedBox(height: 4),
                 Text(value, style: AppTextStyles.heading2.copyWith(color: color)),
               ],
@@ -172,23 +177,30 @@ class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
           ),
         ],
       ),
+        );
+      },
     );
   }
 
   Widget _buildRevenueCard(String title, double value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return Builder(
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.themeSurface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: context.themeColor(
+                  light: Colors.grey.shade200,
+                  dark: Colors.black.withOpacity(0.3),
+                ),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
       child: Row(
         children: [
           Container(
@@ -204,10 +216,10 @@ class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                Text(title, style: AppTextStyles.bodyMedium.copyWith(color: context.themeTextSecondary)),
                 const SizedBox(height: 4),
                 Text(
-                  '${value.toStringAsFixed(0)} د.ع',
+                  '${value.toStringAsFixed(0)} ${AppLocalizations.of(context).currencySymbol}',
                   style: AppTextStyles.heading2.copyWith(color: color),
                 ),
               ],
@@ -215,23 +227,30 @@ class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
           ),
         ],
       ),
+        );
+      },
     );
   }
 
   Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return Builder(
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.themeSurface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: context.themeColor(
+                  light: Colors.grey.shade200,
+                  dark: Colors.black.withOpacity(0.3),
+                ),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
       child: Row(
         children: [
           Container(
@@ -247,7 +266,7 @@ class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                Text(title, style: AppTextStyles.bodyMedium.copyWith(color: context.themeTextSecondary)),
                 const SizedBox(height: 4),
                 Text(value, style: AppTextStyles.heading3.copyWith(color: color)),
               ],
@@ -255,6 +274,8 @@ class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
           ),
         ],
       ),
+        );
+      },
     );
   }
 
@@ -293,14 +314,16 @@ class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
     ).toList();
 
     // Calculate average delivery time
+    // Use delivery timer: starts at pickup confirmation, stops when driver reaches dropoff
     double avgDeliveryMinutes = 0;
     if (deliveredOrders.isNotEmpty) {
       double totalMinutes = 0;
       int validOrders = 0;
       
       for (var order in deliveredOrders) {
-        if (order.updatedAt != null) {
-          final duration = order.updatedAt!.difference(order.createdAt);
+        // Only use delivery timer fields - timer stops when driver reaches dropoff location
+        if (order.deliveryTimerStartedAt != null && order.deliveryTimerStoppedAt != null) {
+          final duration = order.deliveryTimerStoppedAt!.difference(order.deliveryTimerStartedAt!);
           totalMinutes += duration.inMinutes.toDouble();
           validOrders++;
         }

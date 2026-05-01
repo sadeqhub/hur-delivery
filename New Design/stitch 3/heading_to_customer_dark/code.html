@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;family=Tajawal:wght@300;400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-primary": "#6ed6df",
+            "on-secondary": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "tertiary-fixed": "#ffdbc8",
+            "on-background": "#191c1d",
+            "outline-variant": "#bdc9ca",
+            "on-tertiary-container": "#fffbff",
+            "on-secondary-fixed": "#001453",
+            "on-primary-container": "#f5feff",
+            "surface-container": "#edeeef",
+            "on-secondary-fixed-variant": "#173bab",
+            "tertiary": "#8d4a19",
+            "error-container": "#ffdad6",
+            "primary": "#00666d",
+            "tertiary-fixed-dim": "#ffb68a",
+            "surface-tint": "#006970",
+            "surface-container-lowest": "#ffffff",
+            "primary-container": "#00818a",
+            "secondary-fixed-dim": "#b8c4ff",
+            "inverse-surface": "#2e3132",
+            "on-error": "#ffffff",
+            "on-surface": "#191c1d",
+            "error": "#ba1a1a",
+            "on-primary": "#ffffff",
+            "surface-dim": "#d9dadb",
+            "surface-container-high": "#e7e8e9",
+            "surface-container-low": "#f3f4f5",
+            "on-secondary-container": "#00217a",
+            "background": "#f8f9fa",
+            "on-primary-fixed-variant": "#004f54",
+            "surface-variant": "#e1e3e4",
+            "secondary": "#3755c3",
+            "on-surface-variant": "#3d494a",
+            "secondary-fixed": "#dde1ff",
+            "primary-fixed": "#8cf2fc",
+            "on-error-container": "#93000a",
+            "on-primary-fixed": "#002022",
+            "inverse-on-surface": "#f0f1f2",
+            "tertiary-container": "#ab6230",
+            "secondary-container": "#708cfd",
+            "surface": "#f8f9fa",
+            "surface-container-highest": "#e1e3e4",
+            "surface-bright": "#f8f9fa",
+            "outline": "#6d797a",
+            "on-tertiary-fixed-variant": "#733604",
+            "primary-fixed-dim": "#6ed6df",
+            "on-tertiary-fixed": "#321300",
+            "zinc": {
+              "800": "#1F2937",
+              "900": "#111827",
+              "950": "#030712"
+            }
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "fontFamily": {
+            "headline": ["Manrope", "Tajawal", "sans-serif"],
+            "body": ["Manrope", "Tajawal", "sans-serif"],
+            "label": ["Manrope", "Tajawal", "sans-serif"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    body { font-family: 'Manrope', 'Tajawal', sans-serif; }
+    .glass-dark {
+      background: rgba(31, 41, 55, 0.7);
+      backdrop-filter: blur(24px);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-zinc-950 text-zinc-100 overflow-hidden h-screen w-full flex flex-col">
+<header class="fixed top-0 w-full z-50 bg-zinc-800/70 dark:bg-zinc-900/70 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.06)] flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-teal-700 dark:text-teal-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 p-2 rounded-full transition-colors">menu</button>
+<h1 class="font-manrope font-bold text-lg tracking-tight text-teal-700 dark:text-teal-400">Current Delivery</h1>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center bg-amber-500/10 px-3 py-1 rounded-full gap-2">
+<span class="material-symbols-outlined text-amber-500 text-sm">schedule</span>
+<span class="text-amber-500 font-bold text-sm tracking-tighter">3m 45s</span>
+</div>
+<button class="material-symbols-outlined text-teal-700 dark:text-teal-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 p-2 rounded-full transition-colors">support_agent</button>
+</div>
+</header>
+<main class="flex-grow relative pt-16">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover opacity-60 grayscale brightness-50 contrast-125" data-alt="Dark stylized satellite map of Najaf streets at night with a glowing teal navigation path and amber vehicle indicator" data-location="Najaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCztqc6wxld72vgVdS7SmQ8Cf2tEafBHM1lklmuQq9iZoSMw7FyKtMKveyj8s1F5UaSKAfhp0aWyobDLCqbETJmNnaTgW2JYu75aktVk9xc3tSSS0uyrelDePw0dzW-LYgDmvdbDoy2MF821qPx6ul6HLmqoQDlcW5XjJgY280akI3sN-n-3pOxhlv5VCpO513rF7S1dgPP4rbXr7BQw2kxy3yrkH85TEwX97DjhrLhPKu0pXjE1myticjMWi9Jnjp_zHMZcVegJHlh"/>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none">
+<svg class="w-full h-full" fill="none" viewbox="0 0 400 800" xmlns="http://www.w3.org/2000/svg">
+<path d="M100 700C120 600 180 550 220 450C260 350 180 300 250 200" stroke="#00666d" stroke-dasharray="1 12" stroke-linecap="round" stroke-width="6"></path>
+<circle cx="250" cy="200" fill="#00666d" r="12"></circle>
+<circle cx="250" cy="200" r="20" stroke="#00666d" stroke-opacity="0.3" stroke-width="2"></circle>
+</svg>
+</div>
+</div>
+<div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
+<div class="bg-zinc-800/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-white/5 flex items-center gap-4 max-w-[280px]">
+<div class="bg-primary-container p-3 rounded-xl">
+<span class="material-symbols-outlined text-white">turn_right</span>
+</div>
+<div>
+<p class="text-xs text-zinc-400 font-medium">NEXT TURN</p>
+<p class="text-base font-bold text-white">250m • Al-Hussain St.</p>
+</div>
+</div>
+</div>
+<div class="absolute bottom-24 left-0 w-full z-20 px-4">
+<div class="bg-zinc-800/95 backdrop-blur-3xl rounded-[2.5rem] p-8 shadow-[0_-12px_40px_rgba(0,0,0,0.4)] border-t border-white/5 max-w-lg mx-auto">
+<div class="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mb-6 opacity-40"></div>
+<div class="flex justify-between items-start mb-8">
+<div>
+<span class="inline-block bg-primary/20 text-teal-400 text-[10px] font-black tracking-[0.2em] px-2 py-1 rounded mb-2 uppercase">Heading to Customer</span>
+<h2 class="text-3xl font-black text-white tracking-tight">Ahmed Al-S.</h2>
+<div class="flex items-center gap-2 mt-1 text-zinc-400">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<p class="text-sm font-medium">Al-Hussain, Najaf</p>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="w-14 h-14 rounded-2xl bg-zinc-700/50 flex items-center justify-center text-teal-400 hover:bg-zinc-600 transition-all active:scale-95">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">call</span>
+</button>
+<button class="w-14 h-14 rounded-2xl bg-zinc-700/50 flex items-center justify-center text-teal-400 hover:bg-zinc-600 transition-all active:scale-95">
+<span class="material-symbols-outlined">chat_bubble</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-8">
+<div class="bg-zinc-900/50 p-4 rounded-3xl border border-white/5">
+<p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">ETA</p>
+<p class="text-xl font-bold text-white">4 min</p>
+</div>
+<div class="bg-zinc-900/50 p-4 rounded-3xl border border-white/5">
+<p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Distance</p>
+<p class="text-xl font-bold text-white">1.2 km</p>
+</div>
+</div>
+<button class="w-full bg-gradient-to-br from-primary to-primary-container h-16 rounded-2xl text-white font-bold text-lg shadow-xl shadow-teal-900/20 active:scale-[0.98] transition-transform">
+          Mark as Delivered
+        </button>
+</div>
+</div>
+</main>
+<nav class="fixed bottom-0 w-full rounded-t-3xl z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.04)] flex justify-around items-center px-4 pb-6 pt-3 w-full">
+<div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-5 py-2 hover:text-teal-600 transition-all tap-highlight-none scale-98">
+<span class="material-symbols-outlined mb-1">local_shipping</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest">Status</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-2xl px-5 py-2 hover:text-teal-600 transition-all tap-highlight-none scale-98">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">map</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest">Route</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-5 py-2 hover:text-teal-600 transition-all tap-highlight-none scale-98">
+<span class="material-symbols-outlined mb-1">payments</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest">Earnings</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-5 py-2 hover:text-teal-600 transition-all tap-highlight-none scale-98">
+<span class="material-symbols-outlined mb-1">account_circle</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest">Profile</span>
+</div>
+</nav>
+</body></html>

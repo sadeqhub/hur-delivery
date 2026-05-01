@@ -14,7 +14,7 @@
   font-size: 3rem;
   font-weight: 900;
   margin-bottom: 1rem;
-  background: linear-gradient(90deg, #008C95, #1E40AF, #008C95);
+  background: linear-gradient(90deg, #188C93, #188C93, #188C93);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -118,7 +118,7 @@
 }
 
 .blob-2 {
-  background: var(--gradient-secondary);
+  background: var(--gradient-deep);
   bottom: -200px;
   left: -200px;
 }

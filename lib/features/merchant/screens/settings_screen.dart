@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -10,8 +8,7 @@ import '../../../core/utils/responsive_helper.dart';
 import '../../../core/utils/responsive_extensions.dart';
 import '../../../shared/widgets/responsive_container.dart';
 import '../../../shared/widgets/language_switcher.dart';
-import '../../../core/providers/auth_provider.dart';
-import '../../../core/services/notification_manager.dart';
+import '../../../core/providers/theme_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 
 class MerchantSettingsScreen extends StatefulWidget {
@@ -23,14 +20,11 @@ class MerchantSettingsScreen extends StatefulWidget {
 
 class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
   bool _notificationsEnabled = true;
-  bool _soundEnabled = true;
-  bool _vibrationEnabled = true;
   PermissionStatus _notificationPermissionStatus = PermissionStatus.granted;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
     _checkNotificationPermission();
   }
 
@@ -40,19 +34,6 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
       _notificationPermissionStatus = status;
       _notificationsEnabled = status.isGranted;
     });
-  }
-
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _soundEnabled = prefs.getBool('sound_enabled') ?? true;
-      _vibrationEnabled = prefs.getBool('vibration_enabled') ?? true;
-    });
-  }
-
-  Future<void> _saveSetting(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
   }
 
   Future<void> _toggleNotifications(bool value) async {
@@ -142,12 +123,13 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: ResponsiveText(AppLocalizations.of(context).settings, style: TextStyle(fontSize: context.rf(20))),
         centerTitle: true,
-        backgroundColor: AppColors.primary,
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -182,41 +164,26 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
                           onChanged: _toggleNotifications,
                           activeColor: AppColors.primary,
                         ),
-                        if (_notificationsEnabled) ...[
-                          const Divider(height: 1),
-                          SwitchListTile(
-                            secondary: const Icon(Icons.volume_up),
-                            title: Text(loc.sound),
-                            subtitle: Text(loc.soundSubtitle),
-                            value: _soundEnabled,
-                            onChanged: (value) {
-                              setState(() => _soundEnabled = value);
-                              _saveSetting('sound_enabled', value);
-                            },
-                            activeColor: AppColors.primary,
-                          ),
-                          const Divider(height: 1),
-                          SwitchListTile(
-                            secondary: const Icon(Icons.vibration),
-                            title: Text(loc.vibration),
-                            subtitle: Text(loc.vibrationSubtitle),
-                            value: _vibrationEnabled,
-                            onChanged: (value) {
-                              setState(() => _vibrationEnabled = value);
-                              _saveSetting('vibration_enabled', value);
-                              if (value) {
-                                HapticFeedback.mediumImpact();
-                              }
-                            },
-                            activeColor: AppColors.primary,
-                          ),
-                        ],
                       ],
                     ),
                   ),
                   SizedBox(height: context.rs(24)),
+                  
+                  // General Section
+                  _buildSectionHeader(loc.general),
+                  const Card(
+                    child: Column(
+                      children: [
+                         LanguageSwitcherTile(),
+                         Divider(height: 1),
+                         _ThemeToggleTile(),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: context.rs(24)),
+
                   // App Section
-                  _buildSectionHeader(loc.app),
+                  _buildSectionHeader(loc.support),
                   Card(
                     child: Column(
                       children: [
@@ -240,8 +207,6 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
                           trailing: Icon(Icons.arrow_forward_ios, size: context.ri(16)),
                           onTap: () => context.push('/merchant-dashboard/terms-conditions'),
                         ),
-                        const Divider(height: 1),
-                        const LanguageSwitcherTile(),
                       ],
                     ),
                   ),
@@ -272,9 +237,33 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
         title,
         style: AppTextStyles.bodyLarge.copyWith(
           fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
+    );
+  }
+}
+
+class _ThemeToggleTile extends StatelessWidget {
+  const _ThemeToggleTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return SwitchListTile(
+          secondary: Icon(
+            themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+            color: AppColors.primary,
+          ),
+          title: Text(loc.darkMode),
+          subtitle: Text(themeProvider.isDarkMode ? loc.darkModeEnabled : loc.lightModeEnabled),
+          value: themeProvider.isDarkMode,
+          onChanged: (value) => themeProvider.toggleTheme(),
+          activeColor: AppColors.primary,
+        );
+      },
     );
   }
 }

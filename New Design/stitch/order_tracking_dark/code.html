@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Delivery Status - Kinetic Sanctuary</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#006970",
+                    "on-background": "#191c1d",
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#3d494a",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed-variant": "#173bab",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "inverse-surface": "#2e3132",
+                    "primary": "#00666d",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "surface-variant": "#e1e3e4",
+                    "surface-container": "#edeeef",
+                    "on-surface": "#191c1d",
+                    "secondary-fixed": "#dde1ff",
+                    "on-primary-fixed-variant": "#004f54",
+                    "on-secondary-container": "#00217a",
+                    "surface": "#f8f9fa",
+                    "secondary-container": "#708cfd",
+                    "primary-container": "#00818a",
+                    "on-tertiary-fixed-variant": "#733604",
+                    "surface-bright": "#f8f9fa",
+                    "primary-fixed-dim": "#6ed6df",
+                    "on-error": "#ffffff",
+                    "surface-container-high": "#e7e8e9",
+                    "surface-container-low": "#f3f4f5",
+                    "background": "#f8f9fa",
+                    "tertiary-container": "#ab6230",
+                    "tertiary-fixed-dim": "#ffb68a",
+                    "outline-variant": "#bdc9ca",
+                    "on-tertiary-container": "#fffbff",
+                    "on-primary-fixed": "#002022",
+                    "on-primary-container": "#f5feff",
+                    "surface-container-highest": "#e1e3e4",
+                    "primary-fixed": "#8cf2fc",
+                    "on-secondary-fixed": "#001453",
+                    "inverse-on-surface": "#f0f1f2",
+                    "surface-dim": "#d9dadb",
+                    "secondary": "#3755c3",
+                    "outline": "#6d797a",
+                    "on-tertiary-fixed": "#321300",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed": "#ffdbc8",
+                    "inverse-primary": "#6ed6df",
+                    "tertiary": "#8d4a19"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Tajawal", "Manrope", "sans-serif"],
+                    "body": ["Manrope", "Tajawal", "sans-serif"],
+                    "label": ["Manrope", "Tajawal", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-map-dark {
+            background-color: #121415;
+            background-image: 
+                radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+        .map-glow {
+            filter: drop-shadow(0 0 8px rgba(0, 105, 112, 0.4));
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-zinc-950 font-body text-zinc-100 overflow-hidden select-none">
+<!-- Top Navigation Shell -->
+<header class="fixed top-0 w-full z-50 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shadow-sm flex items-center justify-between px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="p-2 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 transition-all duration-300 active:scale-95 rounded-full cursor-pointer">
+<span class="material-symbols-outlined text-teal-700 dark:text-teal-400">arrow_back</span>
+</div>
+<h1 class="text-xl font-bold text-teal-800 dark:text-teal-300 font-['Tajawal'] tracking-tight">Delivery Status</h1>
+</div>
+<div class="p-2 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 transition-all duration-300 active:scale-95 rounded-full cursor-pointer">
+<span class="material-symbols-outlined text-teal-700 dark:text-teal-400">more_vert</span>
+</div>
+</header>
+<!-- Map Canvas Area -->
+<main class="relative h-screen w-full bg-map-dark pt-16">
+<!-- Mock Map Background -->
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full opacity-40 grayscale contrast-125" data-location="Najaf, Iraq" style="">
+<!-- Visualizing path with SVG for polyline -->
+<svg class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+<path d="M100,600 Q200,450 350,400 T500,200" fill="none" opacity="0.6" stroke="#00818a" stroke-dasharray="8 4" stroke-width="4"></path>
+<!-- Pulse Driver Location -->
+<circle class="animate-pulse opacity-40" cx="350" cy="400" fill="#00818a" r="12"></circle>
+<circle cx="350" cy="400" fill="#00818a" r="6"></circle>
+</svg>
+</div>
+<!-- Custom Pins -->
+<div class="absolute left-1/4 top-2/3 -translate-x-1/2 -translate-y-1/2 text-center">
+<div class="bg-emerald-500 text-white p-2 rounded-full shadow-lg ring-4 ring-emerald-500/20 mb-1">
+<span class="material-symbols-outlined block text-base" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+</div>
+<p class="text-[10px] font-bold tracking-widest text-emerald-400 uppercase">Pickup</p>
+</div>
+<div class="absolute right-1/4 top-1/4 -translate-x-1/2 -translate-y-1/2 text-center">
+<div class="bg-red-500 text-white p-2 rounded-full shadow-lg ring-4 ring-red-500/20 mb-1">
+<span class="material-symbols-outlined block text-base" style="font-variation-settings: 'FILL' 1;">home</span>
+</div>
+<p class="text-[10px] font-bold tracking-widest text-red-400 uppercase">Home</p>
+</div>
+</div>
+<!-- Sliding Bottom Sheet -->
+<div class="fixed bottom-0 left-0 w-full z-40 px-4 pb-28">
+<div class="bg-zinc-900/80 backdrop-blur-2xl rounded-3xl p-6 shadow-2xl border-t border-white/5">
+<!-- Handle -->
+<div class="w-12 h-1 bg-zinc-700 rounded-full mx-auto mb-6"></div>
+<!-- ETA Section -->
+<div class="flex items-center justify-between mb-8">
+<div class="space-y-1">
+<span class="text-xs font-bold text-teal-400 tracking-widest uppercase">Estimated Arrival</span>
+<h2 class="text-4xl font-extrabold text-zinc-100 tracking-tighter">12 <span class="text-xl font-medium text-zinc-400">min</span></h2>
+</div>
+<div class="relative w-20 h-20 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90">
+<circle class="text-zinc-800" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-width="4"></circle>
+<circle class="text-teal-500" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-dasharray="213" stroke-dashoffset="60" stroke-width="4"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-teal-500" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+</div>
+</div>
+</div>
+<!-- Driver Card -->
+<div class="bg-zinc-800/50 rounded-2xl p-4 flex items-center gap-4 mb-6">
+<div class="relative">
+<img alt="Driver" class="w-16 h-16 rounded-2xl object-cover ring-2 ring-white/10" data-alt="portrait of a professional delivery man with a friendly expression wearing a dark polo shirt against a neutral urban background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDltzB3b8M4f-ZZ_YbqqyEyGnvhn-iedZUOYcGxxecR8jtDOjhqGkVTVg_1qJ0_QyI1NfkjGXZMKZQMb8v6BD41sAF8l6KWkgtfasg5738n2e99WBEC22FGZxvhBr7irUZnYN9Z82tsA4FujWJodwN62d-R8misSnFfEGCOfOcH9bdmagffDDnk5xCpqB8yuUAGk_sWk2zQqh7IDJ_CP6OZ5esadBKcyY3yNgQMId_mu6bzd7QiCSp1TzN0L9dOFK9weCdt_sjKxCe0"/>
+<div class="absolute -bottom-1 -right-1 bg-zinc-400 text-zinc-900 text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow-md">
+<span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+                            SILVER
+                        </div>
+</div>
+<div class="flex-1">
+<h3 class="text-lg font-bold text-zinc-100">Ahmed Al-Hassan</h3>
+<div class="flex items-center gap-2 text-zinc-400 text-sm">
+<span class="material-symbols-outlined text-sm">motorcycle</span>
+<span>Bajaj Pulsar • 74A-9021</span>
+</div>
+<div class="flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-yellow-500 text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-sm font-bold text-zinc-200">4.9</span>
+<span class="text-xs text-zinc-500 font-medium ml-1">(2.4k orders)</span>
+</div>
+</div>
+<div class="p-3 bg-teal-500/10 text-teal-400 rounded-full active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">call</span>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex gap-4">
+<button class="flex-1 bg-primary text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-teal-900/20">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+                        Message Driver
+                    </button>
+<button class="w-16 bg-zinc-800 text-zinc-300 py-4 rounded-2xl font-bold flex items-center justify-center active:scale-95 transition-all">
+<span class="material-symbols-outlined">help_center</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl rounded-t-3xl z-50 shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+<!-- Home -->
+<div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-5 py-2 hover:text-teal-600 transition-transform duration-200 active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-['Tajawal'] text-xs font-medium">Home</span>
+</div>
+<!-- Orders (Active) -->
+<div class="flex flex-col items-center justify-center bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-2xl px-5 py-2 transition-transform duration-200 active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span class="font-['Tajawal'] text-xs font-medium">Orders</span>
+</div>
+<!-- Wallet -->
+<div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-5 py-2 hover:text-teal-600 transition-transform duration-200 active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined mb-1">account_balance_wallet</span>
+<span class="font-['Tajawal'] text-xs font-medium">Wallet</span>
+</div>
+<!-- Profile -->
+<div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-5 py-2 hover:text-teal-600 transition-transform duration-200 active:scale-90 cursor-pointer">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-['Tajawal'] text-xs font-medium">Profile</span>
+</div>
+</nav>
+</body></html>

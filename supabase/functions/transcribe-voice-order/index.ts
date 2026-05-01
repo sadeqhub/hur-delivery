@@ -122,12 +122,24 @@ The recording may be from a noisy environment. Use context and common patterns t
 5. ALWAYS add "النجف" to delivery addresses
 6. NEVER put AI processing notes in the "notes" field - only customer instructions belong there
 
+**Neighborhood Detection (CRITICAL):**
+1. When extracting delivery_address, also detect which neighborhood it matches
+2. Match the address to the exact neighborhood name from the valid list above
+3. Return the neighborhood name (without "حي" prefix if present, just the name) in a separate "neighborhood" field
+4. Examples:
+   - "حي الجامعة" → neighborhood: "حي الجامعة"
+   - "الجامعة" → neighborhood: "حي الجامعة" (add حي prefix)
+   - "حي الأمير" → neighborhood: "حي الامير"
+   - "الأمير" → neighborhood: "حي الامير" (add حي prefix)
+5. If no neighborhood can be matched, set neighborhood to null
+
 **Expected JSON Structure:**
 {
   "customer_name": "string or null (NULL if not mentioned - do NOT make up names)",
   "customer_phone": "string (exactly 11 digits: 07XXXXXXXXX) or null",
   "pickup_address": "string or null",
   "delivery_address": "string with النجف (e.g. 'حي الجامعة، النجف') or null",
+  "neighborhood": "string or null (exact neighborhood name from valid list, e.g. 'حي الجامعة')",
   "items": [],
   "notes": "string or null (ONLY customer instructions - NO AI processing notes)",
   "delivery_fee": number or null (rounded to valid denomination, ONLY if mentioned),
@@ -146,6 +158,7 @@ Output:
   "customer_phone": "07701234567",
   "pickup_address": null,
   "delivery_address": "حي الجامعة، النجف",
+  "neighborhood": "حي الجامعة",
   "items": [],
   "notes": null,
   "delivery_fee": 3000,
@@ -164,6 +177,7 @@ Output:
   "customer_phone": "07814104097",
   "pickup_address": null,
   "delivery_address": "حي الجامعة، النجف",
+  "neighborhood": "حي الجامعة",
   "items": [],
   "notes": null,
   "delivery_fee": 5000,
@@ -182,6 +196,7 @@ Output:
   "customer_phone": "07701234567",
   "pickup_address": null,
   "delivery_address": "حي الأمير، النجف",
+  "neighborhood": "حي الامير",
   "items": [],
   "notes": "اتصل عند الوصول",
   "delivery_fee": null,

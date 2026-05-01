@@ -90,7 +90,8 @@ serve(async (req) => {
     const { error: updateError } = await supabaseClient.rpc('update_customer_location', {
       p_order_id: order_id,
       p_latitude: lat,
-      p_longitude: lng
+      p_longitude: lng,
+      p_is_auto_update: false // This is a real customer location
     });
 
     if (updateError) {

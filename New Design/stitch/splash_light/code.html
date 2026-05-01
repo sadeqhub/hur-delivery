@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#173bab",
+                        "primary-fixed-dim": "#6ed6df",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary": "#8d4a19",
+                        "on-primary-container": "#f5feff",
+                        "surface-dim": "#d9dadb",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "surface-container-highest": "#e1e3e4",
+                        "tertiary-fixed": "#ffdbc8",
+                        "surface-variant": "#e1e3e4",
+                        "secondary": "#3755c3",
+                        "on-tertiary-fixed": "#321300",
+                        "outline": "#6d797a",
+                        "background": "#f8f9fa",
+                        "tertiary-container": "#ab6230",
+                        "surface-container": "#edeeef",
+                        "surface-container-high": "#e7e8e9",
+                        "on-tertiary": "#ffffff",
+                        "surface": "#f8f9fa",
+                        "outline-variant": "#bdc9ca",
+                        "primary-fixed": "#8cf2fc",
+                        "surface-container-low": "#f3f4f5",
+                        "on-surface-variant": "#3d494a",
+                        "on-secondary-container": "#00217a",
+                        "secondary-container": "#708cfd",
+                        "inverse-primary": "#6ed6df",
+                        "on-tertiary-fixed-variant": "#733604",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#fffbff",
+                        "secondary-fixed": "#dde1ff",
+                        "surface-tint": "#006970",
+                        "surface-bright": "#f8f9fa",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-error": "#ffffff",
+                        "primary-container": "#00818a",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#002022",
+                        "tertiary-fixed-dim": "#ffb68a",
+                        "on-secondary": "#ffffff",
+                        "primary": "#00666d",
+                        "on-background": "#191c1d",
+                        "on-secondary-fixed": "#001453",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#191c1d",
+                        "inverse-surface": "#2e3132"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Tajawal", "Manrope", "sans-serif"],
+                        "body": ["Manrope", "sans-serif"],
+                        "label": ["Manrope", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .kinetic-bg {
+            background: radial-gradient(circle at 50% 50%, #00818a 0%, #00666d 100%);
+        }
+        .wind-trail {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            border-radius: 999px;
+            position: absolute;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex items-center justify-center min-h-screen">
+<!-- Splash Screen Canvas (iPhone 14 Pro Dimensions) -->
+<main class="relative w-[390px] h-[844px] kinetic-bg flex flex-col items-center justify-between py-24 overflow-hidden shadow-2xl">
+<!-- Background Kinetic Elements -->
+<div class="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+<div class="wind-trail w-32 top-[20%] -left-10 rotate-12"></div>
+<div class="wind-trail w-48 top-[45%] -left-20 -rotate-6"></div>
+<div class="wind-trail w-24 top-[70%] -left-5 rotate-3"></div>
+<div class="wind-trail w-40 top-[30%] -right-10 -rotate-12"></div>
+<div class="wind-trail w-56 top-[60%] -right-20 rotate-6"></div>
+</div>
+<!-- Top Branding Anchor -->
+<div class="z-10 flex flex-col items-center gap-2">
+<span class="text-white/60 font-label tracking-[0.2em] text-[10px] font-bold uppercase">Experience Kinetic Speed</span>
+</div>
+<!-- Center Identity Cluster -->
+<div class="relative z-10 flex flex-col items-center">
+<!-- Icon with Motion Visuals -->
+<div class="relative mb-8 group">
+<!-- Outer Glow -->
+<div class="absolute -inset-8 bg-primary-fixed/20 blur-3xl rounded-full"></div>
+<!-- Main Delivery Asset Container -->
+<div class="relative bg-surface-container-lowest/10 backdrop-blur-md p-8 rounded-[40px] border border-white/10 shadow-2xl">
+<span class="material-symbols-outlined text-white text-[84px]" data-icon="delivery_dining" style="font-variation-settings: 'FILL' 1;">delivery_dining</span>
+<!-- Motion Trails attached to Icon -->
+<div class="absolute top-1/2 -left-12 w-16 h-1 bg-gradient-to-r from-transparent to-white/40 rounded-full"></div>
+<div class="absolute top-1/3 -left-8 w-12 h-1 bg-gradient-to-r from-transparent to-white/30 rounded-full"></div>
+</div>
+</div>
+<!-- Brand Typography -->
+<h1 class="text-white font-headline text-5xl font-black tracking-tighter mb-1">
+                Hur Delivery
+            </h1>
+<p class="text-primary-fixed font-headline text-lg font-medium opacity-90">
+                Najaf • Mosul • Beyond
+            </p>
+</div>
+<!-- Bottom Status/Interactive Trigger -->
+<div class="z-10 w-full px-12 flex flex-col items-center gap-8">
+<!-- Loading Indicator (Tonal Layering) -->
+<div class="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-white w-2/3 rounded-full"></div>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+<span class="text-white/80 font-label text-xs tracking-widest uppercase">Initializing Sanctuary...</span>
+</div>
+</div>
+<!-- Editorial Texture Overlay -->
+<div class="absolute inset-0 bg-noise opacity-[0.03] pointer-events-none"></div>
+</main>
+<!-- Visual Polish: Decorative elements for the web view background -->
+<div class="fixed top-0 left-0 w-full h-full -z-10 bg-surface-container-high opacity-50"></div>
+</body></html>

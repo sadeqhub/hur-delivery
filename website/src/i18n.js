@@ -89,11 +89,7 @@ const resources = {
       "how.driver.step3.desc": "اقبل الطلب، استلم من التاجر، وسلّم للعميل باستخدام الملاحة المدمجة",
       
       "how.driver.step4.title": "احصل على أجرك",
-      "how.driver.step4.desc": "بعد إكمال التوصيل، يضاف المبلغ الكامل لمحفظتك فوراً - بدون أي عمولة!",
-      
-      // Commission Free
-      "how.driver.commissionFree.title": "بدون عمولة - 100% لك!",
-      "how.driver.commissionFree.desc": "نحن لا نأخذ أي عمولة من السائقين. كل المبلغ المحدد من التاجر يذهب إليك مباشرة. حريتك في العمل، وأرباحك كاملة لك!",
+      "how.driver.step4.desc": "بعد إكمال التوصيل، يضاف المبلغ الكامل لمحفظتك فوراً",
       
       // Testimonials
       "testimonials.title": "آراء عملائنا",
@@ -240,11 +236,7 @@ const resources = {
       "how.driver.step3.desc": "Accept order, pick up from merchant, and deliver to customer using integrated navigation",
       
       "how.driver.step4.title": "Get Your Payment",
-      "how.driver.step4.desc": "After completing delivery, full amount is added to your wallet instantly - with zero commission!",
-      
-      // Commission Free
-      "how.driver.commissionFree.title": "Zero Commission - 100% Yours!",
-      "how.driver.commissionFree.desc": "We don't take any commission from drivers. The full amount set by the merchant goes directly to you. Your freedom to work, your full earnings!",
+      "how.driver.step4.desc": "After completing delivery, full amount is added to your wallet instantly",
       
       // Testimonials
       "testimonials.title": "What Our Users Say",

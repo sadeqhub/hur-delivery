@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/order_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../shared/widgets/skeletons.dart';
 
 class DriverEarningsScreen extends StatefulWidget {
   const DriverEarningsScreen({super.key});
@@ -31,15 +30,15 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfaceVariant,
+      backgroundColor: context.themeBackground,
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).earnings),
         centerTitle: true,
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: context.themePrimary,
+        foregroundColor: context.themeOnPrimary,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios, color: context.themeOnPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -54,8 +53,15 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
       body: Consumer2<OrderProvider, AuthProvider>(
         builder: (context, orderProvider, authProvider, _) {
           if (orderProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
+            return const SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  SkeletonBox(width: double.infinity, height: 48, borderRadius: 12),
+                  SizedBox(height: 16),
+                  OrderListSkeleton(count: 4),
+                ],
+              ),
             );
           }
 
@@ -67,7 +73,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
                   Icon(
                     Icons.error_outline,
                     size: 64,
-                    color: AppColors.error,
+                    color: context.themeError,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -174,14 +180,14 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
                           Container(
                             padding: const EdgeInsets.all(32),
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceVariant,
+                              color: context.themeSurfaceVariant,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Center(
                               child: Text(
                                 loc.noOrdersInPeriod,
                                 style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.textTertiary,
+                                  color: context.themeTextTertiary,
                                 ),
                               ),
                             ),
@@ -204,13 +210,13 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 64, color: AppColors.error),
-                    SizedBox(height: 16),
+                    Icon(Icons.error_outline, size: 64, color: context.themeError),
+                    const SizedBox(height: 16),
                     Text(
                       AppLocalizations.of(context).errorLoadingStats,
                       style: AppTextStyles.heading3,
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       e.toString(),
                       style: AppTextStyles.bodyMedium,
@@ -235,11 +241,11 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
         return orders.where((o) => o.createdAt.isAfter(todayStart)).toList();
       
       case 'week':
-        final weekStart = now.subtract(Duration(days: 7));
+        final weekStart = now.subtract(const Duration(days: 7));
         return orders.where((o) => o.createdAt.isAfter(weekStart)).toList();
       
       case 'month':
-        final monthStart = now.subtract(Duration(days: 30));
+        final monthStart = now.subtract(const Duration(days: 30));
         return orders.where((o) => o.createdAt.isAfter(monthStart)).toList();
       
       default:
@@ -305,7 +311,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.themeSurface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -336,19 +342,22 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _selectedTimePeriod = value),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.transparent,
+            color: isSelected ? context.themePrimary : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Center(
-            child: Text(
-              label,
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
               style: AppTextStyles.bodySmall.copyWith(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? context.themeOnPrimary : context.themeTextSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
+              child: Text(label),
             ),
           ),
         ),
@@ -388,7 +397,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
           Icon(
             icon,
             size: 16,
-            color: isSelected ? Colors.white : AppColors.primary,
+            color: isSelected ? context.themeOnPrimary : context.themePrimary,
           ),
           const SizedBox(width: 6),
           Text(label),
@@ -397,10 +406,10 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
       onSelected: (selected) {
         setState(() => _selectedStatus = value);
       },
-      backgroundColor: Colors.white,
-      selectedColor: AppColors.primary,
+      backgroundColor: context.themeSurface,
+      selectedColor: context.themePrimary,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.textPrimary,
+        color: isSelected ? context.themeOnPrimary : context.themeTextPrimary,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );
@@ -500,14 +509,14 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primary,
-            AppColors.primary.withOpacity(0.8),
+            context.themePrimary,
+            context.themePrimary.withOpacity(0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: context.themePrimary.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -623,14 +632,14 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.success,
-            AppColors.success.withOpacity(0.8),
+            context.themeSuccess,
+            context.themeSuccess.withOpacity(0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.success.withOpacity(0.3),
+            color: context.themeSuccess.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -641,7 +650,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.account_balance_wallet_outlined,
                 color: Colors.white,
                 size: 28,
@@ -749,7 +758,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
                   loc.deliveredStatus,
                   stats['deliveredOrders'],
                   stats['totalOrders'],
-                  AppColors.success,
+                  context.themeSuccess,
                   Icons.check_circle,
                 ),
                 const SizedBox(height: 8),
@@ -757,7 +766,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
                   loc.cancelledStatus,
                   stats['cancelledOrders'],
                   stats['totalOrders'],
-                  AppColors.error,
+                  context.themeError,
                   Icons.cancel,
                 ),
                 const SizedBox(height: 8),
@@ -765,7 +774,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
                   loc.rejectedStatus,
                   stats['rejectedOrders'],
                   stats['totalOrders'],
-                  AppColors.warning,
+                  context.themeWarning,
                   Icons.block,
                 ),
                 const SizedBox(height: 8),
@@ -773,7 +782,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
                   loc.activeStatus,
                   stats['activeOrders'],
                   stats['totalOrders'],
-                  AppColors.primary,
+                  context.themePrimary,
                   Icons.pending_actions,
                 ),
               ],
@@ -790,7 +799,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.themeSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
@@ -813,12 +822,13 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
                   label,
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w600,
+                    color: context.themeTextPrimary,
                   ),
                 ),
                 Text(
                   '$count طلب',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.themeTextSecondary,
                   ),
                 ),
               ],
@@ -864,7 +874,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.themeSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: _getStatusColor(order.status).withOpacity(0.3),
@@ -893,7 +903,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
                   AppLocalizations.of(context).orderHash(order.id),
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: context.themeTextPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -914,13 +924,13 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
                 '${order.deliveryFee.toStringAsFixed(0)} د.ع',
                 style: AppTextStyles.bodyLarge.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.success,
+                  color: context.themeSuccess,
                 ),
               ),
               Text(
                 AppLocalizations.of(context).deliveryFeesLabel,
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.themeTextSecondary,
                 ),
               ),
             ],
@@ -934,17 +944,17 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
     switch (status) {
       case 'pending':
       case 'assigned':
-        return AppColors.warning;
+        return context.themeWarning;
       case 'accepted':
       case 'on_the_way':
-        return AppColors.primary;
+        return context.themePrimary;
       case 'delivered':
-        return AppColors.success;
+        return context.themeSuccess;
       case 'cancelled':
       case 'rejected':
-        return AppColors.error;
+        return context.themeError;
       default:
-        return AppColors.textTertiary;
+        return context.themeTextTertiary;
     }
   }
 
@@ -1010,7 +1020,7 @@ class _ModernStatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.themeSurface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1042,17 +1052,17 @@ class _ModernStatCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: context.themeTextPrimary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+              color: context.themeTextSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),

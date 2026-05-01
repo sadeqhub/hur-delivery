@@ -40,7 +40,7 @@
   background: var(--gradient-primary);
   color: white;
   border-color: transparent;
-  box-shadow: 0 8px 25px rgba(0, 140, 149, 0.3);
+  box-shadow: 0 8px 25px rgba(24, 140, 147, 0.3);
 }
 
 .commission-free-banner {
@@ -172,7 +172,7 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  box-shadow: 0 2px 8px rgba(0, 140, 149, 0.3);
+  box-shadow: 0 2px 8px rgba(24, 140, 147, 0.3);
 }
 
 @media (max-width: 1024px) {

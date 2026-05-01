@@ -8,7 +8,7 @@ class OrderModel {
   final String? driverName;
   final String? driverPhone;
   final String customerName;
-  final String customerPhone;
+  final String? customerPhone;
   final String pickupAddress;
   final double pickupLatitude;
   final double pickupLongitude;
@@ -30,6 +30,11 @@ class OrderModel {
   final DateTime? readyAt; // When order will be ready for pickup
   final int? readyCountdown; // Minutes until ready (0 = ready now)
   final bool? customerLocationProvided; // Whether customer provided GPS location
+  final String? userFriendlyCode; // User-friendly 6-character code for sharing
+  final int? deliveryTimeLimitSeconds; // Timer limit in seconds (Mapbox * 1.5)
+  final DateTime? deliveryTimerStartedAt; // When timer started (pickup confirmed)
+  final DateTime? deliveryTimerStoppedAt; // When timer stopped (reached dropoff)
+  final DateTime? deliveryTimerExpiresAt; // When timer expires
   final List<OrderItemModel> items;
 
   OrderModel({
@@ -41,7 +46,7 @@ class OrderModel {
     this.driverName,
     this.driverPhone,
     required this.customerName,
-    required this.customerPhone,
+    this.customerPhone,
     required this.pickupAddress,
     required this.pickupLatitude,
     required this.pickupLongitude,
@@ -63,6 +68,11 @@ class OrderModel {
     this.readyAt,
     this.readyCountdown,
     this.customerLocationProvided,
+    this.userFriendlyCode,
+    this.deliveryTimeLimitSeconds,
+    this.deliveryTimerStartedAt,
+    this.deliveryTimerStoppedAt,
+    this.deliveryTimerExpiresAt,
     this.items = const [],
   });
 
@@ -76,7 +86,7 @@ class OrderModel {
       driverName: json['driver_name'] as String?,
       driverPhone: json['driver_phone'] as String?,
       customerName: json['customer_name'] as String,
-      customerPhone: json['customer_phone'] as String,
+      customerPhone: json['customer_phone'] as String?,
       pickupAddress: json['pickup_address'] as String,
       pickupLatitude: double.parse(json['pickup_latitude'].toString()),
       pickupLongitude: double.parse(json['pickup_longitude'].toString()),
@@ -98,6 +108,17 @@ class OrderModel {
       readyAt: json['ready_at'] != null ? DateTime.parse(json['ready_at'] as String) : null,
       readyCountdown: json['ready_countdown'] as int?,
       customerLocationProvided: json['customer_location_provided'] as bool?,
+      userFriendlyCode: json['user_friendly_code'] as String?,
+      deliveryTimeLimitSeconds: json['delivery_time_limit_seconds'] as int?,
+      deliveryTimerStartedAt: json['delivery_timer_started_at'] != null 
+          ? DateTime.parse(json['delivery_timer_started_at'] as String) 
+          : null,
+      deliveryTimerStoppedAt: json['delivery_timer_stopped_at'] != null 
+          ? DateTime.parse(json['delivery_timer_stopped_at'] as String) 
+          : null,
+      deliveryTimerExpiresAt: json['delivery_timer_expires_at'] != null 
+          ? DateTime.parse(json['delivery_timer_expires_at'] as String) 
+          : null,
       items: (json['items'] as List<dynamic>?)
           ?.map((item) => OrderItemModel.fromJson(item as Map<String, dynamic>))
           .toList() ?? [],
@@ -132,6 +153,7 @@ class OrderModel {
       'driver_assigned_at': driverAssignedAt?.toIso8601String(),
       'accepted_at': acceptedAt?.toIso8601String(),
       'rejected_at': rejectedAt?.toIso8601String(),
+      'user_friendly_code': userFriendlyCode,
       'items': items.map((item) => item.toJson()).toList(),
     };
   }
@@ -167,6 +189,11 @@ class OrderModel {
     DateTime? readyAt,
     int? readyCountdown,
     bool? customerLocationProvided,
+    String? userFriendlyCode,
+    int? deliveryTimeLimitSeconds,
+    DateTime? deliveryTimerStartedAt,
+    DateTime? deliveryTimerStoppedAt,
+    DateTime? deliveryTimerExpiresAt,
     List<OrderItemModel>? items,
   }) {
     return OrderModel(
@@ -200,6 +227,11 @@ class OrderModel {
       readyAt: readyAt ?? this.readyAt,
       readyCountdown: readyCountdown ?? this.readyCountdown,
       customerLocationProvided: customerLocationProvided ?? this.customerLocationProvided,
+      userFriendlyCode: userFriendlyCode ?? this.userFriendlyCode,
+      deliveryTimeLimitSeconds: deliveryTimeLimitSeconds ?? this.deliveryTimeLimitSeconds,
+      deliveryTimerStartedAt: deliveryTimerStartedAt ?? this.deliveryTimerStartedAt,
+      deliveryTimerStoppedAt: deliveryTimerStoppedAt ?? this.deliveryTimerStoppedAt,
+      deliveryTimerExpiresAt: deliveryTimerExpiresAt ?? this.deliveryTimerExpiresAt,
       items: items ?? this.items,
     );
   }

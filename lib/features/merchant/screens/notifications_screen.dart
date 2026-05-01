@@ -6,9 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'dart:convert';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 
@@ -219,7 +217,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
     final unreadCount = _notifications.where((n) => !(n['is_read'] ?? false)).length;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Builder(
           builder: (context) {
@@ -264,7 +262,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.notifications_none,
                         size: 80,
                         color: AppColors.textTertiary,
@@ -311,11 +309,15 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
                         child: Card(
                           margin: const EdgeInsets.only(bottom: 12),
                           elevation: isRead ? 0 : 2,
-                          color: isRead ? Colors.white : AppColors.primary.withOpacity(0.05),
+                          color: isRead 
+                              ? context.themeSurface 
+                              : AppColors.primary.withOpacity(0.05),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                             side: BorderSide(
-                              color: isRead ? Colors.transparent : AppColors.primary.withOpacity(0.2),
+                              color: isRead 
+                                  ? Colors.transparent 
+                                  : AppColors.primary.withOpacity(0.2),
                             ),
                           ),
                           child: InkWell(
@@ -350,7 +352,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
                                                 title,
                                                 style: AppTextStyles.bodyMedium.copyWith(
                                                   fontWeight: FontWeight.w700,
-                                                  color: AppColors.textPrimary,
+                                                  color: context.themeTextPrimary,
                                                 ),
                                               ),
                                             ),
@@ -358,7 +360,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
                                               Container(
                                                 width: 8,
                                                 height: 8,
-                                                decoration: BoxDecoration(
+                                                decoration: const BoxDecoration(
                                                   color: AppColors.primary,
                                                   shape: BoxShape.circle,
                                                 ),
@@ -369,7 +371,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
                                         Text(
                                           message,
                                           style: AppTextStyles.bodySmall.copyWith(
-                                            color: AppColors.textSecondary,
+                                            color: context.themeTextSecondary,
                                             height: 1.4,
                                           ),
                                           maxLines: 2,

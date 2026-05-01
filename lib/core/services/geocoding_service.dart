@@ -181,41 +181,83 @@ class GeocodingService {
     }
   }
 
-  // Forward geocode for Najaf specifically (converts written address to coordinates) using v6 API
-  static Future<Map<String, dynamic>?> geocodeNajafAddress(String address) async {
+  // Get city coordinates and Arabic name
+  static Map<String, dynamic> _getCityInfo(String? city) {
+    switch (city?.toLowerCase()) {
+      case 'najaf':
+        return {
+          'latitude': 32.0039,
+          'longitude': 44.3291,
+          'name': 'النجف',
+          'nameEn': 'Najaf',
+          'bbox': '44.2,31.9,44.5,32.2', // minLon,minLat,maxLon,maxLat
+        };
+      case 'mosul':
+        return {
+          'latitude': 36.3400,
+          'longitude': 43.1300,
+          'name': 'الموصل',
+          'nameEn': 'Mosul',
+          'bbox': '43.0,36.2,43.3,36.5', // minLon,minLat,maxLon,maxLat
+        };
+      default:
+        // Default to Najaf if city is not specified or unknown
+        return {
+          'latitude': 32.0039,
+          'longitude': 44.3291,
+          'name': 'النجف',
+          'nameEn': 'Najaf',
+          'bbox': '44.2,31.9,44.5,32.2',
+        };
+    }
+  }
+
+  // Forward geocode address using merchant's city (converts written address to coordinates) using v6 API
+  static Future<Map<String, dynamic>?> geocodeAddress(String address, {String? city}) async {
+    // Get city info (defaults to Najaf if city is null)
+    final cityInfo = _getCityInfo(city);
+    
     // Check if we have a Mapbox token
     if (AppConstants.mapboxAccessToken.isEmpty) {
-      print('⚠️ Mapbox token not available, using Najaf center');
+      print('⚠️ Mapbox token not available, using ${cityInfo['name']} center');
       return {
-        'latitude': 32.0039,
-        'longitude': 44.3291,
-        'address': 'النجف',
+        'latitude': cityInfo['latitude'],
+        'longitude': cityInfo['longitude'],
+        'address': cityInfo['name'],
         'original_address': address,
       };
     }
     
     try {
-      // Ensure address includes Najaf if not mentioned
+      // Ensure address includes city name if not mentioned
       String searchQuery = address;
-      if (!address.contains('نجف') && !address.toLowerCase().contains('najaf')) {
-        searchQuery = '$address، النجف';
+      final cityNameAr = cityInfo['name'] as String;
+      final cityNameEn = cityInfo['nameEn'] as String;
+      
+      if (!address.contains(cityNameAr) && 
+          !address.toLowerCase().contains(cityNameEn.toLowerCase())) {
+        searchQuery = '$address، $cityNameAr';
       }
 
-      // Najaf coordinates for proximity biasing: 32.0039° N, 44.3291° E
+      // City coordinates for proximity biasing
       // Note: v6 API uses longitude,latitude for proximity
+      final lat = cityInfo['latitude'] as double;
+      final lng = cityInfo['longitude'] as double;
+      final bbox = cityInfo['bbox'] as String;
+      
       final url = Uri.parse(
         'https://api.mapbox.com/search/geocode/v6/forward?'
         'q=${Uri.encodeComponent(searchQuery)}&'
         'access_token=${AppConstants.mapboxAccessToken}&'
         'language=ar&'
         'country=IQ&'  // Limit to Iraq
-        'proximity=44.3291,32.0039&'  // Center on Najaf (longitude,latitude)
-        'bbox=44.2,31.9,44.5,32.2&'  // Bounding box around Najaf (minLon,minLat,maxLon,maxLat)
+        'proximity=$lng,$lat&'  // Center on city (longitude,latitude)
+        'bbox=$bbox&'  // Bounding box around city (minLon,minLat,maxLon,maxLat)
         'types=address,street,place,locality&'
         'limit=1'
       );
 
-      print('🗺️ Geocoding Najaf address (v6): $searchQuery');
+      print('🗺️ Geocoding ${cityInfo['name']} address (v6): $searchQuery');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -227,8 +269,8 @@ class GeocodingService {
           final properties = feature['properties'] as Map<String, dynamic>?;
           final coordinates = properties?['coordinates'] as Map<String, dynamic>?;
           
-          final lat = (coordinates?['latitude'] as num?)?.toDouble();
-          final lng = (coordinates?['longitude'] as num?)?.toDouble();
+          final resultLat = (coordinates?['latitude'] as num?)?.toDouble();
+          final resultLng = (coordinates?['longitude'] as num?)?.toDouble();
           
           // Get the best available address string
           final fullAddress = properties?['full_address'] as String?;
@@ -237,45 +279,52 @@ class GeocodingService {
           final formattedAddress = fullAddress ?? 
               (name != null && placeFormatted != null 
                   ? '$name، $placeFormatted' 
-                  : (name ?? placeFormatted ?? 'النجف'));
+                  : (name ?? placeFormatted ?? cityNameAr));
           
-          if (lat != null && lng != null) {
-            print('✅ Geocoded to: lat=$lat, lng=$lng');
+          if (resultLat != null && resultLng != null) {
+            print('✅ Geocoded to: lat=$resultLat, lng=$resultLng');
             print('✅ Address: $formattedAddress');
             
             return {
-              'latitude': lat,
-              'longitude': lng,
+              'latitude': resultLat,
+              'longitude': resultLng,
               'address': formattedAddress,
               'original_address': address,
             };
           }
         }
       } else {
-        print('❌ Najaf geocoding failed with status: ${response.statusCode}');
+        print('❌ ${cityInfo['name']} geocoding failed with status: ${response.statusCode}');
         print('Response: ${response.body}');
       }
       
-      // If geocoding fails, return Najaf center coordinates as fallback
-      print('⚠️ Geocoding failed, using Najaf center');
+      // If geocoding fails, return city center coordinates as fallback
+      print('⚠️ Geocoding failed, using ${cityInfo['name']} center');
       return {
-        'latitude': 32.0039,
-        'longitude': 44.3291,
-        'address': 'النجف',
+        'latitude': lat,
+        'longitude': lng,
+        'address': cityNameAr,
         'original_address': address,
       };
       
     } catch (e, stackTrace) {
-      print('❌ Najaf geocoding error: $e');
+      print('❌ ${cityInfo['name']} geocoding error: $e');
       print('Stack trace: $stackTrace');
-      // Return Najaf center as fallback
+      // Return city center as fallback
       return {
-        'latitude': 32.0039,
-        'longitude': 44.3291,
-        'address': 'النجف',
+        'latitude': cityInfo['latitude'],
+        'longitude': cityInfo['longitude'],
+        'address': cityInfo['name'],
         'original_address': address,
       };
     }
+  }
+
+  // Forward geocode for Najaf specifically (converts written address to coordinates) using v6 API
+  // DEPRECATED: Use geocodeAddress with city parameter instead
+  @Deprecated('Use geocodeAddress with city parameter instead')
+  static Future<Map<String, dynamic>?> geocodeNajafAddress(String address) async {
+    return geocodeAddress(address, city: 'najaf');
   }
 
   // Get formatted address with district/city using v6 API

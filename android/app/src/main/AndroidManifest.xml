@@ -20,15 +20,16 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <!-- Use modern scoped media permissions instead of legacy storage -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Removed READ_MEDIA_IMAGES permission - using Android Photo Picker instead -->
+    <!-- The image_picker package automatically uses the photo picker on Android 13+ (API 33+) -->
+    <!-- when media permissions are not declared, which complies with Google Play policy -->
     
     <!-- Audio Recording for Voice Orders -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Keep microphone for voice orders; remove modify audio settings -->
     
     <application
-        android:label="حر للتوصيل"
+        android:label="HUR"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:enableOnBackInvokedCallback="true">
@@ -41,7 +42,7 @@
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize"
+            android:windowSoftInputMode="adjustPan"
             android:showWhenLocked="true"
             android:turnScreenOn="true">
             <!-- Specifies an Android theme to apply to this Activity as soon as

@@ -1,14 +1,4 @@
-[[redirects]]
-  from = "https://admin.hur.delivery/*"
-  to = "/admin/:splat"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/admin/*"
-  to = "/admin/index.html"
-  status = 200
-
+# Main site SPA routing
 [[redirects]]
   from = "/"
   to = "/index.html"

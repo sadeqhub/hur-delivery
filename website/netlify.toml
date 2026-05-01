@@ -1,13 +1,10 @@
 # Netlify configuration for Hur Delivery Website
 
 [build]
-  command = "npm run build"
+  command = "npm run build:main"
   publish = "dist"
 
-# Note: Asset routing is handled by _redirects file
-# This file focuses on high-level routing rules
-
-# Main site routing (catch-all, must be last)
+# Main site routing
 [[redirects]]
   from = "/*"
   to = "/index.html"

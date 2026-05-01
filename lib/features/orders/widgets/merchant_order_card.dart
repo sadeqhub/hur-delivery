@@ -1,12 +1,11 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../shared/models/order_model.dart';
+import '../../../shared/widgets/delivery_timer_widget.dart';
 import '../../../core/localization/app_localizations.dart';
 
 /// Expandable order card specifically designed for merchant dashboard
@@ -27,7 +26,8 @@ class MerchantOrderCard extends StatefulWidget {
   State<MerchantOrderCard> createState() => _MerchantOrderCardState();
 }
 
-class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProviderStateMixin {
+class _MerchantOrderCardState extends State<MerchantOrderCard>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   bool _isExpanded = false;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
@@ -58,8 +58,9 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentOrder = widget.order;
-    
+
     try {
       _animationController = AnimationController(
         duration: const Duration(milliseconds: 300),
@@ -89,12 +90,15 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
       // Update current order
       _currentOrder = widget.order;
       
-      // Unsubscribe from old order
+      // Unsubscribe from old order and remove channel to avoid leaks
       try {
-        _orderSubscription?.unsubscribe();
-      } catch (e) {
-        print('⚠️ Error unsubscribing from old order: $e');
-      }
+        final oldChannel = _orderSubscription;
+        _orderSubscription = null;
+        if (oldChannel != null) {
+          oldChannel.unsubscribe();
+          Supabase.instance.client.removeChannel(oldChannel);
+        }
+      } catch (_) {}
       
       // Reinitialize flash animation for new status
       try {
@@ -151,8 +155,6 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
   
   void _subscribeToOrderUpdates() {
     try {
-      print('🔄 Subscribing to order updates for: ${widget.order.id}');
-      
       _orderSubscription = Supabase.instance.client
           .channel('order_${widget.order.id}')
           .onPostgresChanges(
@@ -165,62 +167,81 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
               value: widget.order.id,
             ),
             callback: (payload) {
-              print('📢 Order ${widget.order.id} updated in realtime');
               final newData = payload.newRecord;
-              
-              if (mounted && newData['status'] != null) {
-                final newStatus = newData['status'] as String;
-                final oldStatus = _currentOrder.status;
-                
-                if (newStatus != oldStatus) {
-                  print('   Status changed: $oldStatus → $newStatus');
-                  
-                  setState(() {
-                    // Update current order with new status
-                    _currentOrder = _currentOrder.copyWith(
-                      status: newStatus,
-                      driverId: newData['driver_id'] as String?,
-                      driverAssignedAt: newData['driver_assigned_at'] != null 
-                          ? DateTime.parse(newData['driver_assigned_at'] as String)
-                          : null,
-                    );
-                    
-                    // Reinitialize flash animation if status changed to/from rejected
-                    if (newStatus == 'rejected' && oldStatus != 'rejected') {
-                      _flashAnimationController.dispose();
-                      _initializeFlashAnimation();
-                    } else if (newStatus != 'rejected' && oldStatus == 'rejected') {
-                      _flashAnimationController.dispose();
-                      _initializeFlashAnimation();
-                    }
-                  });
+              if (!mounted) return;
+
+              final newStatus = newData['status'] as String?;
+              final oldStatus = _currentOrder.status;
+
+              setState(() {
+                _currentOrder = _currentOrder.copyWith(
+                  status: newStatus ?? _currentOrder.status,
+                  driverId: newData['driver_id'] as String?,
+                  driverAssignedAt: newData['driver_assigned_at'] != null
+                      ? DateTime.parse(newData['driver_assigned_at'] as String)
+                      : null,
+                  deliveryTimerExpiresAt: newData['delivery_timer_expires_at'] != null
+                      ? DateTime.parse(newData['delivery_timer_expires_at'] as String)
+                      : _currentOrder.deliveryTimerExpiresAt,
+                  deliveryTimerStartedAt: newData['delivery_timer_started_at'] != null
+                      ? DateTime.parse(newData['delivery_timer_started_at'] as String)
+                      : _currentOrder.deliveryTimerStartedAt,
+                  deliveryTimerStoppedAt: newData['delivery_timer_stopped_at'] != null
+                      ? DateTime.parse(newData['delivery_timer_stopped_at'] as String)
+                      : _currentOrder.deliveryTimerStoppedAt,
+                  deliveryTimeLimitSeconds: newData['delivery_time_limit_seconds'] as int?,
+                );
+
+                if (newStatus != null && newStatus != oldStatus) {
+                  if (newStatus == 'rejected' || oldStatus == 'rejected') {
+                    _flashAnimationController.dispose();
+                    _initializeFlashAnimation();
+                  }
                 }
-              }
+              });
             },
           )
           .subscribe();
-      
-      print('✅ Subscribed to order ${widget.order.id}');
-    } catch (e) {
-      print('❌ Error subscribing to order updates: $e');
+    } catch (_) {}
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      // Unsubscribe when app goes to background to save connections
+      try {
+        _orderSubscription?.unsubscribe();
+        _orderSubscription = null;
+      } catch (_) {}
+    } else if (state == AppLifecycleState.resumed &&
+        _orderSubscription == null) {
+      // Re-subscribe when app comes back to foreground
+      _subscribeToOrderUpdates();
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     try {
-      _orderSubscription?.unsubscribe();
+      final channel = _orderSubscription;
+      _orderSubscription = null;
+      if (channel != null) {
+        channel.unsubscribe();
+        Supabase.instance.client.removeChannel(channel);
+      }
       _animationController.dispose();
       _flashAnimationController.dispose();
     } catch (e) {
-      print('⚠️ Error disposing MerchantOrderCard: $e');
+      // ignore disposal errors
     }
     super.dispose();
   }
 
   void _toggleExpanded() {
     if (!mounted) return;
-    
+    HapticFeedback.selectionClick();
     setState(() {
       _isExpanded = !_isExpanded;
       if (_isExpanded) {
@@ -247,7 +268,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
         border: Border.all(
           color: _isExpanded 
               ? backgroundColor
-              : Colors.white.withOpacity(0.2),
+              : context.themeBorder.withOpacity(0.4),
           width: _isExpanded ? 3 : 1,
         ),
         boxShadow: [
@@ -272,17 +293,17 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
                 ],
               ),
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(14),
-                topRight: Radius.circular(14),
+                topLeft: const Radius.circular(14),
+                topRight: const Radius.circular(14),
                 bottomLeft: Radius.circular(_isExpanded ? 0 : 14),
                 bottomRight: Radius.circular(_isExpanded ? 0 : 14),
               ),
             ),
             child: InkWell(
-              onTap: _toggleExpanded,
+              onTap: () { HapticFeedback.lightImpact(); _toggleExpanded(); },
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(14),
-                topRight: Radius.circular(14),
+                topLeft: const Radius.circular(14),
+                topRight: const Radius.circular(14),
                 bottomLeft: Radius.circular(_isExpanded ? 0 : 14),
                 bottomRight: Radius.circular(_isExpanded ? 0 : 14),
               ),
@@ -383,6 +404,12 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
                               ),
                             if (order.readyAt != null && !order.isReady)
                               const SizedBox(width: 8),
+                            // Delivery Timer (for on_the_way orders) - high contrast on dark gradient
+                            if (order.isOnTheWay && order.deliveryTimerExpiresAt != null) ...[
+                              const SizedBox(width: 8),
+                              _MerchantTimerChip(order: order),
+                            ],
+                            const SizedBox(width: 8),
                             _StatusBadge(status: order.status),
                           ],
                         ),
@@ -396,7 +423,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
                   AnimatedRotation(
                     turns: _isExpanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 300),
-                    child: Icon(
+                    child: const Icon(
                       Icons.keyboard_arrow_down,
                       color: Colors.white,
                       size: 28,
@@ -415,8 +442,8 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
+                    color: context.themeSurface,
+                    borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(14),
                       bottomRight: Radius.circular(14),
                     ),
@@ -437,7 +464,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
                               if (order.driverId != null) ...[
                                 _buildDetailRow(
                                   icon: Icons.delivery_dining,
-                                  label: loc.merchantLabel,
+                                  label: loc.driver,
                                   value: order.driverName ?? loc.assignedStatus,
                                   valueColor: AppColors.success,
                                 ),
@@ -449,6 +476,11 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
                                     label: loc.driverPhone,
                                     value: order.driverPhone!,
                                   ),
+                                ],
+                                // Delivery Timer (for on_the_way orders)
+                                if (order.isOnTheWay && order.deliveryTimerExpiresAt != null) ...[
+                                  const SizedBox(height: 12),
+                                  DeliveryTimerWidget(order: order),
                                 ],
                                 const SizedBox(height: 8),
                               ],
@@ -479,15 +511,19 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      loc.grandTotalWithDelivery,
-                                      style: AppTextStyles.bodyMedium.copyWith(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: FontWeight.w600,
+                                    Flexible(
+                                      child: Text(
+                                        loc.grandTotalWithDelivery,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTextStyles.bodyMedium.copyWith(
+                                          color: context.themeTextPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
                                     Text(
-                                      '${order.grandTotal?.toStringAsFixed(0) ?? "0"} ${loc.currencySymbol}',
+                                      '${order.grandTotal.toStringAsFixed(0) ?? "0"} ${loc.currencySymbol}',
                                       style: AppTextStyles.bodyLarge.copyWith(
                                         fontWeight: FontWeight.w700,
                                         color: backgroundColor,
@@ -509,16 +545,22 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
                           width: double.infinity,
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.amber.shade50,
+                            color: context.themeColor(
+                              light: Colors.amber.shade50,
+                              dark: context.themeSurfaceVariant,
+                            ),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: Colors.amber.shade200,
+                              color: context.themeColor(
+                                light: Colors.amber.shade200,
+                                dark: context.themeBorder,
+                              ),
                             ),
                           ),
                           child: Text(
                             order.notes!,
                             style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.textPrimary,
+                              color: context.themeTextPrimary,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -593,7 +635,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '#${widget.order.id.substring(0, 8)}',
+                    '#${widget.order.userFriendlyCode ?? widget.order.id.substring(0, 8)}',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: Colors.red.shade700,
                     ),
@@ -615,13 +657,16 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
   }) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
+        Icon(icon, size: 16, color: context.themeTextSecondary),
         const SizedBox(width: 8),
-        Text(
-          '$label: ',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
-            fontSize: 13,
+        Flexible(
+          child: Text(
+            '$label: ',
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: context.themeTextSecondary,
+              fontSize: 13,
+            ),
           ),
         ),
         Expanded(
@@ -654,7 +699,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
           child: Text(
             address,
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textPrimary,
+              color: context.themeTextPrimary,
               height: 1.3,
               fontSize: 13,
             ),
@@ -673,13 +718,17 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: Colors.white.withOpacity(0.9),
-                fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal,
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: Colors.white.withOpacity(0.9),
+                  fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             Text(
               '${amount.toStringAsFixed(0)} ${loc.currencySymbol}',
               style: AppTextStyles.bodyMedium.copyWith(
@@ -737,6 +786,8 @@ class _MerchantOrderCardState extends State<MerchantOrderCard> with TickerProvid
         return AppColors.textTertiary; // Gray for cancelled
       case 'rejected':
         return Colors.red.shade700; // Red for rejected
+      case 'scheduled':
+        return Colors.purple.shade600; // Purple for scheduled
       default:
         return AppColors.primary;
     }
@@ -823,6 +874,11 @@ class _StatusBadge extends StatelessWidget {
         textColor = AppColors.statusCancelled;
         text = loc.statusRejected;
         break;
+      case 'scheduled':
+        backgroundColor = Colors.purple.withOpacity(0.1);
+        textColor = Colors.purple;
+        text = loc.statusScheduled;
+        break;
       default:
         backgroundColor = AppColors.textTertiary.withOpacity(0.1);
         textColor = AppColors.textTertiary;
@@ -832,7 +888,10 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: context.themeColor(
+          light: Colors.white.withOpacity(0.9),
+          dark: context.themeSurface.withOpacity(0.9),
+        ),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -843,6 +902,77 @@ class _StatusBadge extends StatelessWidget {
           fontSize: 11,
         ),
       ),
+    );
+  }
+}
+
+/// High-contrast timer chip for the merchant collapsed card (renders well on dark gradients).
+class _MerchantTimerChip extends StatelessWidget {
+  final OrderModel order;
+  const _MerchantTimerChip({required this.order});
+
+  String _format(int seconds) {
+    final s = seconds.abs();
+    final m = s ~/ 60;
+    final sec = s % 60;
+    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final expiresAt = order.deliveryTimerExpiresAt;
+    if (!order.isOnTheWay || expiresAt == null) return const SizedBox.shrink();
+
+    // live ticker
+    return StreamBuilder<int>(
+      stream: Stream.periodic(const Duration(seconds: 1), (i) => i),
+      builder: (context, _) {
+        final diff = expiresAt.difference(DateTime.now()).inSeconds;
+        final isLate = diff < 0;
+        final isWarning = !isLate && diff <= 300;
+
+        final Color bg = isLate
+            ? Colors.red.shade600
+            : (isWarning ? Colors.orange.shade600 : Colors.white.withOpacity(0.18));
+        final Color border = isLate
+            ? Colors.red.shade200
+            : (isWarning ? Colors.orange.shade200 : Colors.white.withOpacity(0.35));
+
+        final String text = isLate
+            ? '${loc.lateDurationLabel}${_format(diff)}'
+            : _format(diff);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isLate ? Icons.error_outline : Icons.timer_outlined,
+                color: Colors.white,
+                size: 14,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                text,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.2,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

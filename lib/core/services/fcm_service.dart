@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
-import 'package:http/http.dart' as http;
 import '../constants/app_constants.dart';
 
 /// Firebase Cloud Messaging Service

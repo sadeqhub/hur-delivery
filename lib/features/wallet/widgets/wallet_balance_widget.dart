@@ -3,9 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/providers/wallet_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -17,6 +14,11 @@ class WalletBalanceWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer2<WalletProvider, AuthProvider>(
       builder: (context, walletProvider, authProvider, _) {
+        // Hide widget if wallet is disabled
+        if (!walletProvider.isEnabled) {
+          return const SizedBox.shrink();
+        }
+        
         if (walletProvider.isLoading) {
           return Container(
             margin: const EdgeInsets.only(left: 8),
@@ -35,21 +37,22 @@ class WalletBalanceWidget extends StatelessWidget {
         }
 
         // Determine background color based on balance status
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         Color backgroundColor;
         Color textColor;
         IconData icon;
         
         if (walletProvider.isBalanceCritical) {
-          backgroundColor = Colors.white;
+          backgroundColor = isDark ? AppColors.surfaceVariantDark : Colors.white;
           textColor = AppColors.error;
           icon = Icons.warning_amber_rounded;
         } else if (walletProvider.isBalanceLow) {
-          backgroundColor = Colors.white;
+          backgroundColor = isDark ? AppColors.surfaceVariantDark : Colors.white;
           textColor = Colors.orange.shade700;
           icon = Icons.warning_outlined;
         } else {
-          backgroundColor = Colors.white;
-          textColor = AppColors.primary;
+          backgroundColor = isDark ? AppColors.surfaceVariantDark : Colors.white;
+          textColor = isDark ? AppColors.primaryDark : AppColors.primary;
           icon = Icons.account_balance_wallet;
         }
 

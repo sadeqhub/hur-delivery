@@ -32,6 +32,7 @@ class AppLocalizations {
     'ar': {
       // General
       'app_title': 'حر - Hur Delivery',
+      'general': 'عام',
       'ok': 'حسناً',
       'cancel': 'إلغاء',
       'back': 'رجوع',
@@ -66,6 +67,13 @@ class AppLocalizations {
       'have_account': 'حساب موجود',
       'no_account': 'لا يوجد حساب',
       'create_account': 'إنشاء حساب',
+      'try_app': 'تجربة التطبيق',
+      'demo_mode_title': 'تجربة التطبيق',
+      'demo_mode_info': 'في وضع التجربة، يمكنك استكشاف التطبيق ولكن لا يمكنك إنشاء طلبات أو تفعيل وضع الاتصال',
+      'demo_merchant': 'تاجر تجريبي',
+      'demo_merchant_desc': 'استكشف لوحة تحكم التاجر',
+      'demo_driver': 'سائق تجريبي',
+      'demo_driver_desc': 'استكشف لوحة تحكم السائق',
       'change_phone': 'تغيير رقم الهاتف',
       'enter_otp': 'أدخل رمز التحقق',
       'otp_sent_to': 'تم إرسال رمز التحقق إلى',
@@ -99,6 +107,7 @@ class AppLocalizations {
       'wallet': 'المحفظة',
       'support': 'الدعم',
       'voice': 'صوتي',
+      'stats': 'الإحصائيات',
       'overview': 'نظرة عامة',
       'users': 'المستخدمين',
       'orders': 'الطلبات',
@@ -137,6 +146,7 @@ class AppLocalizations {
       'status_cancelled': 'ملغي',
       'status_unassigned': 'غير مخصص',
       'status_rejected': 'مرفوض',
+      'status_scheduled': 'مجدول',
       'status_unknown': 'غير معروف',
       'in_progress_title': 'في الطريق',
       'in_progress_message': 'تم بدء التوصيل للعميل',
@@ -263,6 +273,7 @@ class AppLocalizations {
       'checking_drivers': 'جارٍ التحقق من السائقين المتاحين...',
       'no_drivers_online': 'لا يوجد سائقين متصلين',
       'cannot_create_order': 'لا يمكن إنشاء الطلب حالياً. يرجى المحاولة لاحقاً.',
+      'all_drivers_busy': 'جميع السائقين مشغولون',
       'drivers_online': 'سائق متصل ومتاح للتوصيل',
       'drivers_available_now': 'يوجد سائقون متاحون للتوصيل',
       'refresh': 'تحديث',
@@ -278,10 +289,12 @@ class AppLocalizations {
       'locations': 'المواقع',
       'pickup_location': 'موقع الاستلام',
       'pickup_location_hint': 'اكتب العنوان أو اختر من الخريطة',
+      'advanced_settings': 'الإعدادات المتقدمة',
       'delivery_location': 'موقع التسليم',
       'delivery_location_hint': 'اكتب العنوان أو اختر من الخريطة',
       'prices': 'الأسعار',
       'delivery_fee_required': 'رسوم التوصيل مطلوبة',
+      'low_delivery_fee_warning': 'الرسوم منخفضة جداً. قد يكون من الصعب الحصول على سائق بهذا المبلغ. الرسوم الموصى بها',
       'enter_valid_number': 'أدخل رقم صحيح',
       'amount_required': 'المبلغ مطلوب',
       'vehicle_type': 'نوع المركبة',
@@ -295,6 +308,21 @@ class AppLocalizations {
       'motorbike_hint': 'سيتم إرسال الطلب لسائقي الدراجات النارية',
       'car_hint': 'سيتم إرسال الطلب لسائقي السيارات فقط',
       'truck_hint': 'سيتم إرسال الطلب لسائقي الشاحنات فقط',
+      'order_driver_for_day': 'طلب سائق ليوم كامل',
+      'bulk_order_description': 'احجز سائقاً ليوم كامل لتوصيل الطلبات في الأحياء المحددة',
+      'order_date': 'تاريخ الطلب',
+      'delivery_neighborhoods': 'أحياء التسليم',
+      'minimum_three': 'الحد الأدنى 3',
+      'add_neighborhood': 'إضافة حي',
+      'select_neighborhood': 'اختر حي',
+      'minimum_three_neighborhoods': 'يجب اختيار 3 أحياء على الأقل',
+      'per_delivery_fee': 'رسوم كل توصيل',
+      'bulk_order_fee': 'رسوم طلب السائق',
+      'bulk_order_fee_description': 'رسوم ثابتة لطلب سائق ليوم كامل',
+      'create_bulk_order': 'إنشاء طلب السائق',
+      'bulk_order_created_success': 'تم إنشاء طلب السائق بنجاح',
+      'bulk_order_accepted_success': 'تم قبول طلب السائق بنجاح',
+      'bulk_order_active': 'تم قبول طلب السائق - جاهز للتوصيل',
       'notes_optional': 'ملاحظات (اختياري)',
       'additional_notes': 'ملاحظات إضافية',
       'add_notes_hint': 'أضف أي ملاحظات هنا...',
@@ -369,6 +397,27 @@ class AppLocalizations {
       'low_confidence': 'دقة استخراج البيانات منخفضة ({percent}%). يرجى التحقق من البيانات قبل المتابعة.',
       'continue_action': 'متابعة',
       'customer_phone_required': 'رقم هاتف العميل مطلوب',
+      'customer_phone_required_for_pickup': 'يجب إدخال رقم هاتف العميل قبل تأكيد الاستلام',
+      'customer_phone_optional': 'رقم العميل (اختياري)',
+      'multiple_orders': 'طلبات متعددة',
+      'multiple_orders_description': 'إنشاء طلبات متعددة للتوصيل في أحياء مختلفة',
+      'create_multiple_orders': 'إنشاء الطلبات المتعددة',
+      'bulk_order_status_pending': 'قيد الانتظار',
+      'bulk_order_status_assigned': 'تم التخصيص',
+      'bulk_order_status_accepted': 'مقبول',
+      'bulk_order_status_active': 'نشط',
+      'bulk_order_status_completed': 'مكتمل',
+      'bulk_order_status_cancelled': 'ملغي',
+      'bulk_order_status_rejected': 'مرفوض',
+      'assigned_driver': 'السائق المخصص',
+      'assign_to_same_driver': 'تعيين الطلب لنفس السائق',
+      'current_driver': 'السائق الحالي',
+      'contact_driver': 'اتصل بالسائق',
+      'call_via_whatsapp': 'واتساب',
+      'driver_info_not_available': 'معلومات السائق غير متاحة',
+      'driver_phone_not_available': 'رقم الهاتف غير متاح',
+      'hello_driver': 'مرحبا',
+      'close': 'إغلاق',
       'pickup_address_required': 'عنوان الاستلام مطلوب',
       'delivery_address_required': 'عنوان التسليم مطلوب',
       'order_created_success_voice': '✅ تم إنشاء الطلب بنجاح',
@@ -381,6 +430,9 @@ class AppLocalizations {
       'current_balance': 'الرصيد الحالي',
       'credit_limit': 'الحد الائتماني: ',
       'top_up_wallet': 'شحن المحفظة',
+      'fee_exempt_banner': 'أنت معفي من الرسوم',
+      'fee_exempt_message': 'لأنك مسجل منذ أقل من شهر، لن يتم خصم أي رسوم من محفظتك',
+      'fee_exempt_until': 'الإعفاء حتى',
       'total_orders': 'إجمالي الطلبات',
       'total_fees': 'إجمالي الرسوم',
       'no_transactions': 'لا توجد معاملات',
@@ -437,6 +489,11 @@ class AppLocalizations {
       'status': 'الحالة',
       'registration_date': 'تاريخ التسجيل',
       'enter_label': 'أدخل ',
+      'pick_store_location': 'اختيار موقع المتجر',
+      'pick_on_map': 'تحديد على الخريطة',
+      'store_location_placeholder': 'انقر على أيقونة الخريطة لتحديد الموقع بدقة',
+      'address_required': 'العنوان مطلوب',
+      'location_saved_on_map': 'تم حفظ الموقع على الخريطة',
       // Messaging
       'support': 'الدعم',
       'failed_open_support': 'تعذر فتح محادثة الدعم. حاول مرة أخرى.',
@@ -672,6 +729,22 @@ class AppLocalizations {
       'merchant_welcome_desc2': 'للحفاظ على أمانك، يُنصح بأخذ هويات السائقين أو ضمانات عند التسليم',
       'merchant_welcome_title3': 'هل لديك أسئلة؟',
       'merchant_welcome_desc3': 'تواصل مع فريق الدعم في أي وقت لأي استفسار عن النظام أو الرسوم',
+      // Merchant Walkthrough
+      'merchant_walkthrough_title1': 'العثور على سائق',
+      'merchant_walkthrough_desc1': 'يجد التطبيق لك سائق توصيل مستقل قريب منك لاستلام طلبك',
+      'merchant_walkthrough_title2': 'دفع رسوم الطلب',
+      'merchant_walkthrough_desc2': 'يصل السائق ويدفع رسوم الطلب لك. تأكد من أن السائق يدفع قبل تسليم الطلب',
+      'merchant_walkthrough_title3': 'التوصيل والربح',
+      'merchant_walkthrough_desc3': 'يقوم السائق بتوصيل الطلب، ويحصل على رسوم الطلب بالإضافة إلى رسوم التوصيل',
+      // Driver Walkthrough
+      'driver_walkthrough_title1': 'طلبات قريبة',
+      'driver_walkthrough_desc1': 'التطبيق يجيبلك طلبات قريبة عليك',
+      'driver_walkthrough_title2': 'قبول الطلب ودفع من جيبك',
+      'driver_walkthrough_desc2': 'لما تقبل الطلب، تروح للتاجر وانت تدفع رسوم الطلب من جيبك. تأكد تدفع قبل ما تستلم الطلب',
+      'driver_walkthrough_title3': 'التوصيل والكسب',
+      'driver_walkthrough_desc3': 'بعد التوصيل، تسترجع مبلغ الطلب من الزبون مع رسوم التوصيل. ولو رفض الطلب في التطبيق مع انك واصلته في الوقت المحدد، التطبيق أو التاجر يغطي تكلفة الطلب',
+      'i_agree_to_the': 'أوافق على ',
+      'complete': 'إكمال',
       'ends_in_days': 'ينتهي خلال ',
       'days': ' يوم',
       'ends_in_hours': 'ينتهي خلال ',
@@ -723,6 +796,11 @@ class AppLocalizations {
       'id_verification_failed': 'فشل التحقق من بطاقة الهوية',
       'connection_failed': 'فشل الاتصال بخدمة التحقق: ',
       'error': 'خطأ: ',
+      'you_are_blocked': 'تم حظرك',
+      'account_blocked_message': 'تم حظر حسابك. يرجى التواصل مع مالك التطبيق للمساعدة.',
+      'contact_app_owner': 'التواصل مع مالك التطبيق',
+      'please_reupload_ids': 'يرجى إعادة رفع صور الهوية للتحقق',
+      'reupload_ids_message': 'حالة التحقق الخاصة بك قيد الانتظار. يرجى إعادة رفع صور الهوية لتحديث معلوماتك.',
       // User Registration
       'select_image_source': 'اختر طريقة رفع الصورة',
       'take_photo': 'التقاط صورة',
@@ -775,6 +853,12 @@ class AppLocalizations {
       'store_name_required': 'اسم المتجر مطلوب',
       'store_address': 'عنوان المتجر',
       'select_store_location_map': 'حدد موقع متجرك على الخريطة',
+      'city': 'المدينة',
+      'select_city': 'اختر المدينة',
+      'city_required': 'المدينة مطلوبة',
+      'najaf': 'النجف',
+      'mosul': 'الموصل',
+      'full_name_extracted_automatically': 'سيتم استخراج اسمك الكامل من بطاقة الهوية تلقائياً',
       'vehicle_information': 'معلومات المركبة',
       'vehicle_type': 'نوع المركبة',
       'default': 'افتراضي',
@@ -939,6 +1023,10 @@ class AppLocalizations {
       'language': 'اللغة',
       'language_arabic': 'العربية',
       'language_english': 'الإنجليزية',
+      'dark_mode': 'الوضع الليلي',
+      'dark_mode_enabled': 'الوضع الليلي مفعّل',
+      'light_mode_enabled': 'الوضع النهاري مفعّل',
+      'appearance': 'المظهر',
 
       // System status / maintenance
       'system_maintenance_title': 'النظام قيد الصيانة',
@@ -958,6 +1046,7 @@ class AppLocalizations {
       'delivered_status': 'تم التسليم',
       'cancelled_status': 'ملغية',
       'rejected_status': 'مرفوضة',
+      'scheduled_status': 'مجدول',
       'unknown_status': 'غير معروف',
       
       // Stats
@@ -972,6 +1061,7 @@ class AppLocalizations {
       'driver_whatsapp_message': 'مرحباً {name}، أنا سائق التوصيل من تطبيق حر',
       'location_permission_driver_long': 'للعمل كسائق، يجب منح إذن الموقع "طوال الوقت".',
       'location_permission_explanation': '• استلام إشعارات الطلبات حتى عند إغلاق التطبيق\n• تتبع موقعك أثناء التوصيل\n• الظهور في قائمة السائقين المتاحين',
+      'background_location_permission_title': 'إذن الموقع في الخلفية',
       'background_location_explanation': 'عند تفعيل وضع "متصل"، سيقوم التطبيق بجمع موقعك في الخلفية وعرض إشعار دائم لإبقائك متاحًا لطلبات التوصيل.\n\nيُستخدم ذلك فقط لوظائف التطبيق الأساسية (تتبع السائق، الإشعارات، وتسليم الطلبات).',
       
       // Order Actions
@@ -999,6 +1089,12 @@ class AppLocalizations {
       'retake_photo': 'إعادة التقاط',
       
       // Merchant Order Actions
+      'order_not_found': 'الطلب غير موجود. قد يكون قد تم حذفه.',
+      'location_unavailable': 'تعذّر تحديث موقع السائق',
+      'discard_changes_title': 'تجاهل التغييرات؟',
+      'discard_changes_message': 'لديك بيانات غير محفوظة. هل تريد الخروج؟',
+      'discard_button': 'تجاهل',
+      'load_more_transactions': 'تحميل المزيد',
       'retry_action': 'إعادة المحاولة',
       'cancel_order_action': 'إلغاء الطلب',
       'repost_order': 'إعادة نشر (+500 د.ع)',
@@ -1013,30 +1109,114 @@ class AppLocalizations {
       'repost_action': 'إعادة نشر',
       'repost_order_new_fee': 'سيتم رفع رسوم التوصيل إلى {fee} د.ع (+500 د.ع)',
       'repost_button': 'إعادة النشر',
+
+      // Driver Rank
+      'driver_rank_title': 'رتبتي',
+      'current_rank': 'رتبتك الحالية',
+      'commission_label': 'عمولة',
+      'active_hours_notice': 'ساعات النشاط تحتسب فقط بين الساعة 08:00 صباحاً و 12:00 منتصف الليل.',
+      'wallet_balance': 'رصيد المحفظة',
+      'details': 'التفاصيل',
+      'rank_benefits': 'فوائد الرتب',
+      'current_badge': 'الحالية',
+      'trial_rank': 'تجريبي',
+      'bronze_rank': 'برونزي',
+      'silver_rank': 'فضي',
+      'gold_rank': 'ذهبي',
+      'trial_requirement': 'الشهر الأول فقط',
+      'bronze_requirement': 'الرتبة الافتراضية',
+      'silver_requirement': '150 ساعة شهرياً',
+      'gold_requirement': '240 ساعة شهرياً',
+      'trial_period_title': 'أنت في الفترة التجريبية',
+      'trial_period_message':
+          'في الشهر الأول من التسجيل، لا يتم خصم أي عمولة منك. بعد انتهاء الشهر الأول، سيتم تحويلك تلقائياً إلى الرتبة البرونزية.',
+      'top_rank_title': 'أنت في أعلى رتبة!',
+      'progress_to_rank': 'التقدم للرتبة {rank}',
+      'hours_value': '{hours} ساعة',
+      'hours_required': '{hours} ساعة مطلوبة',
+      'progress_completed': '{percent}% مكتمل',
+      'ranks_apply_monthly': 'الرتب الجديدة تُطبق كل شهر',
       
-      // Driver Dashboard Sidebar
+      // Sidebar Missing Keys
+      'driver_orders': 'طلباتي',
+      'driver_earnings': 'أرباحي',
       'help_support': 'المساعدة والدعم',
-      'driver_orders': 'الطلبات',
-      'driver_earnings': 'الأرباح',
       
-      // Location Permissions
-      'background_location_permission_title': 'معلومات مهمة عن الموقع بالخلفية',
-      'please_allow_always': 'الرجاء اختيار "السماح طوال الوقت" في الإعدادات',
-      'open_settings': 'فتح الإعدادات',
+      // Merchant Dashboard Missing Keys
+      'no_past_orders': 'لا توجد طلبات سابقة',
+      'no_current_orders': 'لا توجد طلبات حالية',
       
-      // Empty States
-      'no_current_orders': 'لا توجد طلبات نشطة',
-      'no_past_orders': 'لا توجد طلبات مكتملة',
-      'no_orders_in_period': 'لا توجد طلبات في هذه الفترة',
+      // Merchant Analytics
+      'stats_title': 'الإحصائيات',
+      'revenue_stats_title': 'إحصائيات الإيرادات',
+      'total_orders_title': 'إجمالي الطلبات',
+      'delivery_fees': 'رسوم التوصيل',
+      'avg_order_value': 'متوسط قيمة الطلب',
+      'performance_metrics': 'مقاييس الأداء',
+      'avg_delivery_time': 'متوسط وقت التوصيل',
+      'completion_rate': 'معدل الإكمال',
+      'cancellation_rate': 'معدل الإلغاء',
+      'active_orders_label': 'طلبات نشطة',
       
-      // Analytics
-      'orders_by_status': 'تصنيف الطلبات حسب الحالة',
-      'recent_orders': 'الطلبات الأخيرة',
-      'error_loading_stats': 'خطأ في تحميل الإحصائيات',
-      'total_orders': 'إجمالي الطلبات',
+      // Driver Dashboard Missing Keys
+      'not_available_short': 'غير متوفر',
+      'merchant_info_unavailable': 'معلومات التاجر غير متوفرة في النظام',
+      'cannot_make_call': 'لا يمكن إجراء المكالمة',
+      'cannot_open_whatsapp': 'لا يمكن فتح واتساب',
+      'invalid_coordinates': 'إحداثيات غير صالحة',
+      'cannot_open_google_maps': 'لا يمكن فتح خرائط جوجل',
+      'failed_open_google_maps': 'فشل فتح خرائط جوجل',
+      'cannot_open_waze': 'لا يمكن فتح تطبيق ويز',
+      'failed_open_waze': 'فشل فتح تطبيق ويز',
+      'waiting_location_permission': 'في انتظار إذن الموقع...',
+      'determining_location': 'جاري تحديد الموقع...',
+      'current_location_status': 'موقعك الحالي',
+      'last_known_location': 'آخر موقع معروف',
+      'uploading_progress': 'جاري الرفع...',
+      'confirm_and_finish': 'تأكيد وإنهاء',
+      'your_location_button': 'موقعك',
+      'accept_order_button': 'قبول الطلب',
+      'time_remaining_label': 'الوقت المتبقي: ',
+
+      // Delivery Timer - Late popup & info
+      'delivery_late_title': 'الطلب متأخر',
+      'delivery_late_message':
+          'هذا الطلب أصبح متأخراً.\n\nإذا تم رفضه، فلن يتم تعويضك عن أجرة الطلب وأجرة التوصيل من التاجر أو من التطبيق.',
+      'delivery_late_ack': 'فهمت',
+      'delivery_timer_info_title': 'عن مؤقت التوصيل',
+      'delivery_timer_info_message':
+          'هذا المؤقت يوضح الحد الأقصى للوقت المخصص لتوصيل هذا الطلب. هذا الوقت يحتوي على هامش أمان إضافي، لذلك هو أكثر من كافٍ للتوصيل في الظروف الطبيعية.\n\nإذا تجاوزت هذا الوقت وتم رفض الطلب من قبل الزبون، قد تكون مسؤولاً عن أجرة الطلب وأجرة التوصيل وقد لا يتم تعويضك عنهما من التاجر أو من التطبيق.',
+      'late_duration_label': 'متأخر: ',
+      'delivery_duration_title': 'مدة التوصيل',
+      'delivery_duration_not_available': 'غير متوفر',
+      'delivery_duration_on_time': 'ضمن الوقت',
+      'delivery_duration_late': 'متأخر',
+
+      // Global Error Manager
+      'err_network_title': 'لا يوجد إنترنت',
+      'err_network_body': 'تحقق من اتصالك بالإنترنت ثم أعد المحاولة.',
+      'err_timeout_title': 'انتهت المهلة',
+      'err_timeout_body': 'الاتصال بطيء جداً. يرجى المحاولة مرة أخرى.',
+      'err_server_conn_title': 'فشل الاتصال',
+      'err_server_conn_body': 'فشل الاتصال بالخادم، يتم إعادة المحاولة تلقائياً.',
+      'err_auth_expired_title': 'انتهت الجلسة',
+      'err_auth_expired_body': 'يُرجى تسجيل الدخول مرة أخرى للمتابعة.',
+      'err_auth_invalid_title': 'بيانات غير صحيحة',
+      'err_auth_invalid_body': 'تحقق من بيانات الدخول وأعد المحاولة.',
+      'err_server_title': 'خطأ في الخادم',
+      'err_server_body': 'حدث خطأ في الخادم. يرجى المحاولة لاحقاً.',
+      'err_rate_limit_title': 'طلبات كثيرة',
+      'err_rate_limit_body': 'انتظر لحظة ثم أعد المحاولة.',
+      'err_not_found_title': 'غير موجود',
+      'err_not_found_body': 'المحتوى المطلوب غير موجود.',
+      'err_permission_title': 'غير مصرح',
+      'err_permission_body': 'ليس لديك صلاحية للوصول إلى هذا المحتوى.',
+      'err_unknown_title': 'خطأ',
+      'err_unknown_body': 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+      'err_retry': 'إعادة المحاولة',
+      'err_dismiss': 'إغلاق',
     },
     'en': {
-      // General
       'app_title': 'Hur Delivery',
       'ok': 'OK',
       'cancel': 'Cancel',
@@ -1044,20 +1224,13 @@ class AppLocalizations {
       'retry': 'Retry',
       'loading': 'Loading...',
       'error_generic': 'An unexpected error occurred',
-
-      // Connectivity
       'no_internet_title': 'No Internet Connection',
-      'no_internet_message':
-          'Please check your internet connection and try again.',
-
-      // Auth / Onboarding
-      'login': 'Log In',
-      'logout': 'Log Out',
+      'login': 'Login',
+      'logout': 'Logout',
       'phone_number': 'Phone Number',
       'enter_phone_number': 'Enter your phone number',
-      'enter_iraqi_phone_login': 'Enter your Iraqi phone number to log in',
-      'enter_iraqi_phone_otp':
-          'Enter your Iraqi phone number to receive a verification code via WhatsApp',
+      'enter_iraqi_phone_login': 'Enter your Iraqi phone number to login',
+      'enter_iraqi_phone_otp': 'Enter your Iraqi phone number to receive OTP via WhatsApp',
       'send_code': 'Send Code',
       'verify_code': 'Verify Code',
       'resend_code': 'Resend Code',
@@ -1066,38 +1239,36 @@ class AppLocalizations {
       'merchant': 'Merchant',
       'customer': 'Customer',
       'user': 'User',
-      'select_role': 'Select account type',
+      'select_role': 'Select Account Type',
       'welcome_to_hur': 'Welcome to Hur Delivery',
-      'fast_delivery_service': 'Fast delivery service',
-      'platform_for_drivers_merchants':
-          'Delivery platform for drivers and merchants',
-      'have_account': 'Account exists',
-      'no_account': 'No account found',
+      'fast_delivery_service': 'Fast Delivery Service',
+      'platform_for_drivers_merchants': 'Delivery Platform for Drivers and Merchants',
+      'have_account': 'Have an account?',
+      'no_account': 'No account?',
       'create_account': 'Create Account',
-      'change_phone': 'Change phone number',
-      'enter_otp': 'Enter verification code',
-      'otp_sent_to': 'Verification code sent to',
-      'test_number_hint': '🧪 Test number: use code 000000',
+      'try_app': 'Try App',
+      'demo_mode_title': 'Try App',
+      'demo_mode_info': 'In demo mode, you can explore the app but cannot create orders or go online',
+      'demo_merchant': 'Demo Merchant',
+      'demo_merchant_desc': 'Explore merchant dashboard',
+      'demo_driver': 'Demo Driver',
+      'demo_driver_desc': 'Explore driver dashboard',
+      'change_phone': 'Change Phone Number',
+      'enter_otp': 'Enter OTP',
+      'otp_sent_to': 'OTP sent to',
+      'test_number_hint': '🧪 Test Number: Use 000000',
       'sent_via_whatsapp': 'Sent via WhatsApp',
-      'confirm_otp': 'Confirm Code',
-      'resend_otp': 'Resend Code',
-      'resend_in_seconds': 'You can resend in {seconds} seconds',
+      'confirm_otp': 'Confirm OTP',
+      'resend_otp': 'Resend OTP',
+      'resend_in_seconds': 'Resend in {seconds} seconds',
       'otp_failed_identity': 'Identity verification failed',
-      'otp_invalid': 'Invalid verification code',
-      'otp_resent_via': 'Verification code resent via {method}',
-      'otp_send_error': 'Error sending verification code',
-      'no_account_for_phone':
-          'No account is registered with this number. Please sign up first.',
-      'user_data_error':
-          'User data error. Please contact support.',
-      'enter_valid_iraqi_phone':
-          'Enter a valid 10-digit Iraqi phone number starting with 7',
-      'phone_required': 'Phone number is required',
+      'otp_invalid': 'Invalid OTP',
+      'otp_resent_via': 'OTP resent via {method}',
+      'otp_send_error': 'Error sending OTP',
+      'no_account_title': 'No Account',
+      'error_selecting_image': 'Error selecting image: ',
+      'phone_required': 'Phone number required',
       'phone_must_be_10_digits': 'Phone number must be 10 digits',
-      'phone_must_start_with_pattern':
-          'Phone must start with 7 or 78000000XX (driver) or 77000000XX (merchant) or 999 (test)',
-
-      // Dashboards
       'dashboard_driver_title': 'Driver Dashboard',
       'dashboard_merchant_title': 'Merchant Dashboard',
       'dashboard_admin_title': 'Admin Dashboard',
@@ -1105,6 +1276,7 @@ class AppLocalizations {
       'wallet': 'Wallet',
       'support': 'Support',
       'voice': 'Voice',
+      'stats': 'Stats',
       'overview': 'Overview',
       'users': 'Users',
       'orders': 'Orders',
@@ -1112,16 +1284,16 @@ class AppLocalizations {
       'driver_online': 'Online',
       'driver_offline': 'Offline',
       'unregistered': 'Unregistered',
-      'must_login_first': 'You must log in first',
+      'must_login_first': 'Must login first',
       'accepted': 'Accepted',
       'accept_success': 'Order accepted successfully',
       'rejected': 'Rejected',
-      'reject_success': 'Order rejected successfully',
+      'reject_success': 'Order rejected',
       'error': 'Error',
-      'operation_error': 'An error occurred',
-      'accept_error': 'Failed to accept order',
-      'reject_error': 'Failed to reject order',
-      'order_number': 'Order No.',
+      'operation_error': 'Operation error',
+      'accept_error': 'Error accepting order',
+      'reject_error': 'Error rejecting order',
+      'order_number': 'Order #',
       'delivery_fee': 'Delivery Fee',
       'order_value': 'Order Value',
       'distance_label': 'Distance',
@@ -1129,67 +1301,48 @@ class AppLocalizations {
       'merchant_label': 'Merchant',
       'customer_label': 'Customer',
       'location_label': 'Location',
-      'cancel': 'Cancel',
       'confirm': 'Confirm',
-      'confirm_go_offline_title': 'Confirm going offline',
-      'confirm_go_offline_message':
-          'Are you sure you want to stop receiving orders? Location tracking and new order notifications will be stopped.',
-      'order_ready_now': 'Order is ready now',
+      'confirm_go_offline_title': 'Confirm Go Offline',
+      'confirm_go_offline_message': 'Are you sure you want to stop receiving orders? Your location tracking and order notifications will be stopped.',
+      'order_ready_now': 'Order Ready Now',
       'status_pending': 'Pending',
       'status_assigned': 'Assigned',
       'status_accepted': 'Accepted',
-      'status_on_the_way': 'On the way',
+      'status_on_the_way': 'On the Way',
       'status_delivered': 'Delivered',
       'status_cancelled': 'Cancelled',
       'status_unassigned': 'Unassigned',
       'status_rejected': 'Rejected',
+      'status_scheduled': 'Scheduled',
       'status_unknown': 'Unknown',
-      'in_progress_title': 'On the way',
-      'in_progress_message': 'Delivery to customer has started',
-      'delivery_confirm_title': 'Confirm delivery',
-      'delivery_confirm_question':
-          'Have you delivered the order to the customer?',
-      'delivery_confirm_hint':
-          'Make sure the customer has received the order before confirming',
-      'delivery_error_title': 'Delivery error',
-      'delivery_error_unknown': 'Unknown error',
+      'in_progress_title': 'In Progress',
+      'in_progress_message': 'Delivery started',
+      'delivery_confirm_title': 'Confirm Delivery',
+      'delivery_error_title': 'Delivery Error',
+      'delivery_error_unknown': 'Unknown Error',
       'delivery_success_title': 'Delivered',
       'delivery_success_message': 'Order delivered successfully',
       'warning_title': 'Warning',
-      'merchant_info_missing': 'Merchant information is not available',
-      'call_merchant_title': 'Call merchant',
-      'call_customer_title': 'Call customer',
+      'merchant_info_missing': 'Merchant info missing',
+      'call_merchant_title': 'Call Merchant',
+      'call_customer_title': 'Call Customer',
       'call_title': 'Call',
       'privacy_policy': 'Privacy Policy',
-      'terms_and_conditions': 'Terms and Conditions',
+      'terms_and_conditions': 'Terms & Conditions',
       'no_orders_yet': 'No orders yet',
       'error_label': 'Error: ',
       'not_available': 'Not available',
-      'call_error_message': 'Unable to make the call',
-      'whatsapp_call': 'Call via WhatsApp',
-      'whatsapp_message': 'WhatsApp message',
-      'whatsapp_open_error': 'Unable to open WhatsApp',
-      'whatsapp_driver_message':
-          'Hello {name}, I am the delivery driver from Hur app',
+      'call_error_message': 'Cannot make call',
+      'whatsapp_call': 'WhatsApp Call',
+      'whatsapp_message': 'WhatsApp Message',
+      'whatsapp_open_error': 'Cannot open WhatsApp',
       'invalid_coordinates': 'Invalid coordinates',
-      'maps_open_error': 'Unable to open Google Maps',
+      'maps_open_error': 'Cannot open Google Maps',
       'maps_launch_failed': 'Failed to launch Google Maps',
-      'waze_open_error': 'Unable to open Waze',
+      'waze_open_error': 'Cannot open Waze',
       'waze_launch_failed': 'Failed to launch Waze',
-      'location_permission_required_title': 'Location permission required',
-      'location_permission_required_message':
-          'To work as a driver, you must grant "Always" location permission.',
-      'location_permission_benefits':
-          'This allows you to:\n• Receive order notifications even when the app is closed\n• Track your location during delivery\n• Appear in the list of available drivers',
-      'location_permission_settings_hint':
-          'Please choose "Allow all the time" in settings',
-      'open_settings': 'Open settings',
-      'background_location_info_title':
-          'Important information about background location',
-      'background_location_info_message':
-          'When you enable Online mode, the app will collect your location in the background and show a persistent notification to keep you available for delivery requests.\n\nThis is only used for core app functions (driver tracking, notifications, and order delivery).',
-
-      // Orders
+      'location_permission_required_title': 'Location Permission Required',
+      'open_settings': 'Open Settings',
       'orders_active': 'Active Orders',
       'orders_completed': 'Completed Orders',
       'no_active_orders': 'No active orders',
@@ -1201,7 +1354,7 @@ class AppLocalizations {
       'bulk_order': 'Bulk Order',
       'voice_order': 'Voice Order',
       'order_number_prefix': 'Order #',
-      'party_info': 'Party Information',
+      'party_info': 'Party Info',
       'customer_phone': 'Customer Phone',
       'driver_phone': 'Driver Phone',
       'searching_driver': 'Searching for driver...',
@@ -1211,145 +1364,160 @@ class AppLocalizations {
       'delivery_locations': 'Delivery Locations',
       'from': 'From',
       'to': 'To',
-      'delivery_proof': 'Delivery Proof Photos',
+      'delivery_proof': 'Delivery Proof',
       'order_items': 'Order Items',
       'financial_summary': 'Financial Summary',
-      'order_price_no_delivery': 'Order Price (without delivery fee)',
+      'order_price_no_delivery': 'Order Price (excl. delivery)',
       'grand_total': 'Grand Total',
       'total_amount': 'Total Amount',
       'notes': 'Notes',
       'cancel_order': 'Cancel Order',
       'cancel_order_confirm': 'Are you sure you want to cancel this order?',
-      'order_cancelled': 'Order cancelled',
+      'order_cancelled': 'Order Cancelled',
       'order_cancel_failed': 'Failed to cancel order',
-      'all_drivers_rejected': 'This order was rejected by all available drivers',
-      'repost_order': 'Repost (+500 IQD)',
+      'all_drivers_rejected': 'All available drivers rejected this order',
+      'repost_order': 'Repost Order (+500 IQD)',
       'reject_order': 'Reject Order',
       'accept_order': 'Accept Order',
       'picked_up': 'Picked Up',
       'on_the_way': 'On the Way',
       'delivered': 'Delivered',
-      'track_driver': 'Track Driver Location',
+      'track_driver': 'Track Driver',
       'contact_support': 'Contact Support',
-      'insufficient_balance_repost': 'Insufficient balance. Please top up your wallet first to repost the order',
-      'merchant_data_error': 'Unable to identify the merchant associated with this order. Please try again later.',
+      'insufficient_balance_repost': 'Insufficient balance to repost order. Please top up.',
+      'merchant_data_error': 'Merchant data error. Please try again.',
       'no_drivers_available': 'No drivers available',
       'repost_order_title': 'Repost Order',
-      'repost_order_message': 'The order will be reposted with increased delivery fee:',
+      'repost_order_message': 'Order will be reposted with increased delivery fee:',
       'current_delivery_fee': 'Current Delivery Fee:',
       'new_delivery_fee': 'New Delivery Fee:',
-      'repost_order_hint': 'The order will be assigned to drivers again.',
-      'repost_success': 'Order reposted successfully! It will be assigned to drivers.',
+      'repost_order_hint': 'Order will be assigned to drivers again.',
+      'repost_success': 'Order reposted successfully.',
       'repost_error': 'Error reposting order',
-      'driver_assigned_soon': 'A driver will be assigned soon',
-      'order_accepted': 'Order accepted',
+      'driver_assigned_soon': 'Driver will be assigned soon',
+      'order_accepted': 'Order Accepted',
       'reject_order_confirm': 'Are you sure you want to reject this order?',
-      'order_rejected': 'Order rejected',
-      'pickup_confirmed': 'Pickup confirmed',
-      'delivery_started': 'Delivery started',
-      'delivery_confirmed': 'Delivery confirmed',
-      'support_message_template': 'Hello, I need help regarding order #',
-      'whatsapp_open_failed': 'Unable to open WhatsApp',
+      'order_rejected': 'Order Rejected',
+      'pickup_confirmed': 'Pickup Confirmed',
+      'delivery_started': 'Delivery Started',
+      'delivery_confirmed': 'Delivery Confirmed',
+      'support_message_template': 'Hi, I need help with Order #',
+      'whatsapp_open_failed': 'Cannot open WhatsApp',
       'whatsapp_error': 'Error opening WhatsApp',
       'am': 'AM',
       'pm': 'PM',
       'status_created': 'Created',
-      'no_delivery_proof': 'No proof photos uploaded for this order yet',
+      'no_delivery_proof': 'No delivery proof yet',
       'currency_symbol': 'IQD',
-      'insufficient_balance_create': 'Please top up your wallet to create a new order',
-      'form_filled_from_voice': '✅ Form filled from voice recording',
+      'insufficient_balance_create': 'Please top up to create new order',
+      'form_filled_from_voice': '✅ Form filled from voice',
       'store_location': 'Store Location',
       'location_selected': 'Location Selected',
-      'pick_location_pickup': 'Select Pickup Location',
-      'pick_location_delivery': 'Select Delivery Location',
+      'pick_location_pickup': 'Pick Pickup Location',
+      'pick_location_delivery': 'Pick Delivery Location',
       'location_success': 'Success',
       'location_success_message': 'Location selected successfully',
       'location_not_found': 'Location not found in Najaf',
       'location_error': 'Error selecting location',
       'checking_drivers': 'Checking available drivers...',
       'no_drivers_online': 'No drivers online',
-      'cannot_create_order': 'Cannot create order at this time. Please try again later.',
-      'drivers_online': 'driver(s) online and available for delivery',
-      'drivers_available_now': 'Drivers are available for delivery',
+      'cannot_create_order': 'Cannot create order right now. Please try again later.',
+      'all_drivers_busy': 'All drivers are busy',
+      'drivers_online': 'Driver online and available',
+      'drivers_available_now': 'Drivers available now',
       'refresh': 'Refresh',
-      'free_driver_available': 'There are available drivers now.',
-      'same_merchant_driver_available': 'The order will be assigned to a driver currently serving the same merchant.',
-      'no_driver_available': 'No online and free drivers available, and no driver serving the same merchant can take an additional order.',
-      'fallback_no_online_drivers': 'No drivers are currently online. Please try again later.',
-      'fallback_exception': 'Unable to verify driver availability. Please try again later or contact support.',
-      'unknown_availability': 'Unable to determine driver availability at this time. Please try again.',
-      'customer_info': 'Customer Information',
-      'customer_name_optional': 'Customer Name (optional)',
+      'free_driver_available': 'Drivers are available.',
+      'same_merchant_driver_available': 'Order will be assigned to a driver serving you.',
+      'no_driver_available': 'No drivers available.',
+      'fallback_no_online_drivers': 'No drivers online. Try again later.',
+      'fallback_exception': 'Cannot check driver availability.',
+      'unknown_availability': 'Unknown driver availability.',
+      'customer_info': 'Customer Info',
+      'customer_name_optional': 'Customer Name (Optional)',
       'enter_customer_name': 'Enter customer name',
       'locations': 'Locations',
       'pickup_location': 'Pickup Location',
-      'pickup_location_hint': 'Type address or select from map',
+      'pickup_location_hint': 'Enter address or pick from map',
+      'advanced_settings': 'Advanced Settings',
       'delivery_location': 'Delivery Location',
-      'delivery_location_hint': 'Type address or select from map',
+      'delivery_location_hint': 'Enter address or pick from map',
       'prices': 'Prices',
-      'delivery_fee_required': 'Delivery fee is required',
-      'enter_valid_number': 'Enter a valid number',
-      'amount_required': 'Amount is required',
+      'delivery_fee_required': 'Delivery fee required',
+      'low_delivery_fee_warning': 'The fee is too low. It may be difficult to get a driver with this amount. Recommended fee',
+      'enter_valid_number': 'Enter valid number',
+      'amount_required': 'Amount required',
       'vehicle_type': 'Vehicle Type',
-      'select_vehicle_type': 'Select required vehicle type',
-      'any_vehicle': 'Any available vehicle',
+      'select_vehicle_type': 'Select Vehicle Type',
+      'any_vehicle': 'Any Vehicle',
       'default': 'Default',
-      'any_vehicle_hint': 'Nearest driver with any vehicle type will be assigned',
+      'any_vehicle_hint': 'Assign nearest driver with any vehicle',
       'motorbike': 'Motorbike',
       'car': 'Car',
       'truck': 'Truck',
-      'motorbike_hint': 'Order will be sent to motorbike drivers',
-      'car_hint': 'Order will be sent to car drivers only',
-      'truck_hint': 'Order will be sent to truck drivers only',
-      'notes_optional': 'Notes (optional)',
+      'motorbike_hint': 'Order sent to motorbikes',
+      'car_hint': 'Order sent to cars',
+      'truck_hint': 'Order sent to trucks',
+      'order_driver_for_day': 'Order Driver for Full Day',
+      'bulk_order_description': 'Book a driver for a full day to deliver orders in specified neighborhoods',
+      'order_date': 'Order Date',
+      'delivery_neighborhoods': 'Delivery Neighborhoods',
+      'minimum_three': 'Minimum 3',
+      'add_neighborhood': 'Add Neighborhood',
+      'select_neighborhood': 'Select Neighborhood',
+      'minimum_three_neighborhoods': 'Must select at least 3 neighborhoods',
+      'per_delivery_fee': 'Per Delivery Fee',
+      'bulk_order_fee': 'Driver Booking Fee',
+      'bulk_order_fee_description': 'Fixed fee for booking a driver for a full day',
+      'create_bulk_order': 'Create Driver Order',
+      'bulk_order_created_success': 'Driver order created successfully',
+      'bulk_order_accepted_success': 'Driver order accepted successfully',
+      'bulk_order_active': 'Driver order accepted - ready for deliveries',
+      'notes_optional': 'Notes (Optional)',
       'additional_notes': 'Additional Notes',
-      'add_notes_hint': 'Add any notes here...',
-      'when_ready': 'When can you prepare the order?',
-      'ready_now': 'Order is ready now',
-      'ready_after_minutes': 'Order will be ready after {minutes} minutes',
-      'now': 'Now',
+      'add_notes_hint': 'Add notes here...',
+      'when_ready': 'When will it be ready?',
+      'ready_now': 'Ready Now',
+      'ready_after_minutes': 'Ready after {minutes} minutes',
       'minutes': 'minutes',
       'sixty_minutes': '60 minutes',
       'grand_total_label': 'Grand Total',
       'creating_order': 'Creating...',
       'order_created': 'Order Created',
       'order_created_success': 'Order created successfully',
-      'order_created_ready_after': 'Order will be ready after {minutes} minutes',
+      'order_created_ready_after': 'Ready after {minutes} minutes',
       'order_create_error': 'Error creating order',
-      'customer_phone_label': 'Customer Phone Number',
-      'phone_invalid_format': 'Enter a valid 10-digit Iraqi number starting with 7',
+      'customer_phone_label': 'Customer Phone',
+      'phone_invalid_format': 'Enter valid Iraqi number starting with 7 (10 digits)',
       'open_map': 'Open Map',
       'search_address': 'Search Address',
       'view_details': 'View Details',
-      'order_display_error': 'Error displaying order',
-      'ago_minutes': '{minutes} minutes ago',
-      'ago_hours': '{hours} hours ago',
+      'order_display_error': 'Order display error',
+      'ago_minutes': '{minutes} min ago',
+      'ago_hours': '{hours} hr ago',
       'ago_days': '{days} days ago',
-      'days_short': 'day',
-      'hours_short': 'hr',
+      'days_short': 'd',
+      'hours_short': 'h',
       'status_waiting': 'Waiting',
       'customer_name_fallback': 'Customer',
-      'phone_not_available': 'Not available',
+      'phone_not_available': 'N/A',
       'pickup_address_fallback': 'Pickup Address',
       'delivery_address_fallback': 'Delivery Address',
       'grand_total_with_delivery': 'Grand Total (Order + Delivery)',
       'assigned_status': 'Assigned',
       'required': 'Required',
-      // Voice Order
-      'voice_order': 'Voice Order',
-      'microphone_permission_required': 'Please allow microphone access',
+      'microphone_permission_required': 'Microphone permission required',
       'recording': 'Recording...',
-      'processing_audio': 'Processing audio...',
-      'click_to_start': 'Tap to start',
-      'extracting_data': 'Extracting data from audio',
+      'processing_audio': 'Processing Audio...',
+      'click_to_start': 'Click to Start',
+      'extracting_data': 'Extracting data...',
       'speak_order_details': 'Speak order details clearly',
-      'how_to_use': 'How to use',
-      'say_customer_name': 'Say customer name: "Name: Ahmad Mohammed"',
-      'say_phone': 'Say phone number: "Phone: 0771234567"',
-      'say_pickup': 'Say pickup location: "From: Karada Street"',
-      'say_delivery': 'Say delivery location: "To: Mansour"',
-      'say_amount': 'Say amount: "Amount: fifty thousand dinars"',
-      'voice_library': 'Previous Recordings Library',
+      'how_to_use': 'How to Use',
+      'say_customer_name': 'Say Customer Name',
+      'say_phone': 'Say Phone',
+      'say_pickup': 'Say Pickup',
+      'say_delivery': 'Say Delivery',
+      'say_amount': 'Say Amount',
+      'voice_library': 'Voice Library',
       'stop_recording': 'Stop Recording',
       'processing': 'Processing...',
       'start_voice_recording': 'Start Voice Recording',
@@ -1359,73 +1527,85 @@ class AppLocalizations {
       'pickup_label': 'Pickup',
       'delivery_label': 'Delivery',
       'amount_label': 'Amount',
-      'confirm_create_order': 'Confirm & Create Order',
-      'transcription': 'Transcription from Audio',
-      'extraction_accuracy': 'Extraction Accuracy: ',
+      'confirm_create_order': 'Confirm & Create',
+      'transcription': 'Transcription',
+      'extraction_accuracy': 'Accuracy: ',
       'missing_fields': 'Missing fields: ',
-      'no_drivers_available_now': 'No drivers available at this time. Please try again later.',
+      'no_drivers_available_now': 'No drivers available now.',
       'error_starting_recording': 'Error starting recording: ',
       'error_stopping_recording': 'Error stopping recording: ',
-      'recording_loaded_success': 'Recording loaded successfully',
+      'recording_loaded_success': 'Recording loaded',
       'recording_load_failed': 'Failed to load recording: ',
       'audio_processing_failed': 'Audio processing failed: ',
-      'error': 'Error: ',
-      'incomplete_data': 'Incomplete data. Please ensure: name, phone, and addresses are present',
+      'incomplete_data': 'Incomplete data. Please ensure Name, Phone, and Addresses.',
       'alert': 'Alert',
-      'low_confidence': 'Low data extraction accuracy ({percent}%). Please verify data before proceeding.',
+      'low_confidence': 'Low confidence ({percent}%). Please verify data.',
       'continue_action': 'Continue',
-      'customer_phone_required': 'Customer phone number is required',
-      'pickup_address_required': 'Pickup address is required',
-      'delivery_address_required': 'Delivery address is required',
+      'customer_phone_required': 'Customer phone required',
+      'customer_phone_required_for_pickup': 'Customer phone number is required before confirming pickup',
+      'customer_phone_optional': 'Customer Phone (Optional)',
+      'assign_to_same_driver': 'Assign to Same Driver',
+      'current_driver': 'Current Driver',
+      'contact_driver': 'Contact Driver',
+      'call_via_whatsapp': 'WhatsApp',
+      'driver_info_not_available': 'Driver information not available',
+      'driver_phone_not_available': 'Phone number not available',
+      'hello_driver': 'Hello',
+      'close': 'Close',
+      'multiple_orders': 'Multiple Orders',
+      'multiple_orders_description': 'Create multiple orders for delivery to different neighborhoods',
+      'create_multiple_orders': 'Create Multiple Orders',
+      'pickup_address_required': 'Pickup address required',
+      'delivery_address_required': 'Delivery address required',
       'order_created_success_voice': '✅ Order created successfully',
       'order_create_error_voice': 'Error creating order: ',
-      // Wallet
       'my_wallet': 'My Wallet',
-      'please_top_up': 'Please top up your wallet',
-      'balance_low': 'Balance is low',
-      'balance_good': 'Balance is good',
+      'please_top_up': 'Please Top Up',
+      'balance_low': 'Low Balance',
+      'balance_good': 'Good Balance',
       'current_balance': 'Current Balance',
       'credit_limit': 'Credit Limit: ',
       'top_up_wallet': 'Top Up Wallet',
+      'fee_exempt_banner': 'You are exempt from fees',
+      'fee_exempt_message': 'Since you registered less than a month ago, no fees will be deducted from your wallet',
+      'fee_exempt_until': 'Exemption until',
       'total_orders': 'Total Orders',
       'total_fees': 'Total Fees',
       'no_transactions': 'No transactions',
       'recent_transactions': 'Recent Transactions',
       'balance': 'Balance: ',
-      // Settings
-      'notifications_enabled': 'Notifications enabled',
-      'notifications_denied': 'Notification permission denied',
+      'notifications_enabled': 'Notifications Enabled',
+      'notifications_denied': 'Notifications Denied',
       'notification_settings': 'Notification Settings',
-      'notification_settings_hint': 'To change notification settings, please go to app settings in the system.',
-      'open_settings': 'Open Settings',
+      'notification_settings_hint': 'Change notification settings in system settings.',
       'notifications': 'Notifications',
+      'general': 'General',
       'instant_notifications': 'Instant Notifications',
-      'receive_notifications': 'Receive notifications about orders and updates',
-      'notifications_disabled': 'Notifications disabled - open app settings to enable',
+      'receive_notifications': 'Receive order notifications',
+      'notifications_disabled': 'Notifications disabled',
       'sound': 'Sound',
       'sound_subtitle': 'Play sound for notifications',
       'vibration': 'Vibration',
-      'vibration_subtitle': 'Enable vibration for notifications',
+      'vibration_subtitle': 'Vibrate for notifications',
       'app': 'App',
       'about_app': 'About App',
-      'app_description': 'Advanced delivery app for managing orders and drivers',
-      'app_description_driver': 'Advanced delivery app for managing orders',
+      'app_description': 'Advanced delivery app',
+      'app_description_driver': 'Advanced delivery app for drivers',
       'version': 'Version ',
       'location': 'Location',
       'location_permission': 'Location Permission',
-      'location_permission_subtitle': 'Must grant "Always" permission to receive orders',
+      'location_permission_subtitle': '\'Always\' permission required for orders',
       'check': 'Check',
-      'location_permission_required_driver': 'To receive delivery orders, you must grant "Always" location permission.\n\nThis allows the app to track your location during delivery and send new order notifications.',
+      'location_permission_required_driver': 'Always location permission required for driver mode.',
       'receive_order_notifications': 'Receive new order notifications',
-      // Profile
       'edit_profile': 'Edit Profile',
       'profile_updated_success': 'Profile updated successfully',
-      'error_occurred': 'An error occurred: ',
-      'feature_coming_soon': 'This feature will be added soon',
+      'error_occurred': 'Error occurred: ',
+      'feature_coming_soon': 'Feature coming soon',
       'name': 'Name',
-      'name_required': 'Please enter name',
+      'name_required': 'Name required',
       'store_name': 'Store Name',
-      'store_name_required': 'Please enter store name',
+      'store_name_required': 'Store Name Required',
       'phone_number_label': 'Phone Number',
       'address': 'Address',
       'save_changes': 'Save Changes',
@@ -1433,9 +1613,9 @@ class AppLocalizations {
       'profile_saved_success': 'Profile saved successfully',
       'error_saving_profile': 'Error saving profile',
       'no_user_data': 'No user data',
-      'account_info': 'Account Information',
+      'account_info': 'Account Info',
       'name_required_field': 'Name is required',
-      'phone_cannot_change': 'Phone number cannot be changed',
+      'phone_cannot_change': 'Cannot change phone number',
       'account_status': 'Account Status',
       'verification_status': 'Verification Status',
       'verified': 'Verified',
@@ -1443,13 +1623,16 @@ class AppLocalizations {
       'status': 'Status',
       'registration_date': 'Registration Date',
       'enter_label': 'Enter ',
+      'pick_store_location': 'Pick Store Location',
+      'pick_on_map': 'Pick on Map',
+      'store_location_placeholder': 'Tap the map icon to set exact location',
+      'address_required': 'Address is required',
+      'location_saved_on_map': 'Location saved on map',
       // Messaging
-      'support': 'Support',
-      'failed_open_support': 'Failed to open support conversation. Please try again.',
-      'retry': 'Retry',
-      'open_messages_list': 'Open Messages List',
-      'failed_select_image': 'Failed to select image. Please try again.',
-      'failed_send_message': 'Failed to send message. Please try again.',
+      'failed_open_support': 'Failed to open support chat.',
+      'open_messages_list': 'Open Messages',
+      'failed_select_image': 'Failed to select image.',
+      'failed_send_message': 'Failed to send message.',
       'conversation': 'Conversation',
       'order': 'Order: ',
       'reply': 'Reply',
@@ -1459,231 +1642,195 @@ class AppLocalizations {
       'technical_support': 'Technical Support',
       'conversation_label': 'Conversation',
       'support_order': 'Support ',
-      // Legal
-      'error_loading_privacy': 'Error loading privacy policy',
-      'error_loading_terms': 'Error loading terms and conditions',
-      // Login with Password
-      'login_with_password': 'Log In',
-      'welcome_back': 'Welcome back',
-      'enter_phone_password': 'Enter your phone number and password',
-      'invalid_phone': 'Invalid phone number',
+      'error_loading_privacy': 'Error loading Privacy Policy',
+      'error_loading_terms': 'Error loading Terms',
+      'login_with_password': 'Login with Password',
+      'welcome_back': 'Welcome Back',
+      'enter_phone_password': 'Enter phone and password',
+      'invalid_phone': 'Invalid Phone',
       'password': 'Password',
-      'password_required': 'Password is required',
-      'invalid_credentials': 'Invalid login credentials',
-      'forgot_password': 'Forgot password?',
-      // Driver Orders
+      'password_required': 'Password required',
+      'invalid_credentials': 'Invalid credentials',
+      'forgot_password': 'Forgot Password?',
       'my_orders': 'My Orders',
       'all': 'All',
       'pending': 'Pending',
-      'accepted': 'Accepted',
       'completed': 'Completed',
       'cancelled': 'Cancelled',
       'no_pending_orders': 'No pending orders',
       'no_accepted_orders': 'No accepted orders',
-      'no_completed_orders': 'No completed orders',
-      'no_cancelled_orders': 'No cancelled orders',
+      'no_cancelled_orders': 'No completed orders',
       'no_orders': 'No orders',
       'order_price': 'Order Price',
-      'customer': 'Customer: ',
-      'from': 'From: ',
-      'to': 'To: ',
       'order_time': 'Order Time: ',
-      'notes': 'Notes:',
-      'accept_order': 'Accept Order',
       'reject': 'Reject',
       'complete_order': 'Complete Order',
       'in_transit': 'In Transit',
-      'delivered': 'Delivered',
-      'rejected': 'Rejected',
       'unknown': 'Unknown',
-      // Driver Earnings
       'earnings': 'Earnings',
-      'driver_id_not_found': 'Error: Driver ID not found',
-      'classify_orders_by_status': 'Classify Orders by Status',
+      'driver_id_not_found': 'Driver ID not found',
+      'classify_orders_by_status': 'Orders by status',
       'recent_orders': 'Recent Orders',
       'no_orders_in_period': 'No orders in this period',
-      'error_loading_stats': 'Error loading statistics',
+      'error_loading_stats': 'Error loading stats',
       'today': 'Today',
       'week': 'Week',
       'month': 'Month',
-      'rejected': 'Rejected',
-      'total_orders': 'Total Orders',
       'active_orders': 'Active Orders',
-      'delivered': 'Delivered',
       'acceptance_rate': 'Acceptance Rate',
       'cancelled_rejected': 'Cancelled/Rejected',
       'hour': 'hour',
       'minute': 'minute',
-      'average_delivery_time': 'Average Delivery Time',
-      'from_acceptance_to_delivery': 'From order acceptance to delivery',
+      'average_delivery_time': 'Avg Delivery Time',
+      'from_acceptance_to_delivery': 'From acceptance to delivery',
       'based_on_completed': 'Based on ',
       'completed_orders': ' completed orders',
       'earnings_summary': 'Earnings Summary',
       'total_earnings': 'Total Earnings',
-      'average_earnings_per_order': 'Average Earnings per Order',
-      // Notifications
-      'notifications': 'Notifications',
+      'average_earnings_per_order': 'Avg earning per order',
       'notification_deleted': 'Notification deleted',
-      'all_marked_read': 'All notifications marked as read',
-      'no_order_linked': 'No order linked to this notification',
+      'all_marked_read': 'All marked read',
+      'no_order_linked': 'No order linked',
       'unread': ' unread',
       'mark_all_read': 'Mark all as read',
       'no_notifications': 'No notifications',
-      // Scheduled Order
-      'scheduled_order': 'Scheduled Order',
-      'schedule_order_later': 'Schedule order for later',
+      'schedule_order_later': 'Schedule Order Later',
       'date_time': 'Date & Time',
       'date': 'Date',
       'time': 'Time',
       'recurring_order': 'Recurring Order',
-      'will_repeat_automatically': 'This order will repeat automatically',
-      'one_time_order': 'One-time order',
+      'will_repeat_automatically': 'Will repeat automatically',
+      'one_time_order': 'One-time Order',
       'recurrence_pattern': 'Recurrence Pattern',
       'daily': 'Daily',
       'weekly': 'Weekly',
       'monthly': 'Monthly',
-      'required': 'Required',
-      'recurrence_end_date': 'Recurrence End Date (optional)',
-      'no_end': 'No end',
-      'order_details': 'Order Details',
+      'recurrence_end_date': 'End Date (Optional)',
+      'no_end': 'No End',
       'customer_name': 'Customer Name',
-      'customer_phone': 'Customer Phone',
-      'pickup_location': 'Pickup Location',
-      'delivery_location': 'Delivery Location',
       'total_amount_iqd': 'Total Amount (IQD)',
       'delivery_fee_iqd': 'Delivery Fee (IQD)',
-      'notes_optional': 'Notes (optional)',
       'scheduling_summary': 'Scheduling Summary',
-      'will_be_published_at': 'Order will be published at: ',
+      'will_be_published_at': 'Published at: ',
       'recurrence': 'Recurrence: ',
       'until': 'Until: ',
-      // Bulk Order
       'bulk_orders': 'Bulk Orders',
-      'multiple_orders_same_pickup': 'Multiple orders for the same pickup location',
+      'multiple_orders_same_pickup': 'Multiple orders, same pickup',
       'shared_details': 'Shared Details',
-      'general_notes_optional': 'General Notes (optional)',
+      'general_notes_optional': 'General Notes',
       'when_need_drivers': 'When do you need drivers?',
-      'now_immediately': 'Now (immediately)',
+      'now_immediately': 'Immediately',
       'after_minutes': 'After ',
-      'minutes': ' minutes',
       'scheduled_orders': 'Scheduled Orders',
-      'now': 'Now',
-      'sixty_minutes': '60 minutes',
       'delivery_addresses': 'Delivery Addresses (',
       'add_address': 'Add Address',
-      'no_delivery_addresses': 'No delivery addresses added yet',
+      'no_delivery_addresses': 'No delivery addresses added',
       'create_bulk_orders': 'Create Bulk Orders (',
-      'please_select': 'Please select ',
-      'vehicle_type': 'Vehicle Type',
+      'please_select': 'Please Select ',
       'motorcycle': 'Motorcycle',
-      'car': 'Car',
-      'truck': 'Truck',
       'order_price_label': 'Order Price: ',
       'please_select_pickup': 'Please select pickup location',
-      'please_add_delivery': 'Please add at least one delivery address',
-      'merchant_data_error': 'Error verifying merchant data. Please log in again.',
-      'no_drivers_available': 'No drivers available',
-      'continue_at_own_risk': 'Continue at your own risk',
+      'please_add_delivery': 'Please add at least one delivery',
+      'continue_at_own_risk': 'Continue at own risk',
       'confirm_bulk_orders': 'Confirm Bulk Orders',
-      'confirm_bulk_orders_question': 'Are you sure you want to create {count} delivery orders?',
-      'scheduled_bulk_orders_message': 'Orders will be scheduled for {minutes} minutes later.',
-      'publish_orders_immediately': 'All orders will be published immediately and made available to drivers.',
-      'bulk_orders_scheduled_success': '{count} orders scheduled for {minutes} minutes later',
-      'bulk_orders_created_success': '{count} orders created successfully',
-      'bulk_orders_failed': 'Failed to publish orders: {error}',
+      'confirm_bulk_orders_question': 'Create {count} orders?',
+      'scheduled_bulk_orders_message': 'Orders scheduled after {minutes} min',
+      'publish_orders_immediately': 'Publish immediately',
+      'bulk_orders_scheduled_success': '{count} orders scheduled',
+      'bulk_orders_created_success': '{count} orders created',
+      'bulk_orders_failed': 'Failed: {error}',
       'add_delivery_address': 'Add Delivery Address',
-      'customer_name': 'Customer Name',
-      'phone_number': 'Phone Number',
-      'delivery_location': 'Delivery Location',
       'order_amount': 'Amount',
-      'notes_optional': 'Notes (optional)',
       'add': 'Add',
       'failed': 'Failed',
-      // Location Picker
       'move_map_select_location': 'Move map to select location',
       'getting_address': 'Getting address...',
-      'location_selected': 'Location selected',
       'cannot_get_current_location': 'Cannot get current location',
-      'move_map_to_select': 'Move map to select location',
+      'move_map_to_select': 'Move map to select',
       'my_location': 'My Location',
       'confirm_location': 'Confirm Location',
-      // Voice Library
-      'voice_library': 'Voice Recordings Library',
       'error_loading_recordings': 'Error loading recordings',
       'no_voice_recordings': 'No voice recordings',
-      'record_first_order': 'Record your first order using voice',
+      'record_first_order': 'Record your first order',
       'record_new_order': 'Record New Order',
       'delete_recording': 'Delete Recording',
-      'confirm_delete_recording': 'Are you sure you want to delete this recording?',
+      'confirm_delete_recording': 'Delete this recording?',
       'delete': 'Delete',
-      'recording_deleted_success': 'Recording deleted successfully',
-      // Top Up Dialog
-      'please_select_payment_method': 'Please select payment method',
-      'please_enter_valid_amount': 'Please enter a valid amount',
+      'recording_deleted_success': 'Recording deleted',
+      'please_select_payment_method': 'Select Payment Method',
+      'please_enter_valid_amount': 'Enter valid amount',
       'minimum_amount_is': 'Minimum amount is ',
       'amount_must_be_greater': 'Amount must be greater than ',
       'plus_fee': ' + ',
       'fee': ' fee',
-      'must_login_first': 'You must log in first',
-      'top_up_via_wayl': 'Top up wallet via Wayl',
-      'payment_success': 'Payment successful! Wallet balance will be updated shortly',
-      'payment_cancelled': 'Payment cancelled',
-      'error_loading_payment': 'Error loading payment page',
+      'top_up_via_wayl': 'Top Up via Wayl',
+      'payment_success': 'Payment Successful',
+      'payment_cancelled': 'Payment Cancelled',
+      'error_loading_payment': 'Error loading payment',
       'failed_create_payment_link': 'Failed to create payment link: ',
-      'top_up_via_rep': 'Top Up Request via Hur Rep',
-      'top_up_request_sent': 'Top up request sent for amount ',
-      'note_fee_deducted': 'Note: ',
-      'as_service_fee': ' IQD will be deducted as service fee',
-      'rep_will_contact_soon': 'A Hur rep will contact you soon to complete the process.',
-      'ok': 'OK',
-      'top_up_wallet': 'Top Up Wallet',
+      'top_up_via_rep': 'Top Up via Representative',
+      'top_up_request_sent': 'Top up request sent for ',
+      'note_fee_deducted': 'Note: Fee deducted ',
+      'as_service_fee': ' IQD',
+      'rep_will_contact_soon': 'Representative will contact you soon.',
       'amount_iqd': 'Amount (IQD)',
       'please_enter_amount': 'Please enter amount',
-      'please_enter_valid_number': 'Please enter a valid number',
+      'please_enter_valid_number': 'Enter valid number',
       'minimum_amount': 'Minimum ',
       'select_payment_method': 'Select Payment Method',
       'online_checkout': 'Online Checkout',
-      'zain_cash_qi_visa_mastercard': 'Zain Cash, Qi Card, Visa, Mastercard - Instant',
-      'hur_rep': 'Hur Rep',
+      'zain_cash_qi_visa_mastercard': 'Zain Cash, Qi Card, Visa, Mastercard',
+      'hur_rep': 'Hur Representative',
       'fee_label': 'Fee ',
-      'continue': 'Continue',
-      // Announcement Dialog
       'got_it': 'Got it',
       'skip': 'Skip',
       'next': 'Next',
-      'start_now': 'Get Started',
+      'start_now': 'Start Now',
       'update_required': 'Update Required',
-      'must_update_app': 'You must update the app to continue using it',
+      'must_update_app': 'Must update app to continue',
       'current_version': 'Current Version:',
       'required_version': 'Required Version:',
       'update_app': 'Update App',
-      'maintenance_title': 'System Under Maintenance',
-      'maintenance_message_driver': 'The system is currently under maintenance. You cannot go online or accept orders at this time. We will be back soon!',
-      'maintenance_message_merchant': 'The system is currently under maintenance. You cannot create new orders at this time. We will be back soon!',
-      'maintenance_message_default': 'The system is currently under maintenance. Some features are temporarily unavailable. We will be back soon!',
-      'maintenance_info': 'You can browse the app, but you cannot create or accept orders at this time',
-      'maintenance_banner': 'Maintenance Mode - Some Features Unavailable',
+      'maintenance_title': 'Maintenance Mode',
+      'maintenance_message_driver': 'System under maintenance.',
+      'maintenance_message_merchant': 'System under maintenance.',
+      'maintenance_message_default': 'System under maintenance.',
+      'maintenance_info': 'Browsing only, no orders.',
+      'maintenance_banner': 'Maintenance Mode',
       'understood': 'Understood',
-      // Driver Welcome
       'driver_welcome_title1': 'Welcome to Hur',
-      'driver_welcome_desc1': 'Join the Hur delivery platform and start your journey to earning income',
-      'driver_welcome_title2': 'Freedom Without Cost',
-      'driver_welcome_desc2': 'We do not take commission from you. Your freedom to work and earn is your full right',
-      'driver_welcome_title3': 'Help Us Fight Fraud',
-      'driver_welcome_desc3': 'We rely on your cooperation in reporting any suspicious activity from merchants that harms the Hur platform',
-      // Merchant Welcome
-      'merchant_welcome_title1': 'How Does It Work?',
-      'merchant_welcome_desc1': 'Hur will provide you with an independent driver to pick up your orders and deliver them to customers with ease',
+      'driver_welcome_desc1': 'Join Hur Delivery',
+      'driver_welcome_title2': 'Freedom',
+      'driver_welcome_desc2': 'No commissions from you.',
+      'driver_welcome_title3': 'Help us',
+      'driver_welcome_desc3': 'Report suspicious activity.',
+      'merchant_welcome_title1': 'How it works?',
+      'merchant_welcome_desc1': 'Hur provides independent drivers.',
+      // Merchant Walkthrough
+      'merchant_walkthrough_title1': 'Find a Driver',
+      'merchant_walkthrough_desc1': 'The app finds you a freelance delivery driver that\'s close to you',
+      'merchant_walkthrough_title2': 'Driver Pays Order Fee',
+      'merchant_walkthrough_desc2': 'The driver arrives and will pay the order fee for you. Make sure drivers pay for orders before you hand them out',
+      'merchant_walkthrough_title3': 'Delivery & Earnings',
+      'merchant_walkthrough_desc3': 'Drivers would then deliver the order, obtain the fee, and in addition gain the delivery fee',
+      // Driver Walkthrough
+      'driver_walkthrough_title1': 'Find Orders',
+      'driver_walkthrough_desc1': 'The app finds you delivery orders that are close to your location',
+      'driver_walkthrough_title2': 'Accept & Pay Yourself',
+      'driver_walkthrough_desc2': 'When you accept an order, you will go to the merchant and you must pay the order fee yourself using your own money. Make sure to pay before receiving the order',
+      'driver_walkthrough_title3': 'Deliver & Earn',
+      'driver_walkthrough_desc3': 'After delivery, you will collect the order amount back from the customer plus the delivery fee. If the order is later rejected in the app even though you delivered it on time, the app or the merchant will cover the order cost',
+      'i_agree_to_the': 'I agree to the ',
+      'complete': 'Complete',
       'merchant_welcome_title2': 'Safety First',
-      'merchant_welcome_desc2': 'To maintain your safety, it is recommended to take driver IDs or guarantees upon delivery',
-      'merchant_welcome_title3': 'Have Questions?',
-      'merchant_welcome_desc3': 'Contact the support team anytime for any inquiries about the system or fees',
+      'merchant_welcome_desc2': 'Check driver ID.',
+      'merchant_welcome_title3': 'Questions?',
+      'merchant_welcome_desc3': 'Contact support.',
       'ends_in_days': 'Ends in ',
       'days': ' days',
       'ends_in_hours': 'Ends in ',
       'hours': ' hours',
       'ends_in_minutes': 'Ends in ',
-      'minutes': ' minutes',
       'ends_in_seconds': 'Ends in ',
       'seconds': ' seconds',
       'january': 'January',
@@ -1698,131 +1845,115 @@ class AppLocalizations {
       'october': 'October',
       'november': 'November',
       'december': 'December',
-      // Splash Screen (loading already exists, using it)
-      'fast_delivery_service': 'Fast delivery service',
-      // Password Reset
       'reset_password': 'Reset Password',
       'enter_code_new_password': 'Enter code and new password',
       'verification_code': 'Verification Code',
-      'enter_6_digit_code': 'Enter a 6-digit code',
+      'enter_6_digit_code': 'Enter 6-digit code',
       'new_password': 'New Password',
-      'password_updated_success': 'Password updated successfully',
+      'password_updated_success': 'Password updated',
       'password_update_failed': 'Failed to update password',
       'update_password': 'Update Password',
-      // Create Password
       'create_password': 'Create Password',
-      'choose_strong_password': 'Choose a strong password',
-      'letters_numbers_only_8_min': 'Letters and numbers only, at least 8 characters',
-      'create_account': 'Create Account',
-      'account_creation_failed': 'Failed to create account',
-      // Verification Pending
-      'verification_pending': 'Under Review',
+      'choose_strong_password': 'Choose strong password',
+      'letters_numbers_only_8_min': 'Letters and numbers, min 8 chars',
+      'account_creation_failed': 'Account creation failed',
+      'verification_pending': 'Verification Pending',
       'verification_rejected': 'Rejected',
-      'verification_under_review': 'Your data is under review',
-      'verification_review_message': 'Your data will be reviewed and verified. You will be notified when the review is complete.',
-      'verification_rejected_message': 'Verification request was rejected. Please review the uploaded data and try again.',
+      'verification_under_review': 'Under Review',
+      'verification_review_message': 'Your data is being reviewed.',
+      'verification_rejected_message': 'Verification rejected. Please check data.',
       'resubmit_verification': 'Resubmit',
-      'logout': 'Logout',
-      'error_selecting_image': 'Error selecting image: ',
-      'please_upload_id_front_back': 'Please upload front and back ID images',
-      'please_upload_selfie_with_id': 'Please upload a selfie with ID',
-      'id_verification_failed': 'ID verification failed',
-      'connection_failed': 'Connection to verification service failed: ',
-      'error': 'Error: ',
-      // User Registration
-      'select_image_source': 'Select image source',
+      'please_upload_id_front_back': 'Upload ID Front & Back',
+      'please_upload_selfie_with_id': 'Upload Selfie with ID',
+      'id_verification_failed': 'ID Verification Failed',
+      'connection_failed': 'Connection Failed: ',
+      'you_are_blocked': 'You Are Blocked',
+      'account_blocked_message': 'Your account has been blocked. Please contact the app owner for assistance.',
+      'contact_app_owner': 'Contact App Owner',
+      'please_reupload_ids': 'Please Re-upload Your IDs',
+      'reupload_ids_message': 'Your verification status is pending. Please re-upload your ID images to update your information.',
+      'select_image_source': 'Select Image Source',
       'take_photo': 'Take Photo',
       'choose_from_gallery': 'Choose from Gallery',
       'select_store_location': 'Select Store Location',
-      'location_selected': 'Location selected',
-      'please_upload_document': 'Please upload document image',
-      'please_upload_document_back': 'Please upload back side of document',
-      'please_upload_selfie': 'Please upload selfie with ID',
-      'please_select_store_location': 'Please select store location',
-      'id_verification_failed_reason': 'ID verification failed',
-      // Map Screen
+      'please_upload_document': 'Upload Document',
+      'please_upload_document_back': 'Upload Document Back',
+      'please_upload_selfie': 'Upload Selfie',
+      'please_select_store_location': 'Select Store Location',
+      'id_verification_failed_reason': 'ID Verification Failed',
       'map': 'Map',
-      'mapbox_integration_progress': 'Mapbox integration in progress...',
-      'select_this_location': 'Select This Location',
-      'tap_map_select_location': 'Tap on map to select location',
-      'my_current_location': 'My Current Location',
-      'confirm_location': 'Confirm Location',
-      'your_current_location': 'Your Current Location',
+      'mapbox_integration_progress': 'Mapbox integration...',
+      'select_this_location': 'Select this location',
+      'tap_map_select_location': 'Tap map to select',
+      'my_current_location': 'My Location',
+      'your_current_location': 'Your Location',
       'selected_location': 'Selected Location',
       'verifying': 'Verifying...',
-      'please_upload_clear_id_images': 'Please upload clear images of the original ID card',
+      'please_upload_clear_id_images': 'Upload clear ID images',
       'what_happens_now': 'What happens now?',
-      'verification_process_steps': '• Document verification by AI\n• Data validation\n• Automatic approval notification',
+      'verification_process_steps': 'AI verification...',
       'refresh_status': 'Refresh Status',
       'upload_new_documents': 'Upload New Documents',
-      'please_upload_clear_id': 'Please upload clear images of the original ID card. Make sure:',
-      'full_name_extracted_automatically': 'Your full name will be automatically extracted from your ID card',
-      'id_upload_requirements': '• Image is clear and not blurry\n• Card is real (not a screenshot)\n• All data is visible and readable',
-      'registration_sent_successfully': 'Registration request sent successfully',
-      'review_by_ai_system': 'Your data will be reviewed by the automated verification system',
-      'documents_not_accepted': 'Uploaded documents were not accepted',
-      'id_card_front': 'ID Card - Front Side',
-      'id_card_back': 'ID Card - Back Side',
+      'please_upload_clear_id': 'Upload clear ID',
+      'id_upload_requirements': 'Clear, valid, readable',
+      'registration_sent_successfully': 'Registration sent',
+      'review_by_ai_system': 'Review by AI',
+      'documents_not_accepted': 'Documents not accepted',
+      'id_card_front': 'ID Card Front',
+      'id_card_back': 'ID Card Back',
       'selfie_with_id': 'Selfie with ID',
       'upload': 'Upload',
       'uploaded': 'Uploaded',
-      'error_selecting_image': 'Error selecting image: ',
-      'registration_error': 'Registration error occurred',
+      'registration_error': 'Registration Error',
       'registering_as': 'Registering as ',
-      'complete_data': 'Complete ',
-      'please_fill_all_required': 'Please fill in all required information',
+      'complete_data': 'Complete Data',
+      'please_fill_all_required': 'Fill all required',
       'how_did_you_hear': 'How did you hear about us?',
       'required_documents': 'Required Documents',
       'registering': 'Registering...',
       'complete_registration': 'Complete Registration',
-      'name_extracted_automatically': 'Your full name will be automatically extracted from your ID card',
-      'store_information': 'Store Information',
-      'store_name': 'Store Name',
-      'enter_store_name': 'Enter your store name',
-      'store_name_required': 'Store name is required',
+      'name_extracted_automatically': 'Name extracted automatically',
+      'store_information': 'Store Info',
+      'enter_store_name': 'Enter Store Name',
       'store_address': 'Store Address',
-      'select_store_location_map': 'Select your store location on the map',
-      'vehicle_information': 'Vehicle Information',
-      'vehicle_type': 'Vehicle Type',
-      'default': 'Default',
-      'do_you_have_license': 'Do you have a driving license?',
-      'do_you_own_vehicle': 'Do you own the vehicle?',
-      'profile_photo_optional': 'Profile Photo (optional)',
-      'add_clear_profile_photo': 'Add a clear profile photo for easy identification by customers.',
-      // Order Creation Carousel
+      'select_store_location_map': 'Select Store Location',
+      'city': 'City',
+      'select_city': 'Select City',
+      'city_required': 'City Required',
+      'najaf': 'Najaf',
+      'mosul': 'Mosul',
+      'full_name_extracted_automatically': 'Full Name extracted automatically',
+      'vehicle_information': 'Vehicle Info',
+      'do_you_have_license': 'Do you have license?',
+      'do_you_own_vehicle': 'Do you own vehicle?',
+      'profile_photo_optional': 'Profile Photo (Optional)',
+      'add_clear_profile_photo': 'Add profile photo',
       'normal_order': 'Normal Order',
       'bulk_orders_title': 'Bulk Orders',
       'scheduled_orders_title': 'Scheduled Orders',
       'voice_order_title': 'Voice Order',
-      'no_account_registered_this_number': 'No account registered with this number. Please register first.',
+      'no_account_registered_this_number': 'No account registered',
       'register': 'Register',
-      'user_data_error_contact_support': 'User data error. Please contact support.',
+      'user_data_error_contact_support': 'User data error',
       'account_already_registered': 'Account already registered',
       'no_account_registered': 'No account registered',
-      'merchant_description': 'Add your products and manage your orders easily',
-      'driver_description': 'Get delivery orders and earn money',
-      // Scheduled Order Additional
-      'schedule_recurring_order': 'Schedule Recurring Order',
+      'merchant_description': 'Manage orders easily',
+      'driver_description': 'Deliver and earn',
+      'schedule_recurring_order': 'Schedule Recurring',
       'schedule_order': 'Schedule Order',
-      'please_select': 'Please select ',
       'vehicle_type_label': 'Vehicle Type',
-      'any_vehicle': 'Any Vehicle',
       'daily_label': 'Daily',
       'weekly_label': 'Weekly',
       'monthly_label': 'Monthly',
-      'please_select_pickup_location': 'Please select pickup location',
-      'please_select_delivery_location': 'Please select delivery location',
-      'merchant_data_error_login_again': 'Error verifying merchant data. Please login again.',
-      'alert': 'Alert',
-      // Order Details
+      'please_select_pickup_location': 'Select Pickup Location',
+      'please_select_delivery_location': 'Select Delivery Location',
+      'merchant_data_error_login_again': 'Merchant data error. Login again.',
       'am_short': 'AM',
       'pm_short': 'PM',
-      'no_images_uploaded_order': 'No images uploaded for this order yet',
-      // Voice Order
+      'no_images_uploaded_order': 'No images uploaded',
       'voice_order_note': 'Voice Order - ',
-      'can_continue_scheduled_order': 'You can proceed to create the scheduled order, and it will be automatically posted at the specified time if drivers are available.',
-      'order_scheduled_success': 'Order scheduled successfully',
-      // Driver Earnings
+      'can_continue_scheduled_order': 'Continue scheduled order',
+      'order_scheduled_success': 'Order Scheduled',
       'completed_orders_label': 'Completed Orders',
       'delivered_status': 'Delivered',
       'cancelled_status': 'Cancelled',
@@ -1830,95 +1961,66 @@ class AppLocalizations {
       'active_status': 'Active',
       'order_hash': 'Order #',
       'delivery_fees_label': 'Delivery Fees',
-      'status_pending': 'Pending',
-      'status_assigned': 'Assigned',
-      // Driver Orders
-      'order_accepted_success': 'Order accepted successfully',
-      'error_occurred': 'Error occurred: ',
-      'order_rejected_success': 'Order rejected',
-      'order_completed_success': 'Order completed successfully',
-      // Wallet Widgets
+      'order_accepted_success': 'Order Accepted',
+      'order_rejected_success': 'Order Rejected',
+      'order_completed_success': 'Order Completed',
       'my_balance': 'My Balance',
-      'balance_needs_top_up': 'Your balance needs to be topped up',
-      'current_balance': 'Your Current Balance',
-      'cannot_create_orders_until_top_up': 'You cannot create new orders until you top up your wallet',
-      'zain_cash_ki': 'Zain Cash / Ki',
-      'hur_rep': 'Hur Rep',
-      // Payment WebView
-      'error_loading_payment_page': 'Error loading payment page: ',
-      // Voice Recording Card
+      'balance_needs_top_up': 'Balance needs top up',
+      'cannot_create_orders_until_top_up': 'Cannot create orders until top up',
+      'zain_cash_ki': 'Zain Cash / Qi',
+      'error_loading_payment_page': 'Error loading payment page',
       'failed_to_load_recording': 'Failed to load recording',
-      'error_playing_recording': 'Error playing recording: ',
-      // Customer Location Sharing
-      'please_allow_location_access': 'Please allow access to location to share your location',
-      'failed_to_send_location': 'Failed to send location. Please try again.',
-      'error_getting_location': 'Error getting location: ',
-      'location_sent_successfully': 'Location sent successfully',
-      'location_received_auto_update': 'Your location has been received and the delivery address will be automatically updated.',
-      'location_ready_no_call_needed': '🎉 Location ready - no need to call',
-      // Location Update Widget
-      'error_checking_location_updates': 'Error checking location updates: ',
-      // Dashboard
+      'error_playing_recording': 'Error playing recording',
+      'please_allow_location_access': 'Allow location access',
+      'failed_to_send_location': 'Failed to send location',
+      'error_getting_location': 'Error getting location',
+      'location_sent_successfully': 'Location sent',
+      'location_received_auto_update': 'Location received',
+      'location_ready_no_call_needed': 'Location Ready',
+      'error_checking_location_updates': 'Error checking location',
       'maintenance_mode': 'Maintenance Mode',
       'connected': 'Connected',
-      'not_available': 'Not Available',
       'not_logged_in': 'Not Logged In',
-      'must_login_first': 'You must login first',
-      'accepted': 'Accepted',
-      'order_accepted_success_message': 'Order accepted successfully',
-      'error_accepting_order': 'Error accepting order',
-      'error_in_operation': 'Error in operation',
-      'error_rejecting_order': 'Error rejecting order',
-      'rejected': 'Rejected',
-      'order_rejected_success_message': 'Order rejected',
+      'order_accepted_success_message': 'Order Accepted',
+      'error_accepting_order': 'Error Accepting',
+      'error_in_operation': 'Error in Operation',
+      'error_rejecting_order': 'Error Rejecting',
+      'order_rejected_success_message': 'Order Rejected',
       'motorbike_label': 'Motorbike',
-      // Map Widget
       'your_current_location_label': 'Your Current Location',
-      'store_location': 'Store Location',
-      'delivery_location': 'Delivery Location',
       'show_route': 'Show Route',
       'store': 'Store',
       'delivery': 'Delivery',
       'your_location': 'Your Location',
-      // ID Verification Review
-      'error_saving_data': 'Error saving data: ',
+      'error_saving_data': 'Error saving data',
       'review_id_data': 'Review ID Data',
-      'extracted_info_message': 'The following information was extracted from your ID card. Please verify its accuracy and correct any errors.',
+      'extracted_info_message': 'Extracted info',
       'full_name_section': 'Full Name',
       'first_name': 'First Name',
-      'enter_name': 'Enter name',
-      'name_required': 'Name is required',
+      'enter_name': 'Enter Name',
       'father_name': 'Father Name',
-      'enter_father_name': 'Enter father name',
-      'father_name_required': 'Father name is required',
+      'enter_father_name': 'Enter Father Name',
+      'father_name_required': 'Father Name Required',
       'grandfather_name': 'Grandfather Name',
-      'enter_grandfather_name': 'Enter grandfather name',
-      'grandfather_name_required': 'Grandfather name is required',
+      'enter_grandfather_name': 'Enter Grandfather Name',
+      'grandfather_name_required': 'Grandfather Name Required',
       'family_name': 'Family Name',
-      'enter_family_name': 'Enter family name',
-      'family_name_required': 'Family name is required',
-      'card_information': 'Card Information',
+      'enter_family_name': 'Enter Family Name',
+      'family_name_required': 'Family Name Required',
+      'card_information': 'Card Info',
       'national_id_number': 'National ID Number',
       'id_number_hint': 'ID Number',
-      'id_number_required': 'ID number is required',
-      // Splash Screen
-      'loading': 'Loading...',
-      'fast_delivery_service': 'Fast Delivery Service',
-      // User Registration Additional
+      'id_number_required': 'ID Number Required',
       'remove_image': 'Remove Image',
-      'location_selected_checkmark': 'Location Selected ✓',
+      'location_selected_checkmark': 'Location Selected',
       'how_did_you_hear_hur': 'How did you hear about Hur?',
       'optional': 'Optional',
       'document_type': 'Document Type',
-      'select_document_type': 'Select document type',
+      'select_document_type': 'Select Doc Info',
       'not_specified': 'Not Specified',
-      'merchant_label': 'Merchant',
       'expiry_date': 'Expiry Date',
       'birth_date': 'Birth Date',
-      'delete_recording': 'Delete Recording',
-      'confirm_delete_recording': 'Are you sure you want to delete this recording?',
-      'delete': 'Delete',
-      'arabic_char': 'ع',
+      'arabic_char': 'AR',
       'recent_activity': 'Recent Activity',
       'total_sales': 'Total Sales',
       'merchants_label': 'Merchants',
@@ -1934,56 +2036,32 @@ class AppLocalizations {
       'cancelled_orders_stat': 'Cancelled Orders',
       'rejected_orders_stat': 'Rejected Orders',
       'wallet_balance': 'Wallet Balance',
-      'wallet_top_up': 'Top Up Wallet',
-
-      // Support / Messaging
+      'wallet_top_up': 'Top Up',
       'support_chat': 'Support Chat',
-      'messages': 'Messages',
-
-      // Settings
       'settings': 'Settings',
-      'profile': 'Profile',
       'language': 'Language',
       'language_arabic': 'Arabic',
       'language_english': 'English',
-
-      // System status / maintenance
+      'dark_mode': 'Dark Mode',
+      'dark_mode_enabled': 'Dark Mode Enabled',
+      'light_mode_enabled': 'Light Mode Enabled',
+      'appearance': 'Appearance',
       'system_maintenance_title': 'System Maintenance',
-      'system_maintenance_message':
-          'The app is currently unavailable due to maintenance. Please try again later.',
-      
-      // Orders Tabs
-      'active_orders': 'Active Orders',
       'past_orders': 'Past Orders',
-      'completed_orders': 'Completed Orders',
-      
-      // Order Status
       'pending_status': 'Pending',
-      'assigned_status': 'Assigned',
       'accepted_status': 'Accepted',
-      'on_the_way_status': 'On The Way',
-      'delivered_status': 'Delivered',
-      'cancelled_status': 'Cancelled',
-      'rejected_status': 'Rejected',
+      'on_the_way_status': 'On the Way',
+      'scheduled_status': 'Scheduled',
       'unknown_status': 'Unknown',
-      
-      // Stats
       'delivered_label': 'Delivered',
       'cancelled_rejected_label': 'Cancelled/Rejected',
-      
-      // Dialog Actions
       'agree': 'Agree',
       'cancel_and_close': 'Cancel & Close',
-      
-      // Driver Messages
-      'driver_whatsapp_message': 'Hello {name}, I am the delivery driver from Hur app',
-      'location_permission_driver_long': 'To work as a driver, you must grant "Always" location permission.',
-      'location_permission_explanation': '• Receive order notifications even when app is closed\n• Track your location during delivery\n• Appear in the list of available drivers',
-      'background_location_explanation': 'When enabling "online" mode, the app will collect your location in the background and display a persistent notification to keep you available for delivery orders.\n\nThis is only used for core app functionality (driver tracking, notifications, and order delivery).',
-      
-      // Order Actions
-      'accept_order': 'Accept Order',
-      'reject_order': 'Reject',
+      'driver_whatsapp_message': 'Hello {name}, I am Hur driver',
+      'location_permission_driver_long': 'Always location permission required',
+      'location_permission_explanation': 'For tracking and notifications',
+      'background_location_permission_title': 'Background Location Permission',
+      'background_location_explanation': 'When you go "Online", the app collects your location in the background and shows a persistent notification to keep you available for delivery orders.\n\nThis is used only for core app functionality (driver tracking, new order notifications, and order delivery).',
       'start_delivery': 'Start Delivery',
       'mark_delivered': 'Mark Delivered',
       'merchant_button': 'Merchant',
@@ -1994,53 +2072,131 @@ class AppLocalizations {
       'delivery_error': 'Delivery Error',
       'call_via_phone': 'Call via Phone',
       'call_via_whatsapp': 'Call via WhatsApp',
-      'whatsapp_message': 'WhatsApp Message',
       'customer_label_colon': 'Customer: ',
       'merchant_label_colon': 'Merchant: ',
       'address_label': 'Address: ',
       'close': 'Close',
-      'understood': 'Understood',
-      'map_updated': 'Understood - Map Updated',
-      'photo_uploaded_success': 'Photo uploaded successfully',
+      'map_updated': 'Map Updated',
+      'photo_uploaded_success': 'Photo Uploaded',
       'error_colon': 'Error: ',
       'retake_photo': 'Retake',
-      
-      // Merchant Order Actions
+      'order_not_found': 'Order not found. It may have been deleted.',
+      'location_unavailable': 'Could not update driver location',
+      'discard_changes_title': 'Discard changes?',
+      'discard_changes_message': 'You have unsaved data. Are you sure you want to leave?',
+      'discard_button': 'Discard',
+      'load_more_transactions': 'Load more',
       'retry_action': 'Retry',
       'cancel_order_action': 'Cancel Order',
-      'repost_order': 'Repost (+500 IQD)',
       'cancel_order_title': 'Cancel Order',
-      'cancel_order_confirm': 'Are you sure you want to cancel this order?',
       'go_back': 'Go Back',
       'no_drivers_available_title': 'No Drivers Available',
-      'repost_order_title': 'Repost Order',
-      'repost_order_message': 'Delivery fee will be increased by 500 IQD',
-      'current_fees': 'Current Fees:',
-      'new_fees': 'New Fees:',
+      'current_fees': 'Current Fees: ',
+      'new_fees': 'New Fees: ',
       'repost_action': 'Repost',
-      'repost_order_new_fee': 'Delivery fee will be increased to {fee} IQD (+500 IQD)',
+      'repost_order_new_fee': 'New Fee: {fee}',
       'repost_button': 'Repost',
-      
-      // Driver Dashboard Sidebar
+      'driver_rank_title': 'My Rank',
+      'current_rank': 'Your current rank',
+      'commission_label': 'Commission',
+      'active_hours_notice': 'Active hours count only between 08:00 AM and 12:00 AM.',
+      'details': 'Details',
+      'rank_benefits': 'Rank benefits',
+      'current_badge': 'Current',
+      'trial_rank': 'Trial',
+      'bronze_rank': 'Bronze',
+      'silver_rank': 'Silver',
+      'gold_rank': 'Gold',
+      'trial_requirement': 'First month only',
+      'bronze_requirement': 'Default rank',
+      'silver_requirement': '150 hours per month',
+      'gold_requirement': '240 hours per month',
+      'trial_period_title': 'You are in the trial period',
+      'top_rank_title': 'You are at the highest rank!',
+      'progress_to_rank': 'Progress to {rank}',
+      'hours_value': '{hours} hours',
+      'hours_required': '{hours} hours required',
+      'progress_completed': '{percent}% complete',
+      'ranks_apply_monthly': 'New ranks are applied monthly',
+
+      // Sidebar Missing Keys
+      'driver_orders': 'Driver Orders',
+      'driver_earnings': 'Driver Earnings',
       'help_support': 'Help & Support',
-      'driver_orders': 'Orders',
-      'driver_earnings': 'Earnings',
-      
-      // Location Permissions
-      'background_location_permission_title': 'Important Information About Background Location',
-      'please_allow_always': 'Please select "Allow all the time" in settings',
-      'open_settings': 'Open Settings',
-      
-      // Empty States
-      'no_current_orders': 'No active orders',
-      'no_past_orders': 'No completed orders',
-      'no_orders_in_period': 'No orders in this period',
-      
-      // Analytics
-      'orders_by_status': 'Orders by Status',
-      'recent_orders': 'Recent Orders',
-      'error_loading_stats': 'Error loading statistics',
-      'total_orders': 'Total Orders',
+
+      // Merchant Dashboard Missing Keys
+      'no_past_orders': 'No past orders',
+      'no_current_orders': 'No current orders',
+
+      // Merchant Analytics
+      'stats_title': 'Statistics',
+      'revenue_stats_title': 'Revenue Statistics',
+      'total_orders_title': 'Total Orders',
+      'delivery_fees': 'Delivery Fees',
+      'avg_order_value': 'Avg Order Value',
+      'performance_metrics': 'Performance Metrics',
+      'avg_delivery_time': 'Avg Delivery Time',
+      'completion_rate': 'Completion Rate',
+      'cancellation_rate': 'Cancellation Rate',
+      'active_orders_label': 'Active Orders',
+
+      // Driver Dashboard Missing Keys
+      'not_available_short': 'N/A',
+      'merchant_info_unavailable': 'Merchant info unavailable',
+      'cannot_make_call': 'Cannot make call',
+      'cannot_open_whatsapp': 'Cannot open WhatsApp',
+      'invalid_coordinates': 'Invalid coordinates',
+      'cannot_open_google_maps': 'Cannot open Google Maps',
+      'failed_open_google_maps': 'Failed to open Google Maps',
+      'cannot_open_waze': 'Cannot open Waze',
+      'failed_open_waze': 'Failed to open Waze',
+      'waiting_location_permission': 'Waiting for location permission...',
+      'determining_location': 'Determining location...',
+      'current_location_status': 'Your current location',
+      'last_known_location': 'Last known location',
+      'uploading_progress': 'Uploading...',
+      'confirm_and_finish': 'Confirm & Finish',
+      'your_location_button': 'Your Location',
+      'accept_order_button': 'Accept Order',
+      'time_remaining_label': 'Time remaining: ',
+
+      // Delivery Timer - Late popup & info
+      'delivery_late_title': 'Order is late',
+      'delivery_late_message':
+          'This order is now late.\n\nIf it is rejected, you will not be compensated for the order fee and delivery fee by the merchant or the app.',
+      'delivery_late_ack': 'I understand',
+      'delivery_timer_info_title': 'About the delivery timer',
+      'delivery_timer_info_message':
+          'This timer shows the maximum time allocated to deliver this order. The time already includes a safety buffer, so it is more than enough for normal delivery.\n\nIf you go over this time and the order is rejected by the customer, you may be responsible for the order fee and delivery fee, and you will not be compensated for either by the merchant or the app.',
+      'late_duration_label': 'Late: ',
+      'delivery_duration_title': 'Delivery duration',
+      'delivery_duration_not_available': 'Not available',
+      'delivery_duration_on_time': 'On time',
+      'delivery_duration_late': 'Late',
+
+      // Global Error Manager
+      'err_network_title': 'No Internet',
+      'err_network_body': 'Check your connection and try again.',
+      'err_timeout_title': 'Connection Timed Out',
+      'err_timeout_body': 'The network is too slow. Please try again.',
+      'err_server_conn_title': 'Connection Failed',
+      'err_server_conn_body': 'Could not reach the server. Retrying automatically.',
+      'err_auth_expired_title': 'Session Expired',
+      'err_auth_expired_body': 'Please sign in again to continue.',
+      'err_auth_invalid_title': 'Invalid Credentials',
+      'err_auth_invalid_body': 'Check your login details and try again.',
+      'err_server_title': 'Server Error',
+      'err_server_body': 'Something went wrong on our end. Try again later.',
+      'err_rate_limit_title': 'Too Many Requests',
+      'err_rate_limit_body': 'Wait a moment, then try again.',
+      'err_not_found_title': 'Not Found',
+      'err_not_found_body': 'The requested content could not be found.',
+      'err_permission_title': 'Access Denied',
+      'err_permission_body': 'You do not have permission to access this.',
+      'err_unknown_title': 'Error',
+      'err_unknown_body': 'Something unexpected went wrong. Please try again.',
+      'err_retry': 'Retry',
+      'err_dismiss': 'Dismiss',
     },
   };
 
@@ -2058,6 +2214,30 @@ class AppLocalizations {
   String get retry => _get('retry');
   String get loading => _get('loading');
   String get errorGeneric => _get('error_generic');
+
+  // Global Error Manager
+  String get errNetworkTitle => _get('err_network_title');
+  String get errNetworkBody => _get('err_network_body');
+  String get errTimeoutTitle => _get('err_timeout_title');
+  String get errTimeoutBody => _get('err_timeout_body');
+  String get errServerConnTitle => _get('err_server_conn_title');
+  String get errServerConnBody => _get('err_server_conn_body');
+  String get errAuthExpiredTitle => _get('err_auth_expired_title');
+  String get errAuthExpiredBody => _get('err_auth_expired_body');
+  String get errAuthInvalidTitle => _get('err_auth_invalid_title');
+  String get errAuthInvalidBody => _get('err_auth_invalid_body');
+  String get errServerTitle => _get('err_server_title');
+  String get errServerBody => _get('err_server_body');
+  String get errRateLimitTitle => _get('err_rate_limit_title');
+  String get errRateLimitBody => _get('err_rate_limit_body');
+  String get errNotFoundTitle => _get('err_not_found_title');
+  String get errNotFoundBody => _get('err_not_found_body');
+  String get errPermissionTitle => _get('err_permission_title');
+  String get errPermissionBody => _get('err_permission_body');
+  String get errUnknownTitle => _get('err_unknown_title');
+  String get errUnknownBody => _get('err_unknown_body');
+  String get errRetry => _get('err_retry');
+  String get errDismiss => _get('err_dismiss');
 
   String get noInternetTitle => _get('no_internet_title');
   String get noInternetMessage => _get('no_internet_message');
@@ -2125,6 +2305,7 @@ class AppLocalizations {
   String get wallet => _get('wallet');
   String get support => _get('support');
   String get voice => _get('voice');
+  String get stats => _get('stats');
 
   String get ordersActive => _get('orders_active');
   String get ordersCompleted => _get('orders_completed');
@@ -2205,6 +2386,7 @@ class AppLocalizations {
   String get checkingDrivers => _get('checking_drivers');
   String get noDriversOnline => _get('no_drivers_online');
   String get cannotCreateOrder => _get('cannot_create_order');
+  String get allDriversBusy => _get('all_drivers_busy');
   String get driversOnline => _get('drivers_online');
   String get driversAvailableNow => _get('drivers_available_now');
   String get refresh => _get('refresh');
@@ -2220,10 +2402,12 @@ class AppLocalizations {
   String get locations => _get('locations');
   String get pickupLocation => _get('pickup_location');
   String get pickupLocationHint => _get('pickup_location_hint');
+  String get advancedSettings => _get('advanced_settings');
   String get deliveryLocation => _get('delivery_location');
   String get deliveryLocationHint => _get('delivery_location_hint');
   String get prices => _get('prices');
   String get deliveryFeeRequired => _get('delivery_fee_required');
+  String get lowDeliveryFeeWarning => _get('low_delivery_fee_warning');
   String get enterValidNumber => _get('enter_valid_number');
   String get amountRequired => _get('amount_required');
   String get vehicleType => _get('vehicle_type');
@@ -2237,6 +2421,21 @@ class AppLocalizations {
   String get motorbikeHint => _get('motorbike_hint');
   String get carHint => _get('car_hint');
   String get truckHint => _get('truck_hint');
+  String get orderDriverForDay => _get('order_driver_for_day');
+  String get bulkOrderDescription => _get('bulk_order_description');
+  String get orderDate => _get('order_date');
+  String get deliveryNeighborhoods => _get('delivery_neighborhoods');
+  String get minimumThree => _get('minimum_three');
+  String get addNeighborhood => _get('add_neighborhood');
+  String get selectNeighborhood => _get('select_neighborhood');
+  String get minimumThreeNeighborhoods => _get('minimum_three_neighborhoods');
+  String get perDeliveryFee => _get('per_delivery_fee');
+  String get bulkOrderFee => _get('bulk_order_fee');
+  String get bulkOrderFeeDescription => _get('bulk_order_fee_description');
+  String get createBulkOrder => _get('create_bulk_order');
+  String get bulkOrderCreatedSuccess => _get('bulk_order_created_success');
+  String get bulkOrderAcceptedSuccess => _get('bulk_order_accepted_success');
+  String get bulkOrderActive => _get('bulk_order_active');
   String get notesOptional => _get('notes_optional');
   String get additionalNotes => _get('additional_notes');
   String get addNotesHint => _get('add_notes_hint');
@@ -2312,6 +2511,27 @@ class AppLocalizations {
   String lowConfidence(int percent) => _get('low_confidence').replaceAll('{percent}', percent.toString());
   String get continueAction => _get('continue_action');
   String get customerPhoneRequired => _get('customer_phone_required');
+  String get customerPhoneRequiredForPickup => _get('customer_phone_required_for_pickup');
+  String get customerPhoneOptional => _get('customer_phone_optional');
+  String get multipleOrders => _get('multiple_orders');
+  String get multipleOrdersDescription => _get('multiple_orders_description');
+  String get createMultipleOrders => _get('create_multiple_orders');
+  String get bulkOrderStatusPending => _get('bulk_order_status_pending');
+  String get bulkOrderStatusAssigned => _get('bulk_order_status_assigned');
+  String get bulkOrderStatusAccepted => _get('bulk_order_status_accepted');
+  String get bulkOrderStatusActive => _get('bulk_order_status_active');
+  String get bulkOrderStatusCompleted => _get('bulk_order_status_completed');
+  String get bulkOrderStatusCancelled => _get('bulk_order_status_cancelled');
+  String get bulkOrderStatusRejected => _get('bulk_order_status_rejected');
+  String get assignedDriver => _get('assigned_driver');
+  String get assignToSameDriver => _get('assign_to_same_driver');
+  String get currentDriver => _get('current_driver');
+  String get contactDriver => _get('contact_driver');
+  String get callViaWhatsApp => _get('call_via_whatsapp');
+  String get driverInfoNotAvailable => _get('driver_info_not_available');
+  String get driverPhoneNotAvailable => _get('driver_phone_not_available');
+  String get helloDriver => _get('hello_driver');
+  String get close => _get('close');
   String get pickupAddressRequired => _get('pickup_address_required');
   String get deliveryAddressRequired => _get('delivery_address_required');
   String get orderCreatedSuccessVoice => _get('order_created_success_voice');
@@ -2324,6 +2544,9 @@ class AppLocalizations {
   String get currentBalance => _get('current_balance');
   String creditLimit(double limit) => '${_get('credit_limit')}${limit.toStringAsFixed(0)} IQD';
   String get topUpWallet => _get('top_up_wallet');
+  String get feeExemptBanner => _get('fee_exempt_banner');
+  String get feeExemptMessage => _get('fee_exempt_message');
+  String get feeExemptUntil => _get('fee_exempt_until');
   String get totalOrders => _get('total_orders');
   String get totalFees => _get('total_fees');
   String get noTransactions => _get('no_transactions');
@@ -2336,6 +2559,7 @@ class AppLocalizations {
   String get notificationSettingsHint => _get('notification_settings_hint');
   String get openSettings => _get('open_settings');
   String get notifications => _get('notifications');
+  String get general => _get('general');
   String get instantNotifications => _get('instant_notifications');
   String get receiveNotifications => _get('receive_notifications');
   String get notificationsDisabled => _get('notifications_disabled');
@@ -2559,6 +2783,13 @@ class AppLocalizations {
   String get chooseStrongPassword => _get('choose_strong_password');
   String get lettersNumbersOnly8Min => _get('letters_numbers_only_8_min');
   String get createAccount => _get('create_account');
+  String get tryApp => _get('try_app');
+  String get demoModeTitle => _get('demo_mode_title');
+  String get demoModeInfo => _get('demo_mode_info');
+  String get demoMerchant => _get('demo_merchant');
+  String get demoMerchantDesc => _get('demo_merchant_desc');
+  String get demoDriver => _get('demo_driver');
+  String get demoDriverDesc => _get('demo_driver_desc');
   String get accountCreationFailed => _get('account_creation_failed');
   // Verification Pending
   String get verificationPending => _get('verification_pending');
@@ -2596,6 +2827,11 @@ class AppLocalizations {
   String get refreshStatus => _get('refresh_status');
   String get uploadNewDocuments => _get('upload_new_documents');
   String get pleaseUploadClearId => _get('please_upload_clear_id');
+  String get youAreBlocked => _get('you_are_blocked');
+  String get accountBlockedMessage => _get('account_blocked_message');
+  String get contactAppOwner => _get('contact_app_owner');
+  String get pleaseReuploadIds => _get('please_reupload_ids');
+  String get reuploadIdsMessage => _get('reupload_ids_message');
   String get fullNameExtractedAutomatically => _get('full_name_extracted_automatically');
   String get idUploadRequirements => _get('id_upload_requirements');
   String get registrationSentSuccessfully => _get('registration_sent_successfully');
@@ -2619,6 +2855,11 @@ class AppLocalizations {
   String get enterStoreName => _get('enter_store_name');
   String get storeAddress => _get('store_address');
   String get selectStoreLocationMap => _get('select_store_location_map');
+  String get city => _get('city');
+  String get selectCity => _get('select_city');
+  String get cityRequired => _get('city_required');
+  String get najaf => _get('najaf');
+  String get mosul => _get('mosul');
   String get vehicleInformation => _get('vehicle_information');
   String get defaultLabel => _get('default');
   String get doYouHaveLicense => _get('do_you_have_license');
@@ -2680,6 +2921,7 @@ class AppLocalizations {
   String get statusDelivered => _get('status_delivered');
   String get statusCancelled => _get('status_cancelled');
   String get statusRejected => _get('status_rejected');
+  String get statusScheduled => _get('status_scheduled');
   String get statusUnknown => _get('status_unknown');
   // Driver Orders
   String get orderAcceptedSuccess => _get('order_accepted_success');
@@ -2690,7 +2932,7 @@ class AppLocalizations {
   String get balanceNeedsTopUp => _get('balance_needs_top_up');
   String get cannotCreateOrdersUntilTopUp => _get('cannot_create_orders_until_top_up');
   String get zainCashKi => _get('zain_cash_ki');
-  String hurRep(double fee) => '${_get('hur_rep')}';
+  String hurRep(double fee) => _get('hur_rep');
   // Payment WebView
   String errorLoadingPaymentPage(String error) => '${_get('error_loading_payment_page')}$error';
   // Voice Recording Card
@@ -2779,6 +3021,10 @@ class AppLocalizations {
   String get language => _get('language');
   String get languageArabic => _get('language_arabic');
   String get languageEnglish => _get('language_english');
+  String get darkMode => _get('dark_mode');
+  String get darkModeEnabled => _get('dark_mode_enabled');
+  String get lightModeEnabled => _get('light_mode_enabled');
+  String get appearance => _get('appearance');
 
   String get systemMaintenanceTitle => _get('system_maintenance_title');
   String get systemMaintenanceMessage => _get('system_maintenance_message');
@@ -2820,6 +3066,25 @@ class AppLocalizations {
   String get merchantWelcomeTitle3 => _get('merchant_welcome_title3');
   String get merchantWelcomeDesc3 => _get('merchant_welcome_desc3');
   
+  // Merchant Walkthrough
+  String get merchantWalkthroughTitle1 => _get('merchant_walkthrough_title1');
+  String get merchantWalkthroughDesc1 => _get('merchant_walkthrough_desc1');
+  String get merchantWalkthroughTitle2 => _get('merchant_walkthrough_title2');
+  String get merchantWalkthroughDesc2 => _get('merchant_walkthrough_desc2');
+  String get merchantWalkthroughTitle3 => _get('merchant_walkthrough_title3');
+  String get merchantWalkthroughDesc3 => _get('merchant_walkthrough_desc3');
+  
+  // Driver Walkthrough
+  String get driverWalkthroughTitle1 => _get('driver_walkthrough_title1');
+  String get driverWalkthroughDesc1 => _get('driver_walkthrough_desc1');
+  String get driverWalkthroughTitle2 => _get('driver_walkthrough_title2');
+  String get driverWalkthroughDesc2 => _get('driver_walkthrough_desc2');
+  String get driverWalkthroughTitle3 => _get('driver_walkthrough_title3');
+  String get driverWalkthroughDesc3 => _get('driver_walkthrough_desc3');
+  
+  String get iAgreeToThe => _get('i_agree_to_the');
+  String get complete => _get('complete');
+  
   // Month Names
   String get january => _get('january');
   String get february => _get('february');
@@ -2849,11 +3114,21 @@ class AppLocalizations {
   String get customerLabelColon => _get('customer_label_colon');
   String get merchantLabelColon => _get('merchant_label_colon');
   String get addressLabel => _get('address_label');
-  String get close => _get('close');
   String get mapUpdated => _get('map_updated');
   String get photoUploadedSuccess => _get('photo_uploaded_success');
+  String get pickStoreLocation => _get('pick_store_location');
+  String get pickOnMap => _get('pick_on_map');
+  String get storeLocationPlaceholder => _get('store_location_placeholder');
+  String get addressRequired => _get('address_required');
+  String get locationSavedOnMap => _get('location_saved_on_map');
   String get errorColon => _get('error_colon');
   String get retakePhoto => _get('retake_photo');
+  String get orderNotFound => _get('order_not_found');
+  String get locationUnavailable => _get('location_unavailable');
+  String get discardChangesTitle => _get('discard_changes_title');
+  String get discardChangesMessage => _get('discard_changes_message');
+  String get discardButton => _get('discard_button');
+  String get loadMoreTransactions => _get('load_more_transactions');
   String get retryAction => _get('retry_action');
   String get cancelOrderAction => _get('cancel_order_action');
   String get goBack => _get('go_back');
@@ -2875,15 +3150,86 @@ class AppLocalizations {
   String get pendingStatus => _get('pending_status');
   String get acceptedStatus => _get('accepted_status');
   String get onTheWayStatus => _get('on_the_way_status');
+  String get scheduledStatus => _get('scheduled_status');
   String get unknownStatus => _get('unknown_status');
   String get helpSupport => _get('help_support');
   String get driverOrders => _get('driver_orders');
   String get driverEarnings => _get('driver_earnings');
+  
+  // Merchant Dashboard Getters
+  String get noPastOrders => _get('no_past_orders');
+  String get noCurrentOrders => _get('no_current_orders');
+  String get statsTitle => _get('stats_title');
+  String get revenueStatsTitle => _get('revenue_stats_title');
+  String get totalOrdersTitle => _get('total_orders_title');
+  String get deliveryFees => _get('delivery_fees');
+  String get avgOrderValue => _get('avg_order_value');
+  String get performanceMetrics => _get('performance_metrics');
+  String get avgDeliveryTime => _get('avg_delivery_time');
+  String get completionRate => _get('completion_rate');
+  String get cancellationRate => _get('cancellation_rate');
+  String get activeOrdersLabel => _get('active_orders_label');
+
+  // Driver Rank
+  String get driverRankTitle => _get('driver_rank_title');
+  String get currentRank => _get('current_rank');
+  String get commissionLabel => _get('commission_label');
+  String get activeHoursNotice => _get('active_hours_notice');
+  String get details => _get('details');
+  String get rankBenefits => _get('rank_benefits');
+  String get currentBadge => _get('current_badge');
+  String get trialRank => _get('trial_rank');
+  String get bronzeRank => _get('bronze_rank');
+  String get silverRank => _get('silver_rank');
+  String get goldRank => _get('gold_rank');
+  String get trialRequirement => _get('trial_requirement');
+  String get bronzeRequirement => _get('bronze_requirement');
+  String get silverRequirement => _get('silver_requirement');
+  String get goldRequirement => _get('gold_requirement');
+  String get trialPeriodTitle => _get('trial_period_title');
+  String get trialPeriodMessage => _get('trial_period_message');
+  String get topRankTitle => _get('top_rank_title');
+  String progressToRank(String rank) => _get('progress_to_rank').replaceAll('{rank}', rank);
+  String hoursValue(String hours) => _get('hours_value').replaceAll('{hours}', hours);
+  String hoursRequired(String hours) => _get('hours_required').replaceAll('{hours}', hours);
+  String progressCompleted(String percent) => _get('progress_completed').replaceAll('{percent}', percent);
+  String get ranksApplyMonthly => _get('ranks_apply_monthly');
   String get backgroundLocationPermissionTitle => _get('background_location_permission_title');
   String get pleaseAllowAlways => _get('please_allow_always');
-  String get noCurrentOrders => _get('no_current_orders');
-  String get noPastOrders => _get('no_past_orders');
+
   String get ordersByStatus => _get('orders_by_status');
+
+  // Driver Dashboard Getters
+  String get notAvailableShort => _get('not_available_short');
+  String get merchantInfoUnavailable => _get('merchant_info_unavailable');
+  String get cannotMakeCall => _get('cannot_make_call');
+  String get cannotOpenWhatsapp => _get('cannot_open_whatsapp');
+  String get invalidCoordinates => _get('invalid_coordinates');
+  String get cannotOpenGoogleMaps => _get('cannot_open_google_maps');
+  String get failedOpenGoogleMaps => _get('failed_open_google_maps');
+  String get cannotOpenWaze => _get('cannot_open_waze');
+  String get failedOpenWaze => _get('failed_open_waze');
+  String get waitingLocationPermission => _get('waiting_location_permission');
+  String get determiningLocation => _get('determining_location');
+  String get currentLocationStatus => _get('current_location_status');
+  String get lastKnownLocation => _get('last_known_location');
+  String get uploadingProgress => _get('uploading_progress');
+  String get confirmAndFinish => _get('confirm_and_finish');
+  String get yourLocationButton => _get('your_location_button');
+  String get acceptOrderButton => _get('accept_order_button');
+  String get timeRemainingLabel => _get('time_remaining_label');
+
+  // Delivery Timer - Late popup
+  String get deliveryLateTitle => _get('delivery_late_title');
+  String get deliveryLateMessage => _get('delivery_late_message');
+  String get deliveryLateAck => _get('delivery_late_ack');
+  String get deliveryTimerInfoTitle => _get('delivery_timer_info_title');
+  String get deliveryTimerInfoMessage => _get('delivery_timer_info_message');
+  String get lateDurationLabel => _get('late_duration_label');
+  String get deliveryDurationTitle => _get('delivery_duration_title');
+  String get deliveryDurationNotAvailable => _get('delivery_duration_not_available');
+  String get deliveryDurationOnTime => _get('delivery_duration_on_time');
+  String get deliveryDurationLate => _get('delivery_duration_late');
 }
 
 class _AppLocalizationsDelegate

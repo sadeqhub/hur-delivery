@@ -91,7 +91,7 @@ class LanguageSwitcherTile extends StatelessWidget {
     final isArabic = localeProvider.isArabic;
 
     return ListTile(
-      leading: Icon(Icons.language, color: AppColors.primary),
+      leading: const Icon(Icons.language, color: AppColors.primary),
       title: Text(loc.language),
       subtitle: Text(isArabic ? loc.languageArabic : loc.languageEnglish),
       trailing: Row(
@@ -105,14 +105,14 @@ class LanguageSwitcherTile extends StatelessWidget {
             ),
             child: Text(
               isArabic ? 'ع' : 'EN',
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: AppColors.primary,
               ),
             ),
           ),
           const SizedBox(width: 8),
-          Icon(
+          const Icon(
             Icons.arrow_forward_ios,
             size: 16,
             color: AppColors.textTertiary,

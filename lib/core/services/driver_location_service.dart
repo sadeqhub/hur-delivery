@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DriverLocationService {
   static const String _baseUrl = 'https://bvtoxmmiitznagsbubhg.supabase.co';
@@ -91,22 +92,18 @@ class DriverLocationService {
   /// Mark that driver has been notified about customer location
   static Future<bool> markDriverNotified(String orderId) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/functions/v1/mark-driver-notified'),
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': _apiKey,
-        },
-        body: json.encode({'order_id': orderId}),
+      // Use the database function directly instead of edge function
+      final response = await Supabase.instance.client.rpc(
+        'mark_driver_notified_location',
+        params: {'p_order_id': orderId},
       );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['success'] == true;
+      if (response != null) {
+        print('✅ Marked driver as notified for order $orderId');
+        return true;
       } else {
         if (kDebugMode) {
-          print('❌ Failed to mark driver as notified: ${response.statusCode}');
-          print('Response: ${response.body}');
+          print('❌ Failed to mark driver as notified');
         }
         return false;
       }
@@ -120,8 +117,9 @@ class DriverLocationService {
 
   /// Get location update notification message for driver
   static String getLocationUpdateMessage(CustomerLocationUpdate update) {
+    final orderCode = update.userFriendlyCode ?? update.orderId.substring(0, 8);
     return '📍 العميل ${update.customerName} قد أرسل موقعه!\n\n'
-           'الطلب: ${update.orderId.substring(0, 8)}...\n'
+           'الطلب: $orderCode...\n'
            'التاجر: ${update.merchantName}\n\n'
            '✅ لا حاجة للاتصال بالعميل - الموقع متوفر الآن';
   }
@@ -138,6 +136,7 @@ class DriverLocationService {
 
 class CustomerLocationUpdate {
   final String orderId;
+  final String? userFriendlyCode;
   final String customerName;
   final String customerPhone;
   final String deliveryAddress;
@@ -150,6 +149,7 @@ class CustomerLocationUpdate {
 
   CustomerLocationUpdate({
     required this.orderId,
+    this.userFriendlyCode,
     required this.customerName,
     required this.customerPhone,
     required this.deliveryAddress,
@@ -164,6 +164,7 @@ class CustomerLocationUpdate {
   factory CustomerLocationUpdate.fromJson(Map<String, dynamic> json) {
     return CustomerLocationUpdate(
       orderId: json['order_id'] ?? '',
+      userFriendlyCode: json['user_friendly_code'] as String?,
       customerName: json['customer_name'] ?? '',
       customerPhone: json['customer_phone'] ?? '',
       deliveryAddress: json['delivery_address'] ?? '',

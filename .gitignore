@@ -5,9 +5,11 @@
 *.swp
 .DS_Store
 .atom/
+.build/
 .buildlog/
 .history
 .svn/
+.swiftpm/
 migrate_working_dir/
 
 # IntelliJ related
@@ -51,6 +53,7 @@ dist/
 .env
 .env.local
 .env.*.local
+ios/Flutter/Secrets.xcconfig
 
 # Firebase
 **/google-services.json
@@ -64,6 +67,9 @@ firebase_options.dart
 
 # Local deployment folders
 .netlify
+
+# Raw hero animation source frames (optimized WebPs are committed under website/public/hero-frames)
+/hero-section-animation/
 
 # Credentials and secrets
 ADMIN_CREDENTIALS.txt

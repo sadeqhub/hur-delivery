@@ -2,7 +2,7 @@ import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiDownload, FiArrowRight, FiArrowLeft } from 'react-icons/fi';
-import { RiGooglePlayFill, RiAppStoreFill } from 'react-icons/ri';
+import { RiGooglePlayFill } from 'react-icons/ri';
 import '../styles/CTA.css';
 
 const CTA = () => {
@@ -93,7 +93,9 @@ const CTA = () => {
 
             <div className="store-buttons">
               <motion.a
-                href="#"
+                href="https://play.google.com/store/apps/details?id=com.hur.delivery"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="store-button"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -102,19 +104,6 @@ const CTA = () => {
                 <div className="store-text">
                   <span className="store-label">{i18n.language === 'ar' ? 'حمّل من' : 'Get it on'}</span>
                   <span className="store-name">Google Play</span>
-                </div>
-              </motion.a>
-
-              <motion.a
-                href="#"
-                className="store-button"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <RiAppStoreFill className="store-icon" />
-                <div className="store-text">
-                  <span className="store-label">{i18n.language === 'ar' ? 'حمّل من' : 'Download on'}</span>
-                  <span className="store-name">App Store</span>
                 </div>
               </motion.a>
             </div>

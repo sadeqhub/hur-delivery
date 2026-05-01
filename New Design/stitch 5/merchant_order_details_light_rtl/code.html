@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&amp;family=Manrope:wght@300;400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f8f9fa",
+                    "tertiary-fixed": "#ffdbc8",
+                    "surface-dim": "#d9dadb",
+                    "tertiary-fixed-dim": "#ffb68a",
+                    "surface-bright": "#f8f9fa",
+                    "background": "#f8f9fa",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#6ed6df",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#3755c3",
+                    "on-background": "#191c1d",
+                    "surface-tint": "#006970",
+                    "secondary-fixed": "#dde1ff",
+                    "on-tertiary-fixed": "#321300",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-secondary-fixed-variant": "#173bab",
+                    "on-secondary-container": "#00217a",
+                    "on-surface-variant": "#3d494a",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#2e3132",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-container-high": "#e7e8e9",
+                    "tertiary": "#8d4a19",
+                    "on-primary-container": "#f5feff",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed-dim": "#6ed6df",
+                    "outline-variant": "#bdc9ca",
+                    "primary-container": "#00818a",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#ab6230",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "surface-container": "#edeeef",
+                    "secondary-container": "#708cfd",
+                    "on-surface": "#191c1d",
+                    "primary-fixed": "#8cf2fc",
+                    "on-tertiary-fixed-variant": "#733604",
+                    "surface-variant": "#e1e3e4",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#001453",
+                    "primary": "#00666d",
+                    "inverse-on-surface": "#f0f1f2",
+                    "outline": "#6d797a",
+                    "on-tertiary-container": "#fffbff",
+                    "on-primary-fixed-variant": "#004f54",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#002022"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope", "Tajawal"],
+                    "body": ["Manrope", "Tajawal"],
+                    "label": ["Manrope", "Tajawal"],
+                    "tajawal": ["Tajawal"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Tajawal', 'Manrope', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface selection:bg-primary-fixed">
+<!-- Top Navigation Anchor (Shared Component Mapping) -->
+<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-lg shadow-sm shadow-teal-900/5 px-6 py-4 flex justify-between items-center">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform text-teal-700">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="text-2xl font-black text-teal-800 tracking-tighter">Hur Delivery</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-left md:text-right hidden sm:block">
+<p class="font-tajawal text-sm font-bold text-teal-700">أحمد النجفي</p>
+<p class="text-[10px] text-stone-500 uppercase tracking-widest">Premier Merchant</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border-2 border-primary-fixed">
+<img class="w-full h-full object-cover" data-alt="close-up portrait of a professional middle eastern businessman with a kind smile, studio lighting, clean background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0JGVBfWGdSyPSscJIdJ77uTu_fO0F8-BUKqf6uzF2LZCpbztjvVqlfXJML54ccRxKagj85ht_phCpQnmV0LRNBVasE4VBQdOGrBTl2IYbZHlC4n-scTqr6bfPYGUCVzdhYXX1fxsSiLv5khnMR-fjZv-5EqaZiKQ4l1NFLn-LgMps-h-VvasEagiWEiIw-yW3cbe9mtKMVSvE-DlqZ6aY0sgeyUwUCVEcNtCR7MytTbdPMsozS23U9dUxsnGTPyV06Fg6LerzSVv3"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-4 max-w-5xl mx-auto space-y-6">
+<!-- Order Header Card (Asymmetric Bento Style) -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="lg:col-span-2 bg-surface-container-lowest rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-8 opacity-5 text-9xl font-black select-none group-hover:scale-110 transition-transform duration-700">#HUR-9283</div>
+<div class="relative z-10">
+<span class="inline-block px-3 py-1 bg-primary-container text-on-primary-container rounded-full font-label text-[10px] font-bold tracking-widest uppercase mb-4">In Progress</span>
+<h2 class="text-4xl font-black font-tajawal text-on-surface mb-2 tracking-tight">تفاصيل الطلب</h2>
+<p class="text-on-surface-variant font-headline text-lg">Order ID: <span class="font-bold text-primary">#HUR-9283-MX</span></p>
+</div>
+<div class="mt-8 flex gap-6">
+<div class="bg-surface-container-low px-6 py-4 rounded-xl flex-1">
+<p class="text-xs text-on-surface-variant font-bold mb-1">وقت الطلب</p>
+<p class="font-headline font-bold text-on-surface">14:30 | 12 May</p>
+</div>
+<div class="bg-surface-container-low px-6 py-4 rounded-xl flex-1">
+<p class="text-xs text-on-surface-variant font-bold mb-1">طريقة الدفع</p>
+<p class="font-headline font-bold text-on-surface">نقداً عند الاستلام</p>
+</div>
+</div>
+</div>
+<!-- Map Mini Preview (Kinetic Sanctuary Style) -->
+<div class="bg-surface-container-low rounded-2xl overflow-hidden relative min-h-[240px]">
+<div class="absolute inset-0 bg-stone-200">
+<img class="w-full h-full object-cover grayscale contrast-125" data-alt="top-down satellite map view of a city grid with stylized teal and grey colors, showing navigation routes" data-location="Najaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZtzxBJYNQNYFHp6v2vzSH8Hi1UH-lRpuvgr0qrIkRyBGsGWOOsPnQA-FcidKwqtVIGFGLAfoWbdE2_Q9YCaV7X_KsLI2D6ceb0R9yyTdVhhXGGOiPQ5cvp8zmT-5Pe3WyUIzpTBcwAhDzxtqiak5fXfuVz53bCPH5fUw-APtlYOWCzcb0fUg-svmXfO98gB-KFXoY6m45xeNxh4IeAoZoBpjxsTTlojMNIcm2e6bBandIw2Wyso-kcnHGC3KSp6_2kOlsp0a63LYI"/>
+</div>
+<div class="absolute inset-0 bg-gradient-to-t from-surface/80 to-transparent"></div>
+<div class="absolute bottom-4 left-4 right-4 glass-panel p-4 rounded-xl flex items-center justify-between">
+<div>
+<p class="text-[10px] font-black uppercase text-primary">Delivery Route</p>
+<p class="text-sm font-bold text-on-surface truncate">حي السعد، النجف الأشرف</p>
+</div>
+<div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30">
+<span class="material-symbols-outlined">directions_run</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Status Progress Stepper (5-step) -->
+<section class="bg-surface-container-lowest rounded-2xl p-8">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 relative">
+<!-- Progress Line -->
+<div class="hidden md:block absolute top-[18px] left-[5%] right-[5%] h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[75%] transition-all duration-1000"></div>
+</div>
+<!-- Step 1 -->
+<div class="flex md:flex-col items-center gap-4 md:gap-3 z-10 w-full md:w-auto">
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center ring-4 ring-primary-fixed">
+<span class="material-symbols-outlined">check</span>
+</div>
+<div class="flex flex-col md:items-center">
+<p class="font-bold text-xs md:text-center text-on-surface">استلام</p>
+<span class="text-[10px] text-on-surface-variant font-medium">14:32</span>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="flex md:flex-col items-center gap-4 md:gap-3 z-10 w-full md:w-auto">
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center ring-4 ring-primary-fixed">
+<span class="material-symbols-outlined">check</span>
+</div>
+<div class="flex flex-col md:items-center">
+<p class="font-bold text-xs md:text-center text-on-surface">تحضير</p>
+<span class="text-[10px] text-on-surface-variant font-medium">14:45</span>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="flex md:flex-col items-center gap-4 md:gap-3 z-10 w-full md:w-auto">
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center ring-4 ring-primary-fixed">
+<span class="material-symbols-outlined">check</span>
+</div>
+<div class="flex flex-col md:items-center">
+<p class="font-bold text-xs md:text-center text-on-surface">في الطريق</p>
+<span class="text-[10px] text-on-surface-variant font-medium">14:58</span>
+</div>
+</div>
+<!-- Step 4 (Active) -->
+<div class="flex md:flex-col items-center gap-4 md:gap-3 z-10 w-full md:w-auto">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center animate-pulse ring-4 ring-primary/20">
+<span class="material-symbols-outlined">local_shipping</span>
+</div>
+<div class="flex flex-col md:items-center">
+<p class="font-black text-xs md:text-center text-primary">قرب الموقع</p>
+<span class="text-[10px] text-primary font-bold">المتوقع 15:15</span>
+</div>
+</div>
+<!-- Step 5 -->
+<div class="flex md:flex-col items-center gap-4 md:gap-3 z-10 w-full md:w-auto opacity-40">
+<div class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined">how_to_reg</span>
+</div>
+<div class="flex flex-col md:items-center">
+<p class="font-bold text-xs md:text-center text-on-surface">تم التسليم</p>
+<span class="text-[10px] text-on-surface-variant font-medium">---</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Stakeholders Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Customer Info -->
+<div class="bg-surface-container-lowest rounded-2xl p-6 flex flex-col gap-6">
+<div class="flex justify-between items-center border-b border-surface-container-high pb-4">
+<h3 class="font-tajawal font-black text-on-surface">معلومات العميل</h3>
+<span class="material-symbols-outlined text-stone-300">person</span>
+</div>
+<div class="flex items-center gap-4">
+<img class="w-14 h-14 rounded-2xl object-cover border-2 border-surface-container" data-alt="candid portrait of a young man smiling, urban background, cinematic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcxP780FNKRfhHowlrU7sq1rl5xGkWfa5-_vLnLn2BL3rkPsM0VqPl78_AHgZPBvK_VunejzWI9OrCqx0SiEHvlqEZjNaUav0Su1O4IMwQSlVQ1Og9IUI3AAOVev4KZ3nFpXZP1N5zMWFOnb87ZPTbbX74GE6ZwYgx1YiO9qM28dhCSkCH6o_cDox9e1OwmFAtUSd1JZy8RG-soYhm3rWIEOPIgKI6HCL7kmJ1uRUAQ_x58cZvkvIKJjQ0g_iEl0jeh2Ommb83NH6B"/>
+<div>
+<p class="font-bold text-lg text-on-surface">محمد جاسم العبيدي</p>
+<p class="text-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                            النجف - حي السلام
+                        </p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary text-on-primary py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-base">chat_bubble</span>
+                        مراسلة
+                    </button>
+<button class="w-12 h-12 bg-surface-container-high text-secondary flex items-center justify-center rounded-xl active:scale-95 transition-transform">
+<span class="material-symbols-outlined">call</span>
+</button>
+</div>
+</div>
+<!-- Driver Info -->
+<div class="bg-surface-container-lowest rounded-2xl p-6 flex flex-col gap-6">
+<div class="flex justify-between items-center border-b border-surface-container-high pb-4">
+<h3 class="font-tajawal font-black text-on-surface">الكابتن</h3>
+<span class="material-symbols-outlined text-stone-300">motorcycle</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="w-14 h-14 rounded-2xl object-cover border-2 border-surface-container" data-alt="professional driver profile photo, smiling, wearing a delivery cap, outdoor daytime lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXJpRTDrtxhCg3rw7XwFp7KbO5euGP95_faxOPhTqT1M4aUn7LieU8rdJIJwpDbByFnbw5aZSccVzjKoHX9UsFXgDfrCYjndlaltC0ws4YXHwlihI-sunrTGiLLOkXjtqt6DVGVZTN2bi9DkYKWP4aUihjNr97Sf_xshK8FoE4FD-TaF1q6s_v6AZuaetu9lMkjWwW0TdGfL_S_p_Mb7ATcfqAod12M1HVFasaewxkvUTk_0XQZThn2tTBfD3M8WnQmtmZ5PeUPwWj"/>
+<div class="absolute -bottom-1 -right-1 bg-secondary text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] border-2 border-white">
+<span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<div>
+<p class="font-bold text-lg text-on-surface">كرار حيدر</p>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-secondary-fixed text-on-secondary-fixed-variant rounded-md text-[10px] font-bold">ID: 7721</span>
+<span class="text-xs text-on-surface-variant">تويوتا كورولا - 1229أ</span>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-surface-container-high text-on-surface-variant py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-base">share_location</span>
+                        تتبع المسار
+                    </button>
+<button class="w-12 h-12 bg-surface-container-high text-secondary flex items-center justify-center rounded-xl active:scale-95 transition-transform">
+<span class="material-symbols-outlined">call</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Order Items & Billing (High-End Table) -->
+<section class="bg-surface-container-lowest rounded-2xl overflow-hidden">
+<div class="p-8 border-b border-surface-container">
+<h3 class="font-tajawal font-black text-xl text-on-surface">قائمة المشتريات</h3>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-right border-collapse">
+<thead class="bg-surface-container-low text-on-surface-variant text-[10px] font-bold uppercase tracking-widest">
+<tr>
+<th class="px-8 py-4">المنتج</th>
+<th class="px-8 py-4">الكمية</th>
+<th class="px-8 py-4">السعر</th>
+<th class="px-8 py-4">الإجمالي</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-high">
+<tr class="group hover:bg-surface-container-lowest transition-colors">
+<td class="px-8 py-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="gourmet plated dish with fresh ingredients, professional food photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4x9I4qMdm0P6jFVlQH3OaUa52rJON9MXj6rtF7Jn7ik5IU6WrrNL1DQ6aZokBUt5GSnf1SnjOf5RCf0NbQNWLl_ncGzggoNawdAOvbgs2wzK1Y0E8NjQ9iQQjyTr-WTjtmySeDqwkmql_vJGNahh5t5FW3UJq8INzjlYlxhkp1BmiY1QREj2zr1tZVfSahsAM1gOuNCQSgAckZKU_KHlmGy5y_-y0WwYETOPbZLiq76u-RMVmg7Ovu0zt2B_aHltBzL4E8iFnGaiD"/>
+</div>
+<p class="font-bold text-on-surface">وجبة برغر كلاسيك عائلية</p>
+</div>
+</td>
+<td class="px-8 py-6 font-headline font-medium text-on-surface-variant">2x</td>
+<td class="px-8 py-6 font-headline font-medium text-on-surface-variant">12,500 د.ع</td>
+<td class="px-8 py-6 font-headline font-bold text-on-surface">25,000 د.ع</td>
+</tr>
+<tr class="group hover:bg-surface-container-lowest transition-colors">
+<td class="px-8 py-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="cold refreshing soda glass with ice and mint, vibrant lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyJNsnDkTkbOQEQz_DWQXpIkoufNAdSt7Dr-iGzZPBwrLTkDlaD8Bc04dKJ1YMlEn9Zynv0QSWVPKgB3sDOmdV2D5wEx-TSgeCnCdKGDhB9FyuEwrqzdIGAK5RDx73FSdN2hdxOqaUgqdJ7kI8Z0GEpK0sKapfRwHfIFoBe8prRUGpEKCpJ61Xl6Nf5Rd44_MSWJMEX3UoJsMGIUDYPyilYoBpdUb8kGzGsHnpuLUND4l8rlYeRS0p-jVeYuC50XclfHNNdBI75U9U"/>
+</div>
+<p class="font-bold text-on-surface">مشروب غازي - حجم كبير</p>
+</div>
+</td>
+<td class="px-8 py-6 font-headline font-medium text-on-surface-variant">3x</td>
+<td class="px-8 py-6 font-headline font-medium text-on-surface-variant">1,500 د.ع</td>
+<td class="px-8 py-6 font-headline font-bold text-on-surface">4,500 د.ع</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Fee Breakdown -->
+<div class="p-8 bg-surface-container-low/50 flex flex-col md:flex-row gap-8 justify-between">
+<div class="flex-1 space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant text-sm">المجموع الفرعي</span>
+<span class="font-headline font-bold text-on-surface">29,500 د.ع</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant text-sm">أجور التوصيل</span>
+<span class="font-headline font-bold text-primary">3,000 د.ع</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant text-sm">الخصم (برومو)</span>
+<span class="font-headline font-bold text-error">- 2,500 د.ع</span>
+</div>
+</div>
+<div class="hidden md:block w-[1px] bg-outline-variant/30"></div>
+<div class="flex-1 flex flex-col justify-center">
+<p class="text-[10px] font-black uppercase text-secondary mb-1">المبلغ الإجمالي</p>
+<p class="text-4xl font-black font-headline text-on-surface">30,000 <span class="text-sm font-medium">د.ع</span></p>
+</div>
+</div>
+</section>
+<!-- Final Actions -->
+<section class="flex flex-col sm:flex-row gap-4 pt-4">
+<button class="flex-[2] bg-gradient-to-tr from-primary to-primary-container text-on-primary py-4 rounded-xl font-black text-lg shadow-xl shadow-primary/20 active:scale-[0.98] transition-transform">
+                تم استلام الطلب بنجاح
+            </button>
+<button class="flex-1 bg-error-container text-on-error-container py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-error/10 transition-colors">
+<span class="material-symbols-outlined">cancel</span>
+                إلغاء الطلب
+            </button>
+</section>
+</main>
+<!-- Bottom Navigation Shell (Shared Component Mapping) -->
+<nav class="fixed bottom-0 w-full rounded-t-[32px] z-50 bg-white/70 backdrop-blur-2xl shadow-[0_-8px_24px_rgba(0,0,0,0.06)] md:hidden">
+<div class="flex justify-around items-center px-4 pb-6 pt-3 w-full max-w-lg mx-auto">
+<a class="flex flex-col items-center justify-center bg-teal-50 text-teal-700 rounded-2xl px-5 py-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">list_alt</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center text-stone-400 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Menu</span>
+</a>
+<a class="flex flex-col items-center justify-center text-stone-400 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Analytics</span>
+</a>
+<a class="flex flex-col items-center justify-center text-stone-400 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Side Nav for Web (Implicit Conversion) -->
+<div class="hidden md:flex fixed right-0 top-0 h-full w-20 bg-white border-l border-surface-container items-center flex-col py-10 gap-8 z-40">
+<div class="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center text-white">
+<span class="material-symbols-outlined">dashboard</span>
+</div>
+<div class="flex flex-col gap-6">
+<span class="material-symbols-outlined text-primary cursor-pointer" style="font-variation-settings: 'FILL' 1;">list_alt</span>
+<span class="material-symbols-outlined text-stone-400 cursor-pointer hover:text-primary transition-colors">restaurant_menu</span>
+<span class="material-symbols-outlined text-stone-400 cursor-pointer hover:text-primary transition-colors">bar_chart</span>
+<span class="material-symbols-outlined text-stone-400 cursor-pointer hover:text-primary transition-colors">notifications</span>
+</div>
+<div class="mt-auto">
+<span class="material-symbols-outlined text-stone-400 cursor-pointer hover:text-error transition-colors">logout</span>
+</div>
+</div>
+</body></html>

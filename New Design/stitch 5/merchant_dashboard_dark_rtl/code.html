@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&amp;family=Manrope:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface": "#191c1d",
+                        "tertiary-fixed": "#ffdbc8",
+                        "surface-dim": "#0e1111",
+                        "tertiary-fixed-dim": "#ffb68a",
+                        "surface-bright": "#1f2223",
+                        "background": "#0e1111",
+                        "error": "#ffb4ab",
+                        "inverse-primary": "#006970",
+                        "surface-container-lowest": "#090c0d",
+                        "secondary": "#b8c4ff",
+                        "on-background": "#e1e3e4",
+                        "surface-tint": "#6ed6df",
+                        "secondary-fixed": "#dde1ff",
+                        "on-tertiary-fixed": "#321300",
+                        "surface-container-highest": "#333537",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "on-secondary-container": "#dde1ff",
+                        "on-surface-variant": "#bec8c9",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#e1e3e4",
+                        "surface-container-low": "#1d2021",
+                        "surface-container-high": "#282a2b",
+                        "tertiary": "#ffb68a",
+                        "on-primary-container": "#8cf2fc",
+                        "on-secondary": "#00217a",
+                        "primary-fixed-dim": "#6ed6df",
+                        "outline-variant": "#3f4849",
+                        "primary-container": "#004f54",
+                        "error-container": "#93000a",
+                        "tertiary-container": "#733604",
+                        "on-primary": "#00373a",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "surface-container": "#212425",
+                        "secondary-container": "#173bab",
+                        "on-surface": "#e1e3e4",
+                        "primary-fixed": "#8cf2fc",
+                        "on-tertiary-fixed-variant": "#733604",
+                        "surface-variant": "#3f4849",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#001453",
+                        "primary": "#6ed6df",
+                        "inverse-on-surface": "#191c1d",
+                        "outline": "#899393",
+                        "on-tertiary-container": "#ffdbc8",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-tertiary": "#542100",
+                        "on-primary-fixed": "#002022"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["Tajawal", "Manrope", "sans-serif"],
+                        "body": ["Tajawal", "Manrope", "sans-serif"],
+                        "label": ["Tajawal", "Manrope", "sans-serif"],
+                        "tajawal": ["Tajawal", "sans-serif"],
+                        "manrope": ["Manrope", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(25, 28, 29, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-stone-950/80 backdrop-blur-lg shadow-sm shadow-teal-900/5 px-6 py-4 flex justify-between items-center">
+<div class="flex items-center gap-4">
+<button class="text-teal-400 active:scale-95 transition-transform hover:bg-stone-800/50 p-2 rounded-xl">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-tajawal text-2xl font-black text-teal-200 tracking-tighter">Hur Delivery</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-left md:text-right hidden sm:block">
+<p class="text-xs font-bold text-teal-400 font-manrope">PREMIER MERCHANT</p>
+<p class="text-sm font-medium opacity-80">Ahmed Al-Najafi</p>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
+<img alt="Merchant Profile" class="w-full h-full object-cover" data-alt="Professional headshot of a middle-eastern man in business attire, warm studio lighting, soft depth of field" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-fPK6zGjMMiWYWeJxDCvtklpYWIEOpSv6J1Eavn8CsfCMVyHNAp29R_Cz5YXJFHHNPD78oLUKKSVgThMotJgZxte98JXYa0dFpamcCsK7hgcFk0KNB5jvy-gciNCorUF70xGBTvKQFsaJtlk9f6sTSFjXv-Ve11-EqB2h-8WOl_IKJXue8XohbVydS17ykusGFwXDeB7s5U3-KzJg6PvjSxprehGUBxFdvd9hP1pEq9lJmtijeksZjMu6Za0ilHI-kKc50vFtCY1u"/>
+</div>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-7xl mx-auto space-y-8">
+<!-- Stats Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="md:col-span-2 bg-surface-container-low p-6 rounded-[24px] flex flex-col justify-between relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/20 transition-colors"></div>
+<div class="flex justify-between items-start">
+<div>
+<p class="text-on-surface-variant font-medium mb-1">إجمالي المبيعات اليوم</p>
+<h2 class="text-4xl font-extrabold font-manrope text-primary tracking-tight">1,240,500 <span class="text-lg font-tajawal">د.ع</span></h2>
+</div>
+<span class="material-symbols-outlined text-primary bg-primary/10 p-3 rounded-2xl" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<div class="mt-6 flex items-center gap-2 text-sm">
+<span class="text-teal-400 flex items-center font-manrope font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span> +12%
+                    </span>
+<span class="opacity-50">مقارنة بالأمس</span>
+</div>
+</div>
+<div class="bg-surface-container-high p-6 rounded-[24px] flex flex-col justify-between">
+<div class="flex justify-between">
+<p class="text-on-surface-variant font-medium">طلبات نشطة</p>
+<span class="material-symbols-outlined text-secondary" data-icon="package_2">package_2</span>
+</div>
+<div>
+<h2 class="text-5xl font-extrabold font-manrope">18</h2>
+<p class="text-xs text-secondary mt-2 font-bold uppercase tracking-widest">Processing Now</p>
+</div>
+</div>
+<div class="bg-surface-container-high p-6 rounded-[24px] flex flex-col justify-between">
+<div class="flex justify-between">
+<p class="text-on-surface-variant font-medium">وقت التحضير</p>
+<span class="material-symbols-outlined text-tertiary" data-icon="avg_time">avg_time</span>
+</div>
+<div>
+<h2 class="text-5xl font-extrabold font-manrope">14</h2>
+<p class="text-xs text-tertiary mt-2 font-bold uppercase tracking-widest">Minutes Avg</p>
+</div>
+</div>
+</section>
+<!-- Active Orders Scroll -->
+<section class="space-y-4">
+<div class="flex justify-between items-end">
+<div>
+<h3 class="text-xl font-bold font-tajawal text-teal-200">الطلبات الجارية</h3>
+<p class="text-sm text-on-surface-variant">تتبع حالة التحضير والتوصيل الحالية</p>
+</div>
+<button class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+                    عرض الكل <span class="material-symbols-outlined text-sm" data-icon="chevron_left">chevron_left</span>
+</button>
+</div>
+<div class="flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6">
+<!-- Order Card 1 -->
+<div class="min-w-[300px] bg-surface-container-lowest border border-outline-variant/10 p-5 rounded-[20px] shadow-lg shadow-black/20 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="bg-teal-900/40 text-teal-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-tighter">Preparing</span>
+<div class="text-left font-manrope text-xs opacity-60">#HR-9921</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Gourmet pepperoni pizza with melted cheese and fresh basil on a dark stone background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOfgG2GXPrKSjyMb5KrYDVenBC-h25PfKalvmpVC4Z7n_Mv27hnvHlZm9WaldNV3BMwl_krSBEtBbc87GrYHM_caP5cbyD2dE7z0QjAd6iiDqKDRPyPdB4i7u79OyvNgWl2xeMo2YlhVJ2uCa-_3CKFz86tEB-Hs1_chd6wx8qWH9rELJPBbi0JaSdI_iwOu6Gb7xEwVV8o3m3aG9uBnFIFcV2OfYFerx_S59RsbTzeYogDFAv3M95wJ_BeX_TQ_GIl9-RxD75JIj8"/>
+</div>
+<div>
+<h4 class="font-bold text-sm">بيتزا بيبروني كبيرة</h4>
+<p class="text-xs text-on-surface-variant">زبون: محمد العلي</p>
+</div>
+</div>
+<div class="h-[1px] bg-outline-variant/10"></div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-lg" data-icon="schedule">schedule</span>
+<span class="font-manrope font-bold text-lg">08:45</span>
+</div>
+<button class="bg-primary/10 text-primary px-4 py-2 rounded-xl text-xs font-bold active:scale-95 transition-transform">تفاصيل</button>
+</div>
+</div>
+<!-- Order Card 2 -->
+<div class="min-w-[300px] bg-surface-container-lowest border border-outline-variant/10 p-5 rounded-[20px] shadow-lg shadow-black/20 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="bg-secondary-container/40 text-secondary text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-tighter">On Way</span>
+<div class="text-left font-manrope text-xs opacity-60">#HR-9925</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Juicy double cheeseburger with fresh lettuce and tomato on a toasted brioche bun" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHhSt_cco9ycN4monOEqTqawjF4RAWVi3YdP9YUT5xEUlUeAUy4qjfly_wrF-8vo2lR7EpuON0FCyPFtsCk8URRGqT8Ccj0dzN0i2l0vvKQRHnKE_7-aQJDJE1jVREEZhIETziHEQKp9PHWtC9CoTXxeA7ITuvPXsjQLQ44y8N-7PJaqRAJRpxuvXmg_MvodcZUd_8jXMYTqXH6uElkpYXE7iRFMO58SsXyB9ukR9SnGs2M0vgsMokLyhUKFSgMeeFHE-C-wbWWWV4"/>
+</div>
+<div>
+<h4 class="font-bold text-sm">وجبة برجر دبل</h4>
+<p class="text-xs text-on-surface-variant">زبون: سارة جاسم</p>
+</div>
+</div>
+<div class="h-[1px] bg-outline-variant/10"></div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2 text-secondary">
+<span class="material-symbols-outlined text-lg" data-icon="delivery_dining">delivery_dining</span>
+<span class="font-manrope font-bold text-lg">12:20</span>
+</div>
+<button class="bg-secondary/10 text-secondary px-4 py-2 rounded-xl text-xs font-bold active:scale-95 transition-transform">تتبع</button>
+</div>
+</div>
+<!-- Order Card 3 -->
+<div class="min-w-[300px] bg-surface-container-lowest border border-outline-variant/10 p-5 rounded-[20px] shadow-lg shadow-black/20 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="bg-tertiary-container/40 text-tertiary text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-tighter">Ready</span>
+<div class="text-left font-manrope text-xs opacity-60">#HR-9928</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Fresh caesar salad with grilled chicken and parmesan shavings in a white ceramic bowl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxn7eLt4Uhr-RUbSAZJfIBe8M9ll54hRDJT8pIsn6xH5ITYmKLeYb8rdkoeLwZo5400DB36XtgK5GSW_Hm1CnYS6p7qsV2dCEm42L1MTRL-70r6qOPyA5DrCErgc--_5BWNXj-99eJ3AQnyPz_Ta5V5uiH6115eMeuDsIQF1_BWNKBIIjv59vuy0ZV0PvaO5QL_Uv_3n4skfwIIGuwtqFRiKHtxZIQ0CClbcWU75Qu31WwAF5WeNWeSrTxQq1wz8kA-4AbTWDKPha-"/>
+</div>
+<div>
+<h4 class="font-bold text-sm">سلطة سيزر بالدجاج</h4>
+<p class="text-xs text-on-surface-variant">زبون: علي كريم</p>
+</div>
+</div>
+<div class="h-[1px] bg-outline-variant/10"></div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2 text-tertiary">
+<span class="material-symbols-outlined text-lg" data-icon="check_circle">check_circle</span>
+<span class="font-manrope font-bold text-lg">DONE</span>
+</div>
+<button class="bg-tertiary/10 text-tertiary px-4 py-2 rounded-xl text-xs font-bold active:scale-95 transition-transform">استلام</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Actions & Maps -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Quick Actions -->
+<div class="lg:col-span-1 space-y-4">
+<h3 class="text-xl font-bold font-tajawal text-teal-200">إجراءات سريعة</h3>
+<div class="grid grid-cols-2 gap-3">
+<button class="bg-primary hover:bg-primary-container text-on-primary p-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-3xl" data-icon="add_circle">add_circle</span>
+<span class="font-bold text-sm">طلب جديد</span>
+</button>
+<button class="bg-surface-container-high hover:bg-surface-container-highest p-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-95">
+<span class="material-symbols-outlined text-3xl text-primary" data-icon="analytics">analytics</span>
+<span class="font-bold text-sm">التحليلات</span>
+</button>
+<button class="bg-surface-container-high hover:bg-surface-container-highest p-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-95">
+<span class="material-symbols-outlined text-3xl text-primary" data-icon="menu_book">menu_book</span>
+<span class="font-bold text-sm">تعديل القائمة</span>
+</button>
+<button class="bg-surface-container-high hover:bg-surface-container-highest p-4 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-95">
+<span class="material-symbols-outlined text-3xl text-primary" data-icon="support_agent">support_agent</span>
+<span class="font-bold text-sm">الدعم الفني</span>
+</button>
+</div>
+<div class="bg-surface-container p-6 rounded-[24px] mt-4">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></div>
+<h4 class="font-bold">حالة المتجر</h4>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm opacity-70">يستقبل الطلبات حالياً</span>
+<div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-teal-600 transition-colors duration-200 ease-in-out">
+<span class="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</div>
+</div>
+</div>
+</div>
+<!-- Area Map View (Najaf Context) -->
+<div class="lg:col-span-2 relative min-h-[300px] rounded-[32px] overflow-hidden group shadow-2xl">
+<div class="absolute inset-0 bg-stone-900">
+<img class="w-full h-full object-cover opacity-50 grayscale contrast-125" data-alt="Modern stylized map interface with neon blue and dark grey tones showing urban street grids" data-location="Najaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCosy4ta6DSvFQWa5XDBxOHzlrP9Ddg0qZe3ezbRNxZC212Ho4uQ8wqZcugBlwP2FXpbiup9XJ8rqgtUmi7bpULd1HezjUDoPlryL370luVlNoN0UEBHS_DO59ZIiu2eNRgW7-QeuG31JQCy6iKm-tZd4a-3m9QP2C7rapH6w7_TM7YAMsl3fyCETdVwY8wbryNByDaj4cC3YCFhHcd9-GrUkqEYPKv_ieTk4HqNI_JYIWCBscDSpJCDvjwHBF3xmzroM07FHz93R1C"/>
+</div>
+<!-- Map UI Elements -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="relative">
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 glass-panel px-3 py-1.5 rounded-full border border-teal-500/30 whitespace-nowrap">
+<p class="text-[10px] font-bold text-teal-400">سائق قريب: 2 دقيقة</p>
+</div>
+<span class="material-symbols-outlined text-teal-400 text-4xl" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+</div>
+<!-- Glass Overlay Footer -->
+<div class="absolute bottom-4 left-4 right-4 glass-panel p-4 rounded-2xl border border-white/5 flex justify-between items-center">
+<div>
+<p class="text-xs opacity-60">منطقة التغطية الحالية</p>
+<h4 class="font-bold text-teal-200">النجف الأشرف - حي السعد</h4>
+</div>
+<div class="flex -space-x-2 rtl:space-x-reverse">
+<div class="w-8 h-8 rounded-full border-2 border-stone-950 bg-stone-800 flex items-center justify-center text-[10px] font-bold">12+</div>
+<div class="w-8 h-8 rounded-full border-2 border-stone-950 bg-teal-500 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait of a woman's face with professional lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrt8_tBQyLe6Ge1u7VSWJJ3askoU1IuHQdXmpMUuBv2D4RVk_auoSrdYG2BpgNxbQ1k9848uodfIfGa1GQtl5_rZaYBrrUGSXhFDXiYEYKC3AZY3se-T-oVPcBw5KlqCrOIijHDghiV19ngICakkpdSGKboeF-mP6MS5Dol94wcFInN6YlLHRkaP7QKx43ExRmOfzVm0c5hrWgJ9uvD3FAdN4ojwntqNOPOUtpb2xdOQWQ1cqE7JwMkaqMaBBNV2rnuL0fgp5r6Vyb"/>
+</div>
+<div class="w-8 h-8 rounded-full border-2 border-stone-950 bg-teal-700 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of a smiling man with sharp lighting and clean background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUSJQP-JSTBO0uaCi_8LfYrvqv-vUgv5a5wf4G7CmSTybawo3bAjRRSjcriowuGE5N4KQtpyvGU0531lWtGECKqFRH7CA9065Vkk2dAMEMGq62JYGulGx4jRxiMEjUgVBXfjU0X85diOyHaadzDxsHIrI3sU044laockmm2ilODdf9xWlQ44DT610IZp2QB891mApEfdrobxbkg-g5slbbLp4KbT6OtqpnUxSPD74AaxpnWZYdFNgKYhEjcyzF6T2VbA86nIqMZWbp"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full rounded-t-[32px] z-50 bg-stone-900/70 backdrop-blur-2xl shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+<div class="flex justify-around items-center px-4 pb-6 pt-3 w-full max-w-lg mx-auto">
+<button class="flex flex-col items-center justify-center bg-teal-900/30 text-teal-300 rounded-2xl px-5 py-2 active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Orders</span>
+</button>
+<button class="flex flex-col items-center justify-center text-stone-500 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Menu</span>
+</button>
+<button class="flex flex-col items-center justify-center text-stone-500 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Analytics</span>
+</button>
+<button class="flex flex-col items-center justify-center text-stone-500 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Settings</span>
+</button>
+</div>
+</nav>
+<!-- FAB for New Order (Mobile Only) -->
+<button class="fixed bottom-28 left-6 w-14 h-14 bg-teal-500 text-stone-950 rounded-2xl flex items-center justify-center shadow-xl shadow-teal-500/20 active:scale-90 transition-transform md:hidden">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</body></html>

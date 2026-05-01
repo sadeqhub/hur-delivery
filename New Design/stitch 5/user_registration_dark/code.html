@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&amp;family=Manrope:wght@400;500;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f8f9fa",
+                    "tertiary-fixed": "#ffdbc8",
+                    "surface-dim": "#d9dadb",
+                    "tertiary-fixed-dim": "#ffb68a",
+                    "surface-bright": "#f8f9fa",
+                    "background": "#f8f9fa",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#6ed6df",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#3755c3",
+                    "on-background": "#191c1d",
+                    "surface-tint": "#006970",
+                    "secondary-fixed": "#dde1ff",
+                    "on-tertiary-fixed": "#321300",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-secondary-fixed-variant": "#173bab",
+                    "on-secondary-container": "#00217a",
+                    "on-surface-variant": "#3d494a",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#2e3132",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-container-high": "#e7e8e9",
+                    "tertiary": "#8d4a19",
+                    "on-primary-container": "#f5feff",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed-dim": "#6ed6df",
+                    "outline-variant": "#bdc9ca",
+                    "primary-container": "#00818a",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#ab6230",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "surface-container": "#edeeef",
+                    "secondary-container": "#708cfd",
+                    "on-surface": "#191c1d",
+                    "primary-fixed": "#8cf2fc",
+                    "on-tertiary-fixed-variant": "#733604",
+                    "surface-variant": "#e1e3e4",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#001453",
+                    "primary": "#00666d",
+                    "inverse-on-surface": "#f0f1f2",
+                    "outline": "#6d797a",
+                    "on-tertiary-container": "#fffbff",
+                    "on-primary-fixed-variant": "#004f54",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#002022"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "tajawal": ["Tajawal", "sans-serif"],
+                    "headline": ["Manrope", "sans-serif"],
+                    "body": ["Manrope", "sans-serif"],
+                    "label": ["Manrope", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Tajawal', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-stone-950 text-white min-h-screen flex flex-col font-tajawal selection:bg-primary-container selection:text-white">
+<!-- Shell Suppression applied: No BottomNavBar or SideNav for Registration journey -->
+<!-- Header Section -->
+<header class="fixed top-0 w-full z-50 bg-stone-950/80 backdrop-blur-lg flex items-center justify-between px-6 py-6 h-20">
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-stone-900 text-stone-400 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<h1 class="text-2xl font-black text-teal-400 tracking-tighter">Hur Delivery</h1>
+<div class="w-10"></div> <!-- Spacer for symmetry -->
+</header>
+<main class="flex-grow flex flex-col pt-24 px-6 pb-12 max-w-lg mx-auto w-full">
+<!-- Progress Indicator -->
+<div class="mb-12">
+<div class="flex justify-between items-center mb-4">
+<span class="text-primary font-bold text-sm tracking-widest uppercase">الخطوة 01 من 03</span>
+<span class="text-stone-500 font-medium text-sm">33% مكتمل</span>
+</div>
+<div class="h-1.5 w-full bg-stone-900 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-1/3 rounded-full"></div>
+</div>
+</div>
+<!-- Hero Text -->
+<section class="mb-10">
+<h2 class="text-4xl font-extrabold tracking-tight text-white mb-3">لنبدأ رحلتك</h2>
+<p class="text-stone-400 text-lg leading-relaxed">أدخل اسمك الكامل وأي رمز إحالة تملكه للانضمام إلى نخبة مرسلي حر.</p>
+</section>
+<!-- Form Section -->
+<form class="space-y-8">
+<!-- Full Name Input -->
+<div class="space-y-3">
+<label class="block text-sm font-bold text-stone-300 mr-1" for="full_name">الاسم الكامل</label>
+<div class="relative group">
+<input class="w-full bg-stone-900 border-none rounded-2xl px-5 py-4 text-white placeholder:text-stone-600 focus:ring-2 focus:ring-primary transition-all text-lg" id="full_name" name="full_name" placeholder="أدخل اسمك كما في الهوية" type="text"/>
+<div class="absolute inset-y-0 left-5 flex items-center pointer-events-none text-stone-600 group-focus-within:text-primary">
+<span class="material-symbols-outlined">person</span>
+</div>
+</div>
+</div>
+<!-- Referral Code Input (Optional) -->
+<div class="space-y-3">
+<div class="flex justify-between items-center mr-1">
+<label class="block text-sm font-bold text-stone-300" for="referral">رمز الإحالة</label>
+<span class="text-xs font-medium text-stone-500 bg-stone-900 px-2 py-1 rounded-lg">اختياري</span>
+</div>
+<div class="relative group">
+<input class="w-full bg-stone-900 border-none rounded-2xl px-5 py-4 text-white placeholder:text-stone-600 focus:ring-2 focus:ring-primary transition-all text-lg font-mono" id="referral" name="referral" placeholder="HUR-XXXXX" type="text"/>
+<div class="absolute inset-y-0 left-5 flex items-center pointer-events-none text-stone-600 group-focus-within:text-primary">
+<span class="material-symbols-outlined">confirmation_number</span>
+</div>
+</div>
+<p class="text-xs text-stone-500 mr-1 leading-relaxed">أدخل رمز الإحالة للحصول على رصيد ترحيبي في محفظتك.</p>
+</div>
+<!-- Visual Anchor / Decorative Element -->
+<div class="pt-8">
+<div class="relative h-48 rounded-[32px] overflow-hidden bg-stone-900">
+<img class="w-full h-full object-cover opacity-50" data-alt="abstract flowing silk textures in deep teal and charcoal with soft ambient studio lighting and cinematic depth" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCD1li_eATV0PSrJeIXtEn27yS6WySQ_hF4ZEgxq2ZfBj27RemOUtMYWNuPVfb4NoKSseMwCXO-MbhjEJcsyng2FENRsMeqUZlhi8m0Yn8Nyig7LMxsTgqXANkL648BivcZR66Bg-przO6RfZl1KZDzwhoraUGBHkEZY_UhSNrQyBrWBdAJMcs-jqZstTuPY6Ef89ceQX6895igSs129qZKICcShTHifMeoxivXmGRv5GejHvXlLL5Xzqy5Nv18B6rmnFdVmXbIcuwb"/>
+<div class="absolute inset-0 bg-gradient-to-t from-stone-950 to-transparent"></div>
+<div class="absolute bottom-6 right-6 left-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+<span class="material-symbols-outlined text-primary text-xl">verified_user</span>
+</div>
+<div>
+<p class="text-white font-bold text-sm">أمانك هو أولويتنا</p>
+<p class="text-stone-400 text-xs">بياناتك مشفرة ومحمية وفق أعلى المعايير</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</form>
+</main>
+<!-- Fixed Footer Action -->
+<footer class="sticky bottom-0 p-6 bg-stone-950/80 backdrop-blur-xl">
+<div class="max-w-lg mx-auto w-full">
+<button class="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-white font-black text-lg rounded-2xl shadow-xl shadow-teal-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span>المتابعة للخطوة التالية</span>
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<p class="text-center mt-4 text-stone-500 text-sm">
+                هل لديك حساب بالفعل؟ 
+                <a class="text-primary font-bold mr-1" href="#">تسجيل الدخول</a>
+</p>
+</div>
+</footer>
+</body></html>

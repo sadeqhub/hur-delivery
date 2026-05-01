@@ -10,29 +10,29 @@ class ResponsiveHelper {
   
   // Screen size detection
   static bool isMobile(BuildContext context) {
-    return MediaQuery.of(context).size.width < _mobileBreakpoint;
+    return MediaQuery.sizeOf(context).width < _mobileBreakpoint;
   }
   
   static bool isTablet(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.sizeOf(context).width;
     return width >= _mobileBreakpoint && width < _tabletBreakpoint;
   }
   
   static bool isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width >= _tabletBreakpoint;
+    return MediaQuery.sizeOf(context).width >= _tabletBreakpoint;
   }
   
   static bool isSmallScreen(BuildContext context) {
-    return MediaQuery.of(context).size.width < 400;
+    return MediaQuery.sizeOf(context).width < 400;
   }
   
   static bool isVerySmallScreen(BuildContext context) {
-    return MediaQuery.of(context).size.width < 360;
+    return MediaQuery.sizeOf(context).width < 360;
   }
   
   // Responsive sizing based on screen width - maintains consistent layout
   static double getResponsiveWidth(BuildContext context, double baseWidth) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     
     // For consistent layout, use percentage-based scaling rather than fixed reductions
     if (isVerySmallScreen(context)) {
@@ -140,7 +140,7 @@ class ResponsiveHelper {
   
   // Responsive logo size - maintains consistent proportions
   static double getResponsiveLogoSize(BuildContext context, double baseSize) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     
     if (isVerySmallScreen(context)) {
       return screenWidth * 0.5; // 50% of screen width for very small screens
@@ -156,12 +156,12 @@ class ResponsiveHelper {
   
   // Get responsive screen dimensions
   static Size getScreenSize(BuildContext context) {
-    return MediaQuery.of(context).size;
+    return MediaQuery.sizeOf(context);
   }
   
   // Consistent form element width - ensures input fields and buttons have same width
   static double getFormElementWidth(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     
     // Use consistent percentage-based width for all form elements
     if (isVerySmallScreen(context)) {
@@ -190,17 +190,17 @@ class ResponsiveHelper {
   
   // Check if device has notch or status bar
   static bool hasNotch(BuildContext context) {
-    return MediaQuery.of(context).padding.top > 24;
+    return MediaQuery.paddingOf(context).top > 24;
   }
   
   // Get safe area padding
   static EdgeInsets getSafeAreaPadding(BuildContext context) {
-    return MediaQuery.of(context).padding;
+    return MediaQuery.paddingOf(context);
   }
   
   // Responsive bottom navigation bar height
   static double getResponsiveBottomNavHeight(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenHeight = MediaQuery.sizeOf(context).height;
     
     if (isVerySmallScreen(context)) {
       return screenHeight * 0.08; // 8% of screen height
@@ -213,7 +213,7 @@ class ResponsiveHelper {
   
   // Responsive app bar height
   static double getResponsiveAppBarHeight(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenHeight = MediaQuery.sizeOf(context).height;
     
     if (isVerySmallScreen(context)) {
       return screenHeight * 0.06; // 6% of screen height
@@ -226,7 +226,7 @@ class ResponsiveHelper {
   
   // Responsive floating action button size
   static double getResponsiveFabSize(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     
     if (isVerySmallScreen(context)) {
       return screenWidth * 0.12; // 12% of screen width
@@ -239,11 +239,11 @@ class ResponsiveHelper {
   
   /// Get responsive value using percentage of screen width
   static double widthPercent(BuildContext context, double percent) {
-    return MediaQuery.of(context).size.width * (percent / 100);
+    return MediaQuery.sizeOf(context).width * (percent / 100);
   }
   
   /// Get responsive value using percentage of screen height
   static double heightPercent(BuildContext context, double percent) {
-    return MediaQuery.of(context).size.height * (percent / 100);
+    return MediaQuery.sizeOf(context).height * (percent / 100);
   }
 }

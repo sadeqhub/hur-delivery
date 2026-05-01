@@ -41,19 +41,24 @@ ALTER TABLE merchant_wallets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wallet_transactions ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for merchant_wallets
+DROP POLICY IF EXISTS "Merchants can view their own wallet" ON merchant_wallets;
 CREATE POLICY "Merchants can view their own wallet" ON merchant_wallets
   FOR SELECT USING (merchant_id = auth.uid());
 
+DROP POLICY IF EXISTS "System can create wallets" ON merchant_wallets;
 CREATE POLICY "System can create wallets" ON merchant_wallets
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "System can update wallets" ON merchant_wallets;
 CREATE POLICY "System can update wallets" ON merchant_wallets
   FOR UPDATE USING (true);
 
 -- RLS Policies for wallet_transactions
+DROP POLICY IF EXISTS "Merchants can view their own transactions" ON wallet_transactions;
 CREATE POLICY "Merchants can view their own transactions" ON wallet_transactions
   FOR SELECT USING (merchant_id = auth.uid());
 
+DROP POLICY IF EXISTS "System can create transactions" ON wallet_transactions;
 CREATE POLICY "System can create transactions" ON wallet_transactions
   FOR INSERT WITH CHECK (true);
 

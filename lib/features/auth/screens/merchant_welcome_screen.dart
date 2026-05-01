@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/localization/app_localizations.dart';
 
 class MerchantWelcomeScreen extends StatefulWidget {
@@ -43,10 +40,14 @@ class _MerchantWelcomeScreenState extends State<MerchantWelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final screenWidth = MediaQuery.sizeOf(context).width;
 
-    return Scaffold(
+    return Theme(
+      data: ThemeData.light().copyWith(
+        primaryColor: AppColors.primary,
+      ),
+      child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -60,7 +61,7 @@ class _MerchantWelcomeScreenState extends State<MerchantWelcomeScreen> {
                 onPressed: _navigateToMerchantDashboard,
                 child: Text(
                   loc.skip,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -186,6 +187,7 @@ class _MerchantWelcomeScreenState extends State<MerchantWelcomeScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

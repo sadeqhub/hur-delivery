@@ -1,15 +1,20 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/services/messaging_service.dart';
 import '../../../core/localization/app_localizations.dart';
 
 class MessagingThreadScreen extends StatefulWidget {
   final String conversationId;
-  const MessagingThreadScreen({super.key, required this.conversationId});
+  final bool isSupport;
+  const MessagingThreadScreen({super.key, required this.conversationId, this.isSupport = false});
 
   @override
   State<MessagingThreadScreen> createState() => _MessagingThreadScreenState();
@@ -26,13 +31,124 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
   File? _pendingImage;
   bool _isSending = false;
 
+  // Typing-indicator state. Admin messages arriving via realtime are held back
+  // behind a short Timer to give the illusion that the agent is typing. Existing
+  // history (loaded on first stream emission) is marked revealed immediately.
+  final Set<String> _revealedIds = {};
+  final Map<String, Timer> _revealTimers = {};
+  bool _seededReveals = false;
+
+  // Recognizers for tappable email/phone spans. Recreated on each build and
+  // disposed in dispose() to avoid leaking gesture detectors.
+  final List<TapGestureRecognizer> _linkRecognizers = [];
+
+  // Matches Iraqi-format phones (+9647XXXXXXXXX or 07XXXXXXXX) and emails.
+  // Lookarounds prevent partial matches inside longer digit runs (e.g. dates).
+  static final RegExp _linkRegex = RegExp(
+    r'(?<!\d)(\+\d{9,15}|0\d{9,10})(?!\d)'
+    r'|([\w.+\-]+@[\w\-]+\.[\w.\-]+)',
+  );
+
   @override
   void initState() {
     super.initState();
-    // Client should only show messages from past day; admin web shows all
-    final since = DateTime.now().toUtc().subtract(const Duration(days: 1));
-    _stream = MessagingService.instance.watchMessages(widget.conversationId,
-        lookback: const Duration(days: 1));
+    _stream = MessagingService.instance.watchMessages(
+      widget.conversationId,
+      lookback: const Duration(days: 1),
+    );
+    if (widget.isSupport) {
+      MessagingService.instance.setViewingSupport(true);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final t in _revealTimers.values) {
+      t.cancel();
+    }
+    _revealTimers.clear();
+    for (final r in _linkRecognizers) {
+      r.dispose();
+    }
+    _linkRecognizers.clear();
+    if (widget.isSupport) {
+      MessagingService.instance.setViewingSupport(false);
+    }
+    super.dispose();
+  }
+
+  Future<void> _openLink(Uri uri) async {
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(uri.toString())),
+        );
+      }
+    } catch (_) {
+      // Best-effort: silently ignore launch failures.
+    }
+  }
+
+  // Builds TextSpans for a message body, turning detected phone numbers and
+  // emails into tappable links. Caller is responsible for disposing the
+  // accumulated _linkRecognizers (handled in dispose()).
+  List<TextSpan> _buildMessageSpans(
+    String text, {
+    required TextStyle? linkStyle,
+  }) {
+    final spans = <TextSpan>[];
+    int cursor = 0;
+
+    for (final match in _linkRegex.allMatches(text)) {
+      if (match.start > cursor) {
+        spans.add(TextSpan(text: text.substring(cursor, match.start)));
+      }
+
+      final raw = match.group(0)!;
+      final isEmail = raw.contains('@');
+      final uri = isEmail
+          ? Uri(scheme: 'mailto', path: raw)
+          : Uri(scheme: 'tel', path: raw.replaceAll(' ', ''));
+
+      final recognizer = TapGestureRecognizer()..onTap = () => _openLink(uri);
+      _linkRecognizers.add(recognizer);
+
+      spans.add(TextSpan(
+        text: raw,
+        style: linkStyle,
+        recognizer: recognizer,
+      ));
+
+      cursor = match.end;
+    }
+
+    if (cursor < text.length) {
+      spans.add(TextSpan(text: text.substring(cursor)));
+    }
+
+    return spans;
+  }
+
+  // Reading speed ≈ characters/second translated to a typing dwell time.
+  // ~25ms per character + 400ms baseline, clamped to a humane window.
+  Duration _typingDurationFor(String body) {
+    final ms = (400 + body.length * 25).clamp(600, 3000);
+    return Duration(milliseconds: ms);
+  }
+
+  void _scheduleReveal(String id, Duration delay) {
+    if (!mounted) return;
+    if (_revealedIds.contains(id) || _revealTimers.containsKey(id)) return;
+    _revealTimers[id] = Timer(delay, () {
+      if (!mounted) return;
+      setState(() {
+        _revealedIds.add(id);
+        _revealTimers.remove(id);
+      });
+    });
+    // Trigger a rebuild to show the typing bubble immediately.
+    setState(() {});
   }
 
   Future<Message?> _resolveSentMessage({
@@ -47,8 +163,10 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
           .select()
           .eq('conversation_id', conversationId)
           .eq('sender_id', senderId)
-          .gte('created_at',
-              startedAt.subtract(const Duration(seconds: 2)).toIso8601String())
+          .gte(
+            'created_at',
+            startedAt.subtract(const Duration(seconds: 2)).toIso8601String(),
+          )
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
@@ -89,9 +207,7 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
     final text = _controller.text.trim();
     final hasText = text.isNotEmpty;
     final hasImage = _pendingImage != null;
-    if (!hasText && !hasImage) {
-      return;
-    }
+    if (!hasText && !hasImage) return;
 
     final myId = Supabase.instance.client.auth.currentUser?.id;
     final replyToId = _replyingTo?.id;
@@ -117,6 +233,7 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
             : ext == 'gif'
                 ? 'image/gif'
                 : 'image/jpeg';
+
         await Supabase.instance.client.storage.from('files').uploadBinary(
               objectPath,
               bytes,
@@ -125,6 +242,7 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
                 contentType: mime,
               ),
             );
+
         attachmentUrl = Supabase.instance.client.storage
             .from('files')
             .getPublicUrl(objectPath);
@@ -148,7 +266,7 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
 
       final sentMessage = await MessagingService.instance.sendMessage(
         conversationId: widget.conversationId,
-        body: text.isNotEmpty ? text : null,
+        body: hasText ? text : null,
         replyToMessageId: replyToId,
         attachmentUrl: attachmentUrl,
         attachmentType: attachmentType,
@@ -187,11 +305,7 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              e.message.isNotEmpty
-                  ? e.message
-                  : loc.failedSendMessage,
-            ),
+            content: Text(e.message.isNotEmpty ? e.message : loc.failedSendMessage),
           ),
         );
       }
@@ -231,39 +345,35 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
 
     if (_scroll.hasClients) {
       await Future.delayed(const Duration(milliseconds: 50));
+      // With reverse: true, position 0.0 is the bottom (newest message).
       _scroll.animateTo(
-        _scroll.position.maxScrollExtent,
+        0.0,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
       );
     }
   }
 
-  void _scrollToBottomOnNextFrame() {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!_scroll.hasClients) return;
-      _scroll.jumpTo(_scroll.position.maxScrollExtent);
-    });
-  }
-
   String _formatTime(DateTime? timestamp) {
     if (timestamp == null) return '';
     final local = timestamp.toLocal();
-    final two = (int n) => n.toString().padLeft(2, '0');
+    String two(int n) => n.toString().padLeft(2, '0');
     return '${two(local.hour)}:${two(local.minute)}';
   }
 
   Widget _buildReplyPreview() {
     if (_replyingTo == null) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     final previewText = _replyingTo!.body;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.teal.withOpacity(0.08),
-        border: Border(
-          left: BorderSide(color: Colors.teal.shade400, width: 3),
-        ),
+        color: cs.primaryContainer.withOpacity(0.6),
+        border: Border(left: BorderSide(color: cs.primary, width: 3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -273,12 +383,14 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
               previewText,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: Colors.teal.shade800),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onPrimaryContainer,
+              ),
             ),
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.close, size: 18),
+            icon: Icon(Icons.close, size: 18, color: cs.onPrimaryContainer),
             onPressed: () => setState(() => _replyingTo = null),
           ),
         ],
@@ -288,7 +400,23 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final myId = Supabase.instance.client.auth.currentUser?.id;
+
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Bubble colors based on theme
+    final myBubble = cs.primaryContainer;
+    final otherBubble = cs.surfaceContainerHighest;
+
+    final repliedBg = cs.surfaceContainerHighest;
+    final repliedBorderMine = cs.primary;
+    final repliedBorderOther = cs.outline;
+
+    final pendingImageBg = cs.surfaceContainerHighest;
+    final previewCloseBg = Colors.black.withOpacity(isDark ? 0.55 : 0.6);
+
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context).conversation)),
       body: Column(
@@ -298,36 +426,78 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
               stream: _stream,
               builder: (context, snapshot) {
                 final msgs = [...(snapshot.data ?? const <Message>[])];
-                // Capture known ids
+
                 for (final m in msgs) {
                   if (m.id.isNotEmpty) _knownIds.add(m.id);
                 }
-                // Append pending that aren't yet in stream
+
                 final combined = [
                   ...msgs,
                   ..._pending.where((m) => !_knownIds.contains(m.id)),
                 ];
-                // sort ascending by created_at then id to ensure stable order
+
+                // Sort newest-first so that with reverse: true, the latest
+                // message lands at the bottom of the visible area on open.
                 combined.sort((a, b) {
-                  final at =
-                      a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-                  final bt =
-                      b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-                  final cmp = at.compareTo(bt);
+                  final at = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+                  final bt = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+                  final cmp = bt.compareTo(at);
                   if (cmp != 0) return cmp;
-                  return a.id.compareTo(b.id);
+                  return b.id.compareTo(a.id);
                 });
-                _scrollToBottomOnNextFrame();
+
                 if (snapshot.hasError) {
                   debugPrint('❌ Messaging stream error: ${snapshot.error}');
                 }
+
+                // First non-empty emission is the loaded history — reveal everything
+                // immediately so we don't show a typing bubble for old messages.
+                if (!_seededReveals && msgs.isNotEmpty) {
+                  for (final m in msgs) {
+                    if (m.id.isNotEmpty) _revealedIds.add(m.id);
+                  }
+                  _seededReveals = true;
+                }
+
+                // Any incoming message from someone else that we haven't revealed
+                // yet gets queued behind a typing-indicator delay.
+                for (final m in msgs) {
+                  if (m.id.isEmpty) continue;
+                  if (m.senderId == myId) continue;
+                  if (_revealedIds.contains(m.id)) continue;
+                  if (_revealTimers.containsKey(m.id)) continue;
+                  final id = m.id;
+                  final body = m.body;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scheduleReveal(id, _typingDurationFor(body));
+                  });
+                }
+
+                // Hide queued admin messages from the list until their timer fires.
+                final visible = combined.where((m) {
+                  if (m.senderId == myId) return true;
+                  if (m.id.isEmpty) return true; // safety
+                  return _revealedIds.contains(m.id);
+                }).toList();
+
+                final showTyping = _revealTimers.isNotEmpty;
+
                 return ListView.builder(
                   controller: _scroll,
-                  itemCount: combined.length,
+                  reverse: true,
+                  itemCount: visible.length + (showTyping ? 1 : 0),
                   itemBuilder: (_, i) {
-                    final m = combined[i];
+                    if (showTyping && i == 0) {
+                      return _TypingBubble(
+                        bubbleColor: otherBubble,
+                        dotColor: cs.onSurfaceVariant,
+                        borderColor: cs.outlineVariant,
+                      );
+                    }
+                    final m = visible[i - (showTyping ? 1 : 0)];
                     final isMe = m.senderId == myId;
                     final createdAt = _formatTime(m.createdAt);
+
                     final replyToId = m.replyToMessageId;
                     Message? repliedTo;
                     if (replyToId != null) {
@@ -338,64 +508,86 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
                         }
                       }
                     }
+
+                    final bubbleBg = isMe ? myBubble : otherBubble;
+                    final bubbleText = isMe ? cs.onPrimaryContainer : cs.onSurface;
+                    final timeText = cs.onSurfaceVariant;
+
                     return Align(
-                      alignment:
-                          isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                       child: Container(
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isMe
-                              ? Colors.teal.shade100
-                              : Colors.grey.shade200,
+                          color: bubbleBg,
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: cs.outlineVariant, width: 0.6),
                         ),
                         child: Column(
-                          crossAxisAlignment: isMe
-                              ? CrossAxisAlignment.end
-                              : CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                           children: [
                             if (repliedTo != null)
                               Container(
                                 margin: const EdgeInsets.only(bottom: 6),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: repliedBg,
                                   border: Border(
                                     left: BorderSide(
-                                      color: isMe
-                                          ? Colors.teal.shade600
-                                          : Colors.grey.shade600,
+                                      color: isMe ? repliedBorderMine : repliedBorderOther,
                                       width: 3,
                                     ),
                                   ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  repliedTo!.body,
+                                  repliedTo.body,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: theme.textTheme.bodySmall?.copyWith(
                                     fontSize: 12,
-                                    color: Colors.black.withOpacity(0.7),
+                                    color: cs.onSurfaceVariant,
                                   ),
                                 ),
                               ),
-                            if (m.body.isNotEmpty) Text(m.body),
-                            if (m.attachmentUrl != null &&
-                                m.attachmentUrl!.isNotEmpty)
+                            if (m.body.isNotEmpty)
+                              SelectableText.rich(
+                                TextSpan(
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: bubbleText,
+                                  ),
+                                  children: _buildMessageSpans(
+                                    m.body,
+                                    linkStyle: theme.textTheme.bodyMedium?.copyWith(
+                                      color: cs.primary,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: cs.primary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (m.attachmentUrl != null && m.attachmentUrl!.isNotEmpty)
                               Padding(
-                                padding: EdgeInsets.only(
-                                    top: m.body.isNotEmpty ? 8 : 0),
+                                padding: EdgeInsets.only(top: m.body.isNotEmpty ? 8 : 0),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(10),
-                                  child: Image.network(
-                                    m.attachmentUrl!,
+                                  child: CachedNetworkImage(
+                                    imageUrl: m.attachmentUrl!,
                                     width: 220,
                                     fit: BoxFit.cover,
+                                    placeholder: (context, url) => Container(
+                                      width: 220,
+                                      height: 120,
+                                      color: Colors.grey[300],
+                                      child: const Center(child: CircularProgressIndicator()),
+                                    ),
+                                    errorWidget: (context, url, error) => Container(
+                                      width: 220,
+                                      height: 120,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.error),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -407,9 +599,9 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
                                     final loc = AppLocalizations.of(context);
                                     return Text(
                                       loc.orderLabel(m.orderId ?? ''),
-                                      style: TextStyle(
+                                      style: theme.textTheme.bodySmall?.copyWith(
                                         fontSize: 11,
-                                        color: Colors.teal.shade700,
+                                        color: cs.primary,
                                       ),
                                     );
                                   },
@@ -419,19 +611,18 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.reply, size: 16),
+                                  icon: Icon(Icons.reply, size: 16, color: timeText),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
-                                  onPressed: () =>
-                                      setState(() => _replyingTo = m),
+                                  onPressed: () => setState(() => _replyingTo = m),
                                   tooltip: AppLocalizations.of(context).reply,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   createdAt,
-                                  style: TextStyle(
+                                  style: theme.textTheme.bodySmall?.copyWith(
                                     fontSize: 10,
-                                    color: Colors.black.withOpacity(0.5),
+                                    color: timeText,
                                   ),
                                 ),
                               ],
@@ -464,7 +655,8 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
                             height: 120,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
-                              color: Colors.black.withOpacity(0.05),
+                              color: pendingImageBg,
+                              border: Border.all(color: cs.outlineVariant),
                             ),
                             child: Stack(
                               children: [
@@ -482,14 +674,13 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
                                   right: 6,
                                   child: CircleAvatar(
                                     radius: 16,
-                                    backgroundColor:
-                                        Colors.black.withOpacity(0.6),
+                                    backgroundColor: previewCloseBg,
                                     child: IconButton(
                                       padding: EdgeInsets.zero,
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.close,
                                         size: 16,
-                                        color: Colors.white,
+                                        color: cs.onPrimary,
                                       ),
                                       onPressed: _removePendingImage,
                                     ),
@@ -528,6 +719,90 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Three-dot animated bubble shown while a support reply is being "typed".
+class _TypingBubble extends StatefulWidget {
+  final Color bubbleColor;
+  final Color dotColor;
+  final Color borderColor;
+  const _TypingBubble({
+    required this.bubbleColor,
+    required this.dotColor,
+    required this.borderColor,
+  });
+
+  @override
+  State<_TypingBubble> createState() => _TypingBubbleState();
+}
+
+class _TypingBubbleState extends State<_TypingBubble>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ac;
+
+  @override
+  void initState() {
+    super.initState();
+    _ac = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ac.dispose();
+    super.dispose();
+  }
+
+  Widget _dot(double phase) {
+    return AnimatedBuilder(
+      animation: _ac,
+      builder: (_, __) {
+        final t = (_ac.value + phase) % 1.0;
+        // Triangle wave: 0 → 1 → 0
+        final wave = t < 0.5 ? t * 2 : (1 - t) * 2;
+        final opacity = 0.3 + 0.7 * wave;
+        return Opacity(
+          opacity: opacity,
+          child: Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: widget.dotColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: widget.bubbleColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: widget.borderColor, width: 0.6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _dot(0.0),
+            const SizedBox(width: 4),
+            _dot(0.33),
+            const SizedBox(width: 4),
+            _dot(0.66),
+          ],
+        ),
       ),
     );
   }

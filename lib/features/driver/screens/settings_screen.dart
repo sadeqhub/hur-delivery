@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
 import '../../../shared/widgets/language_switcher.dart';
-import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/theme_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 
 class DriverSettingsScreen extends StatefulWidget {
@@ -22,15 +17,11 @@ class DriverSettingsScreen extends StatefulWidget {
 
 class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
   bool _notificationsEnabled = true;
-  bool _soundEnabled = true;
-  bool _vibrationEnabled = true;
-  bool _locationAlwaysOn = true;
   PermissionStatus _notificationPermissionStatus = PermissionStatus.granted;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
     _checkNotificationPermission();
   }
 
@@ -40,20 +31,6 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
       _notificationPermissionStatus = status;
       _notificationsEnabled = status.isGranted;
     });
-  }
-
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _soundEnabled = prefs.getBool('driver_sound_enabled') ?? true;
-      _vibrationEnabled = prefs.getBool('driver_vibration_enabled') ?? true;
-      _locationAlwaysOn = prefs.getBool('driver_location_always_on') ?? true;
-    });
-  }
-
-  Future<void> _saveSetting(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
   }
 
   Future<void> _toggleNotifications(bool value) async {
@@ -81,33 +58,6 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
       }
     } else {
       _showPermissionDialog();
-    }
-  }
-
-  Future<void> _checkLocationPermission() async {
-    final status = await Permission.locationAlways.status;
-    if (!status.isGranted) {
-      final loc = AppLocalizations.of(context);
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(loc.locationPermissionRequiredTitle),
-          content: Text(loc.locationPermissionRequiredDriver),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(loc.cancel),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                openAppSettings();
-              },
-              child: Text(loc.openSettings),
-            ),
-          ],
-        ),
-      );
     }
   }
 
@@ -160,12 +110,13 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).settings),
         centerTitle: true,
-        backgroundColor: AppColors.primary,
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -174,8 +125,8 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
         ),
       ),
       body: ListView(
-                padding: const EdgeInsets.all(16),
-      children: [
+        padding: const EdgeInsets.all(16),
+        children: [
           Builder(
             builder: (context) {
               final loc = AppLocalizations.of(context);
@@ -200,63 +151,26 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
                           onChanged: _toggleNotifications,
                           activeColor: AppColors.primary,
                         ),
-                        if (_notificationsEnabled) ...[
-                          const Divider(height: 1),
-                          SwitchListTile(
-                            secondary: const Icon(Icons.volume_up),
-                            title: Text(loc.sound),
-                            subtitle: Text(loc.soundSubtitle),
-                            value: _soundEnabled,
-                            onChanged: (value) {
-                              setState(() => _soundEnabled = value);
-                              _saveSetting('driver_sound_enabled', value);
-                            },
-                            activeColor: AppColors.primary,
-                          ),
-                          const Divider(height: 1),
-                          SwitchListTile(
-                            secondary: const Icon(Icons.vibration),
-                            title: Text(loc.vibration),
-                            subtitle: Text(loc.vibrationSubtitle),
-                            value: _vibrationEnabled,
-                            onChanged: (value) {
-                              setState(() => _vibrationEnabled = value);
-                              _saveSetting('driver_vibration_enabled', value);
-                              if (value) {
-                                HapticFeedback.mediumImpact();
-                              }
-                            },
-                            activeColor: AppColors.primary,
-                          ),
-                        ],
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Location Section (Important for Drivers)
-                  _buildSectionHeader(loc.location),
-                  Card(
+                  
+                  // General Section (Language, Theme)
+                  _buildSectionHeader(loc.general),
+                  const Card(
                     child: Column(
                       children: [
-                        ListTile(
-                          leading: const Icon(Icons.location_on),
-                          title: Text(loc.locationPermission),
-                          subtitle: Text(loc.locationPermissionSubtitle),
-                          trailing: ElevatedButton(
-                            onPressed: _checkLocationPermission,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: Text(loc.check),
-                          ),
-                        ),
+                         LanguageSwitcherTile(),
+                         Divider(height: 1),
+                         _ThemeToggleTile(),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // App Section
-                  _buildSectionHeader(loc.app),
+                  
+                  // Legal & Support Section
+                  _buildSectionHeader(loc.support),
                   Card(
                     child: Column(
                       children: [
@@ -280,12 +194,11 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
                           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                           onTap: () => context.push('/driver/terms-conditions'),
                         ),
-                        const Divider(height: 1),
-                        LanguageSwitcherTile(),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
+                  
                   // Version Info
                   Center(
                     child: Text(
@@ -312,9 +225,33 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
         title,
         style: AppTextStyles.bodyLarge.copyWith(
           fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
+    );
+  }
+}
+
+class _ThemeToggleTile extends StatelessWidget {
+  const _ThemeToggleTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return SwitchListTile(
+          secondary: Icon(
+            themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+            color: AppColors.primary,
+          ),
+          title: Text(loc.darkMode),
+          subtitle: Text(themeProvider.isDarkMode ? loc.darkModeEnabled : loc.lightModeEnabled),
+          value: themeProvider.isDarkMode,
+          onChanged: (value) => themeProvider.toggleTheme(),
+          activeColor: AppColors.primary,
+        );
+      },
     );
   }
 }

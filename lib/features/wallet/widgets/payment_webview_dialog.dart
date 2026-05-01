@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/localization/app_localizations.dart';
 
 /// WebView dialog for displaying payment pages (Wayl checkout)
@@ -61,8 +58,13 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
             print('[PaymentWebView] Error: ${error.description}');
             print('[PaymentWebView] Error code: ${error.errorCode}');
             print('[PaymentWebView] Error type: ${error.errorType}');
-            
-            // Show error to user
+            print('[PaymentWebView] Is for main frame: ${error.isForMainFrame}');
+
+            // Only surface errors for the main frame — sub-resource failures
+            // (analytics, ads, iframes) fire this callback too and should be ignored,
+            // as the page itself may have loaded successfully.
+            if (error.isForMainFrame != true) return;
+
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -72,7 +74,7 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
                 ),
               );
             }
-            
+
             widget.onError?.call();
           },
           onNavigationRequest: (NavigationRequest request) {
@@ -157,9 +159,9 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
             // Header
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.primary,
-                borderRadius: const BorderRadius.only(
+                borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
                 ),

@@ -1,14 +1,21 @@
-import 'dart:typed_data';
 import 'dart:async';
-import 'package:flutter/foundation.dart' show unawaited;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../shared/models/order_model.dart';
 import '../constants/app_constants.dart';
-import '../services/flutterfire_notification_service.dart';
 import '../services/notification_manager.dart';
 import '../services/error_manager.dart';
+import '../services/route_time_service.dart';
+import '../providers/location_provider.dart';
+import '../services/optimized_order_loader.dart';
+import '../services/performance_optimizer.dart';
+import '../services/request_priority_manager.dart';
+import '../services/network_quality_service.dart';
+import '../services/response_cache_service.dart';
+import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
 
 class OrderProvider extends ChangeNotifier {
   List<OrderModel> _orders = [];
@@ -19,6 +26,7 @@ class OrderProvider extends ChangeNotifier {
   Timer? _timeoutStateUpdateTimer;
   StreamSubscription? _ordersSubscription;
   StreamSubscription? _timeoutStatesSubscription;
+  RealtimeChannel? _timeoutStatesChannel; // For timeout states Realtime subscription
   
   // Map of order_id -> remaining_seconds from order_timeout_state table
   Map<String, int> _timeoutStates = {};
@@ -31,20 +39,46 @@ class OrderProvider extends ChangeNotifier {
   DateTime? _roleCacheTime;
   static const _roleCacheExpiry = Duration(minutes: 5);
 
+  // Response cache service for 4G optimization
+  final _responseCache = ResponseCacheService();
+
+  // Cached filtered lists — invalidated on _orders change
+  List<OrderModel>? _cachedPendingOrders;
+  List<OrderModel>? _cachedActiveOrders;
+  List<OrderModel>? _cachedCompletedOrders;
+
+  // Per-driver cache for getAllActiveOrdersForDriver
+  final Map<String, List<OrderModel>> _driverActiveOrdersCache = {};
+
   List<OrderModel> get orders => _orders;
   OrderModel? get currentOrder => _currentOrder;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  
+
+  // Override notifyListeners to always invalidate derived-list caches first.
+  // This guarantees no stale cache is ever served after a rebuild, without
+  // having to touch every mutation site individually.
+  @override
+  void notifyListeners() {
+    _cachedPendingOrders = null;
+    _cachedActiveOrders = null;
+    _cachedCompletedOrders = null;
+    _driverActiveOrdersCache.clear();
+    super.notifyListeners();
+  }
+
   // Get timeout remaining seconds for an order
   int? getTimeoutRemaining(String orderId) {
     return _timeoutStates[orderId];
   }
 
-  // Filtered orders by status
-  List<OrderModel> get pendingOrders => _orders.where((o) => o.isPending).toList();
-  List<OrderModel> get activeOrders => _orders.where((o) => o.isActive).toList();
-  List<OrderModel> get completedOrders => _orders.where((o) => o.isCompleted).toList();
+  // Filtered orders by status — cached, O(1) after first call
+  List<OrderModel> get pendingOrders =>
+      _cachedPendingOrders ??= _orders.where((o) => o.isPending).toList();
+  List<OrderModel> get activeOrders =>
+      _cachedActiveOrders ??= _orders.where((o) => o.isActive).toList();
+  List<OrderModel> get completedOrders =>
+      _cachedCompletedOrders ??= _orders.where((o) => o.isCompleted).toList();
   
   // Get active order for driver (assigned and not completed)
   OrderModel? getActiveOrderForDriver(String driverId) {
@@ -53,100 +87,72 @@ class OrderProvider extends ChangeNotifier {
   }
 
   // Get ALL active orders for a driver (for swipeable cards)
+  // Results are cached per-driver and invalidated when orders or timeout states change.
   List<OrderModel> getAllActiveOrdersForDriver(String driverId) {
-    print('🔍 getAllActiveOrdersForDriver called for driver: $driverId');
-    print('   Total orders in provider: ${_orders.length}');
-    print('   Timed out orders set: ${_timedOutOrders.length} entries: $_timedOutOrders');
-    
+    final cached = _driverActiveOrdersCache[driverId];
+    if (cached != null) return cached;
+
     final activeOrders = _orders
         .where((order) {
-          // Filter basic conditions
           if (order.driverId != driverId) return false;
-          if (order.status == 'delivered' || 
-              order.status == 'cancelled' || 
-              order.status == 'rejected') return false;
-          
+          if (order.status == 'delivered' ||
+              order.status == 'cancelled' ||
+              order.status == 'rejected') {
+            return false;
+          }
+
           // Filter out pending orders with zero or negative countdown
-          if (order.status == 'pending' && 
-              order.driverId != null && 
+          if (order.status == 'pending' &&
+              order.driverId != null &&
               order.driverAssignedAt != null) {
-            
-            // Parse assignment time to check if this is a recent assignment
             DateTime assignedAt;
             try {
-              assignedAt = order.driverAssignedAt is DateTime 
+              assignedAt = order.driverAssignedAt is DateTime
                   ? order.driverAssignedAt as DateTime
                   : DateTime.parse(order.driverAssignedAt!.toString());
-            } catch (e) {
-              print('⚠️  Could not parse driver_assigned_at for order ${order.id}');
+            } catch (_) {
               return true; // Keep the order if we can't parse
             }
-            
+
             final elapsed = DateTime.now().difference(assignedAt).inSeconds;
-            
-            // Check if this assignment is fresh (assigned within last 5 seconds)
-            // This handles reposted orders or new assignments
             final isFreshAssignment = elapsed <= 5;
-            
-            // If already marked as timed out BUT has fresh assignment, it's a new order - remove from set
+
             if (_timedOutOrders.contains(order.id)) {
               if (isFreshAssignment) {
                 _timedOutOrders.remove(order.id);
-                print('✨ Order ${order.id} is freshly assigned (${elapsed}s ago) - REMOVED from timeout list, showing order');
               } else {
-                // Not a fresh assignment, this is the old timed out order
-                print('⏱️  Order ${order.id} marked as timed out - staying filtered (elapsed: ${elapsed}s)');
                 return false;
               }
             }
-            
+
             final remainingSeconds = _timeoutStates[order.id];
-            
-            // If countdown is 0 or less, mark as timed out and filter out (expired)
+
             if (remainingSeconds != null && remainingSeconds <= 0) {
               _timedOutOrders.add(order.id);
-              print('⏱️  Filtering out order ${order.id} - countdown expired (${remainingSeconds}s) - MARKED');
               return false;
             }
-            
-            // Also check time-based calculation as backup
+
             if (elapsed >= 30) {
               _timedOutOrders.add(order.id);
-              print('⏱️  Filtering out order ${order.id} - time expired (${elapsed}s elapsed) - MARKED');
               return false;
             }
           }
-          
-          // Clean up timed out orders set if order is no longer pending
+
+          // Clean up timed out marker if order progressed past pending
           if (order.status != 'pending' && _timedOutOrders.contains(order.id)) {
             _timedOutOrders.remove(order.id);
-            print('🧹 Cleaned up timed out marker for order ${order.id} (status: ${order.status})');
           }
-          
+
           return true;
         })
         .toList()
       ..sort((a, b) {
-        // Sort by priority: pending first, then by creation time
         if (a.status == 'pending' && b.status != 'pending') return -1;
         if (a.status != 'pending' && b.status == 'pending') return 1;
         return b.createdAt.compareTo(a.createdAt);
       });
-    
-    if (activeOrders.isNotEmpty) {
-      print('🎯 Driver $driverId has ${activeOrders.length} active order(s)');
-      for (var order in activeOrders) {
-        print('  📦 Order ${order.id}: status=${order.status}, driver_id=${order.driverId}');
-      }
-    } else {
-      print('📭 Driver $driverId has no active orders');
-      // Log all orders for debugging
-      print('📋 All orders for debugging:');
-      for (var order in _orders) {
-        print('  📦 Order ${order.id}: status=${order.status}, driver_id=${order.driverId}');
-      }
-    }
-    
+
+    _driverActiveOrdersCache[driverId] = activeOrders;
     return activeOrders;
   }
 
@@ -165,9 +171,11 @@ class OrderProvider extends ChangeNotifier {
     try {
       await _loadOrders();
       await _subscribeToOrders();
-      await _subscribeToTimeoutStates();
+      // PERFORMANCE FIX: Removed real-time subscription to timeout states
+      // Using polling instead (already updating every 15s) - reduces ~20 subscriptions
+      // await _subscribeToTimeoutStates(); // REMOVED - using polling instead
       _startAutoRejectTimer();
-      _startTimeoutStateUpdater();
+      _startTimeoutStateUpdater(); // This now fetches timeout states via polling
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -177,77 +185,159 @@ class OrderProvider extends ChangeNotifier {
   }
   
   // Subscribe to order_timeout_state table for real-time countdown values
+  // OPTIMIZED: Only subscribe to timeout states for orders relevant to current user (driver)
+  // This reduces Realtime query load by filtering at database level
   Future<void> _subscribeToTimeoutStates() async {
     try {
-      await _timeoutStatesSubscription?.cancel();
-      _timeoutStatesSubscription = Supabase.instance.client
-          .from('order_timeout_state')
-          .stream(primaryKey: ['order_id'])
-          .listen((data) {
-        print('⏱️  Timeout states received: ${data.length} entries');
-        
-        // Update timeout states map
-        _timeoutStates.clear();
-        for (var state in data) {
-          final orderId = state['order_id'] as String;
-          final remaining = state['remaining_seconds'] as int;
-          
-          _timeoutStates[orderId] = remaining;
-          
-          if (remaining <= 10) {
-            print('   ⏰ Order $orderId: $remaining seconds');
-          }
-        }
-        
-        notifyListeners();
-      });
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        print('⚠️ No current user - skipping timeout states subscription');
+        return;
+      }
+
+      // Get user role to determine if we need timeout states
+      final userResponse = await Supabase.instance.client
+          .from('users')
+          .select('role')
+          .eq('id', currentUser.id)
+          .single();
       
-      print('✅ Subscribed to order_timeout_state table');
+      final userRole = userResponse['role'] as String;
+      
+      // Only drivers need timeout states (for pending orders assigned to them)
+      if (userRole != 'driver') {
+        print('ℹ️  User is not a driver - skipping timeout states subscription');
+        return;
+      }
+
+      // Cancel existing subscription
+      await _timeoutStatesChannel?.unsubscribe();
+      
+      // Use PostgresChanges with filter for driver_id to reduce query load
+      // This only sends updates for timeout states relevant to this driver
+      _timeoutStatesChannel = Supabase.instance.client
+          .channel('timeout_states_${currentUser.id}')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'order_timeout_state',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'driver_id',
+              value: currentUser.id,
+            ),
+            callback: (payload) {
+              // Handle individual timeout state updates efficiently
+              final orderId = payload.newRecord['order_id'] as String;
+              final remaining = payload.newRecord['remaining_seconds'] as int;
+              
+              _timeoutStates[orderId] = remaining;
+              
+              if (remaining <= 10) {
+                print('   ⏰ Order $orderId: $remaining seconds');
+              }
+              
+              notifyListeners();
+                        },
+          )
+          .subscribe();
+      
+      print('✅ Subscribed to order_timeout_state table (filtered by driver_id)');
     } catch (e) {
       print('❌ Error subscribing to timeout states: $e');
     }
   }
   
-  // Call database function every 1 second to update timeout states
-  void _startTimeoutStateUpdater() {
-    _timeoutStateUpdateTimer?.cancel();
-    _timeoutStateUpdateTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-      try {
-        // Update all timeout states in database
-        await Supabase.instance.client.rpc('update_order_timeout_states');
-      } catch (e) {
-        // Silence errors to prevent log spam
-      }
-    });
-    print('✅ Timeout state updater started (calls DB every 1 second)');
+  // PERFORMANCE FIX: Now fetches timeout states via polling instead of real-time subscription
+  // This reduces ~20 subscriptions (one per driver) and WAL polling overhead
+  // Updates every 5 seconds for responsive countdown (acceptable delay)
+  Future<String?> _getCachedUserRole(String userId) async {
+    final now = DateTime.now();
+    if (_cachedUserRole != null &&
+        _roleCacheTime != null &&
+        now.difference(_roleCacheTime!) < _roleCacheExpiry) {
+      return _cachedUserRole;
+    }
+    final userResponse = await Supabase.instance.client
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+    _cachedUserRole = userResponse?['role'] as String?;
+    _roleCacheTime = now;
+    return _cachedUserRole;
   }
 
-  // Start auto-reject timer (database polling)
+  void _startTimeoutStateUpdater() {
+    _timeoutStateUpdateTimer?.cancel();
+    _timeoutStateUpdateTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      // Use unawaited to prevent blocking main thread - this is non-critical
+      unawaited(() async {
+        try {
+          final currentUser = Supabase.instance.client.auth.currentUser;
+          if (currentUser == null) return;
+
+          // Use cached role — avoids a DB query on every 5s tick
+          final role = await _getCachedUserRole(currentUser.id);
+          if (role != 'driver') {
+            return; // Not a driver, skip
+          }
+          
+          // Update all timeout states in database
+          await Supabase.instance.client.rpc('update_order_timeout_states')
+              .timeout(const Duration(seconds: 3), onTimeout: () {
+            print('⚠️ Timeout state update timed out');
+            return null;
+          });
+          
+          // Fetch timeout states for current driver via polling (replaces real-time subscription)
+          final response = await Supabase.instance.client
+              .from('order_timeout_state')
+              .select('order_id, remaining_seconds')
+              .eq('driver_id', currentUser.id)
+              .timeout(const Duration(seconds: 2), onTimeout: () {
+            return <Map<String, dynamic>>[];
+          });
+          
+          // Update local state
+          final Map<String, int> newTimeoutStates = {};
+          for (var state in response) {
+            final orderId = state['order_id'] as String;
+            final remaining = state['remaining_seconds'] as int;
+            newTimeoutStates[orderId] = remaining;
+          }
+          
+          // Only notify if there are actual changes (mapEquals avoids false positives)
+          if (!mapEquals(newTimeoutStates, _timeoutStates)) {
+            _timeoutStates = newTimeoutStates;
+            notifyListeners();
+          }
+        } catch (e) {
+          // Silence errors to prevent log spam
+        }
+      }());
+    });
+  }
+
+  // PERFORMANCE FIX: Increased interval from 10s to 30s to reduce database load
+  // With limited resources (0.5GB memory, shared CPU), we need to reduce polling frequency
+  // The database has triggers that handle most of this, so frequent polling is not critical
   void _startAutoRejectTimer() {
     // Cancel existing timer if any
     _autoRejectTimer?.cancel();
     
-    // Check for expired orders every 5 seconds
-    _autoRejectTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      // Use error manager for automatic retry and recovery
-      await ErrorManager.safeExecute(
+    // Check for expired orders every 30 seconds (increased from 10s to reduce database load)
+    _autoRejectTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      // Use unawaited to prevent blocking main thread
+      unawaited(ErrorManager.safeExecute(
         operation: () async {
-          print('⏰ Checking for expired orders...');
-          
-          // Call database function to check and process expired orders
-          // Error manager will handle retries and session refresh automatically
-          final result = await Supabase.instance.client.rpc('app_check_expired_orders');
-          print('✅ Auto-reject check completed. Result: $result');
-          
-          // Always refresh orders to ensure UI is up-to-date
-          print('🔄 Refreshing orders after auto-reject check...');
-          await _loadOrders();
+          await Supabase.instance.client.rpc('app_check_expired_orders')
+              .timeout(const Duration(seconds: 5), onTimeout: () => null);
         },
         operationName: 'auto-reject-check',
         isCritical: false, // Non-critical - can fail silently
-      );
+      ));
     });
-    print('✅ Auto-reject timer started (checks every 5 seconds)');
   }
 
   // Stop auto-reject timer
@@ -260,6 +350,10 @@ class OrderProvider extends ChangeNotifier {
   void dispose() {
     stopAutoRejectTimer();
     _timeoutStateUpdateTimer?.cancel();
+    _ordersSubscription?.cancel();
+    _timeoutStatesSubscription?.cancel();
+    // PERFORMANCE FIX: No longer using real-time subscription for timeout states
+    // _timeoutStatesChannel?.unsubscribe(); // REMOVED
     super.dispose();
   }
 
@@ -273,55 +367,29 @@ class OrderProvider extends ChangeNotifier {
   }
 
   // Refresh a specific order (useful for coordinate updates)
+  // OPTIMIZED: Uses priority system for faster loading
   Future<void> refreshOrder(String orderId) async {
     try {
       print('🔄 Refreshing order $orderId...');
       
-      final response = await Supabase.instance.client
-          .from('orders')
-          .select('''
-            *,
-            items:order_items(*),
-            driver:users!driver_id(name, phone),
-            merchant:users!merchant_id(name, phone, store_name)
-          ''')
-          .eq('id', orderId)
-          .single();
-
-      if (response != null) {
-        // Process the order data
-        final orderData = response;
-        
-        // Extract driver info
-        if (orderData['driver'] != null && orderData['driver'] is Map) {
-          orderData['driver_name'] = orderData['driver']['name'];
-          orderData['driver_phone'] = orderData['driver']['phone'];
-        }
-        
-        // Extract merchant info
-        if (orderData['merchant'] != null && orderData['merchant'] is Map) {
-          orderData['merchant_name'] = orderData['merchant']['store_name'] ?? orderData['merchant']['name'];
-          orderData['merchant_phone'] = orderData['merchant']['phone'];
-        }
-        
-        // Log coordinate validation but don't auto-fix
-        final deliveryLat = orderData['delivery_latitude'];
-        final deliveryLng = orderData['delivery_longitude'];
-        if (deliveryLat == null || deliveryLng == null || 
-            deliveryLat < 29.0 || deliveryLat > 37.0 || 
-            deliveryLng < 38.0 || deliveryLng > 49.0) {
-          print('⚠️ Order $orderId has invalid coordinates: $deliveryLat, $deliveryLng');
-          print('📝 Coordinates will be validated by database, not auto-fixed by client');
-        }
-        
-        // Ensure numeric delivery coords
-        if (orderData['delivery_latitude'] == null || orderData['delivery_longitude'] == null) {
-          orderData['delivery_latitude'] = orderData['delivery_latitude'] ?? 0.0;
-          orderData['delivery_longitude'] = orderData['delivery_longitude'] ?? 0.0;
-        }
-        // Create updated order model
-        final updatedOrder = OrderModel.fromJson(orderData);
-        
+      final optimizer = PerformanceOptimizer();
+      final loader = OptimizedOrderLoader();
+      
+      // Determine priority - if order details screen is visible, use critical
+      final screenName = optimizer.visibilityTracker.currentScreen;
+      final isOrderDetailsVisible = screenName == 'order_details';
+      
+      final priority = isOrderDetailsVisible 
+          ? RequestPriority.critical  // User is viewing this order
+          : RequestPriority.high;     // Background refresh
+      
+      // Load order details with priority
+      final updatedOrder = await loader.loadOrderDetails(
+        orderId: orderId,
+        priority: priority,
+      );
+      
+      if (updatedOrder != null) {
         // Find and update the order in the list
         final orderIndex = _orders.indexWhere((o) => o.id == orderId);
         if (orderIndex != -1) {
@@ -342,6 +410,7 @@ class OrderProvider extends ChangeNotifier {
   }
 
   // Load orders from database
+  // OPTIMIZED: Uses priority system and optimized loader for better 4G performance
   Future<void> _loadOrders() async {
     try {
       final currentUser = Supabase.instance.client.auth.currentUser;
@@ -359,7 +428,7 @@ class OrderProvider extends ChangeNotifier {
       } else {
         // METHOD 2: Try to get from auth user metadata (no DB query)
         userRole = currentUser.userMetadata?['role'] as String? ??
-            currentUser.appMetadata?['role'] as String?;
+            currentUser.appMetadata['role'] as String?;
 
         // METHOD 3: Try to infer from cached auth provider/user model if available
         if ((userRole == null || userRole.isEmpty) && _orders.isNotEmpty) {
@@ -389,166 +458,149 @@ class OrderProvider extends ChangeNotifier {
       }
       final effectiveRole = userRole ?? 'merchant';
 
-      List<Map<String, dynamic>> response = [];
+      // OPTIMIZED: Use optimized loader with priority system and caching
+      final optimizer = PerformanceOptimizer();
+      final loader = OptimizedOrderLoader();
+      final networkQualityService = NetworkQualityService();
+      
+      // Determine priority based on current screen visibility
+      final screenName = optimizer.visibilityTracker.currentScreen;
+      final isDashboardVisible = screenName == 'merchant_dashboard' || 
+                                 screenName == 'driver_dashboard';
+      
+      final priority = isDashboardVisible 
+          ? RequestPriority.critical  // Dashboard is visible - load immediately
+          : RequestPriority.high;      // Background load - still important
+      
+      // Check cache first (if network is slow)
+      final cacheKey = 'orders_${currentUser.id}_${effectiveRole}_0';
+      if (networkQualityService.isSlowConnection) {
+        final cachedOrders = await _responseCache.getCachedResponse<List<OrderModel>>(cacheKey);
+        if (cachedOrders != null && cachedOrders.isNotEmpty) {
+          _orders = cachedOrders;
+          notifyListeners();
+          // Load fresh data in background
+          unawaited(_loadFreshOrdersAndCache(currentUser.id, effectiveRole, loader, priority, cacheKey));
+          return; // Return early with cached data
+        }
+      }
+      
+      // Load first page of orders with priority
+      final orders = await loader.loadOrdersOptimized(
+        userId: currentUser.id,
+        userRole: effectiveRole,
+        page: 0,
+        priority: priority,
+      );
+      
+      // Update orders list
+      _orders = orders;
+      
+      // Cache the response (if network is slow)
+      if (networkQualityService.isSlowConnection) {
+        await _responseCache.cacheResponse(
+          key: cacheKey,
+          data: orders,
+          cacheDuration: const Duration(minutes: 2),
+        );
+      }
+      
+      // If connection is good, prefetch next page in background (non-blocking)
+      if (optimizer.networkQuality != NetworkQuality.poor && 
+          optimizer.networkQuality != NetworkQuality.offline) {
+        // Prefetch next page in background
+        loader.loadOrdersOptimized(
+          userId: currentUser.id,
+          userRole: effectiveRole,
+          page: 1,
+          priority: RequestPriority.low, // Background prefetch
+        ).then((nextPageOrders) {
+          // Append next page if we got results
+          if (nextPageOrders.isNotEmpty) {
+            _orders.addAll(nextPageOrders);
+            notifyListeners();
+          }
+        }).catchError((e) {
+          // Silently fail for background prefetch
+          print('⚠️ Background prefetch failed: $e');
+        }); // Don't await - fire and forget
+      }
 
-      // Retry logic for connection reset errors
-      int retryCount = 0;
-      const maxRetries = 3;
+      // Bulk orders removed - no longer loading bulk orders
       
-      while (retryCount <= maxRetries) {
+      // Keep existing scheduled orders loading logic (unchanged)
+      
+      // For merchants, also fetch scheduled orders and convert them to OrderModel format
+      if (effectiveRole == 'merchant') {
         try {
-          if (effectiveRole == 'driver') {
-            // For drivers, show all orders assigned to them (including completed ones)
-            // This allows them to see their history in the orders sidebar
-        response = await Supabase.instance.client
-            .from('orders')
-            .select('''
-              *,
-              items:order_items(*),
-              driver:users!driver_id(name, phone),
-              merchant:users!merchant_id(name, phone, store_name)
-            ''')
-            .eq('driver_id', currentUser.id)
-                .inFilter('status', ['pending','accepted','on_the_way','delivered','cancelled'])
-                .order('created_at', ascending: false)
-                .limit(100) // Limit to last 100 orders for performance
-                .timeout(
-                  const Duration(seconds: 15),
-                  onTimeout: () {
-                    print('⚠️ Orders query timeout');
-                    return <Map<String, dynamic>>[];
-                  },
-                );
-      } else {
-        // For merchants, get their orders
-        // We'll calculate timeout_remaining_seconds in Dart after fetching
-        response = await Supabase.instance.client
-            .from('orders')
-            .select('''
-              *,
-              items:order_items(*),
-              driver:users!driver_id(name, phone)
-            ''')
-            .eq('merchant_id', currentUser.id)
-                .order('created_at', ascending: false)
-                .timeout(
-                  const Duration(seconds: 15),
-                  onTimeout: () {
-                    print('⚠️ Orders query timeout');
-                    return <Map<String, dynamic>>[];
-                  },
-                );
-          }
-          
-          // Success - break out of retry loop
-          break;
+          final scheduledOrdersResponse = await Supabase.instance.client
+              .from('scheduled_orders')
+              .select('*')
+              .eq('merchant_id', currentUser.id)
+              .eq('status', 'scheduled')
+              .order('scheduled_at', ascending: true)
+              .timeout(
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  print('⚠️ Scheduled orders query timeout');
+                  return <Map<String, dynamic>>[];
+                },
+              );
+
+          // Filter out scheduled orders that have already been posted (created_order_id is not null)
+          final scheduledOrders = scheduledOrdersResponse
+              .where((scheduledOrder) => scheduledOrder['created_order_id'] == null)
+              .map((scheduledOrder) {
+            // Convert scheduled order to OrderModel format
+            // Use scheduled_at if available, otherwise use scheduled_date + scheduled_time
+            DateTime scheduledDateTime;
+            if (scheduledOrder['scheduled_at'] != null) {
+              scheduledDateTime = DateTime.parse(scheduledOrder['scheduled_at'] as String);
+            } else if (scheduledOrder['scheduled_date'] != null && scheduledOrder['scheduled_time'] != null) {
+              final dateStr = scheduledOrder['scheduled_date'] as String;
+              final timeStr = scheduledOrder['scheduled_time'] as String;
+              scheduledDateTime = DateTime.parse('$dateStr $timeStr');
+            } else {
+              scheduledDateTime = DateTime.parse(scheduledOrder['created_at'] as String);
+            }
+
+            // Normalize vehicle type (motorcycle -> motorbike)
+            String vehicleType = scheduledOrder['vehicle_type'] as String? ?? 'motorbike';
+            if (vehicleType == 'motorcycle') {
+              vehicleType = 'motorbike';
+            }
+
+            return OrderModel(
+              id: 'scheduled_${scheduledOrder['id']}', // Prefix to distinguish from regular orders
+              merchantId: scheduledOrder['merchant_id'] as String,
+              customerName: scheduledOrder['customer_name'] as String,
+              customerPhone: scheduledOrder['customer_phone'] as String,
+              pickupAddress: scheduledOrder['pickup_address'] as String,
+              pickupLatitude: double.parse(scheduledOrder['pickup_latitude'].toString()),
+              pickupLongitude: double.parse(scheduledOrder['pickup_longitude'].toString()),
+              deliveryAddress: scheduledOrder['delivery_address'] as String,
+              deliveryLatitude: double.parse(scheduledOrder['delivery_latitude'].toString()),
+              deliveryLongitude: double.parse(scheduledOrder['delivery_longitude'].toString()),
+              status: 'scheduled',
+              totalAmount: double.parse(scheduledOrder['total_amount']?.toString() ?? '0'),
+              deliveryFee: double.parse(scheduledOrder['delivery_fee']?.toString() ?? '0'),
+              notes: scheduledOrder['notes'] as String?,
+              vehicleType: vehicleType,
+              createdAt: DateTime.parse(scheduledOrder['created_at'] as String),
+              updatedAt: scheduledOrder['updated_at'] != null ? DateTime.parse(scheduledOrder['updated_at'] as String) : null,
+              readyAt: scheduledDateTime, // Use scheduled time as readyAt for display purposes
+              items: const [], // Scheduled orders don't have items yet
+            );
+          }).toList();
+
+          // Merge scheduled orders into the orders list
+          _orders.addAll(scheduledOrders);
+          print('✅ Loaded ${scheduledOrders.length} scheduled order(s)');
         } catch (e) {
-          final errorString = e.toString().toLowerCase();
-          final isConnectionError = errorString.contains('connection reset') ||
-                                   errorString.contains('connection refused') ||
-                                   errorString.contains('socket') ||
-                                   errorString.contains('network') ||
-                                   errorString.contains('timeout');
-          
-          retryCount++;
-          
-          if (isConnectionError && retryCount <= maxRetries) {
-            print('⚠️ Connection error loading orders (attempt $retryCount/$maxRetries): $e');
-            // Exponential backoff: wait 1s, 2s, 4s
-            await Future.delayed(Duration(seconds: 1 << (retryCount - 1)));
-            continue; // Retry
-          } else {
-            // Not a connection error, or max retries reached
-            print('❌ Error loading orders: $e');
-            rethrow; // Let outer catch handle it
-          }
+          print('⚠️ Error loading scheduled orders: $e');
+          // Don't fail the entire load if scheduled orders fail
         }
       }
-      
-      // If all retries failed, use empty list
-      if (response.isEmpty && retryCount > maxRetries) {
-        print('⚠️ All retry attempts failed - using empty order list');
-        response = [];
-      }
-      
-      // Process response to flatten driver and merchant info and calculate timeout
-      _orders = response.map((order) {
-        // Debug logging
-        print('📦 Order ${order['id']}: driver_id=${order['driver_id']}, driver=${order['driver']}, merchant=${order['merchant']}');
-        
-        // Validate and fix delivery coordinates
-        final deliveryLat = order['delivery_latitude'];
-        final deliveryLng = order['delivery_longitude'];
-        if (deliveryLat == null || deliveryLng == null || 
-            deliveryLat < 29.0 || deliveryLat > 37.0 || 
-            deliveryLng < 38.0 || deliveryLng > 49.0) {
-          print('⚠️ Order ${order['id']} has invalid delivery coordinates: $deliveryLat, $deliveryLng');
-          print('   Customer: ${order['customer_name']}, Address: ${order['delivery_address']}');
-          
-          // Log invalid coordinates but don't auto-fix
-          print('⚠️ Order has invalid coordinates: ${order['delivery_latitude']}, ${order['delivery_longitude']}');
-          print('📝 Coordinates will be validated by database, not auto-fixed by client');
-        }
-        
-        // Extract driver info
-        if (order['driver'] != null && order['driver'] is Map) {
-          order['driver_name'] = order['driver']['name'];
-          order['driver_phone'] = order['driver']['phone'];
-          print('✅ Added driver info: ${order['driver_name']} - ${order['driver_phone']}');
-        } else if (order['driver_id'] != null) {
-          print('⚠️ Order has driver_id but no driver data loaded');
-        }
-        
-        // Extract merchant info
-        if (order['merchant'] != null && order['merchant'] is Map) {
-          order['merchant_name'] = order['merchant']['store_name'] ?? order['merchant']['name'];
-          order['merchant_phone'] = order['merchant']['phone'];
-          print('✅ Added merchant info: ${order['merchant_name']} - ${order['merchant_phone']}');
-        } else {
-          print('⚠️ Order has merchant_id but no merchant data loaded');
-        }
-        
-        // Calculate timeout_remaining_seconds for pending orders with driver assigned
-        if (order['status'] == 'pending' && 
-            order['driver_id'] != null && 
-            order['driver_assigned_at'] != null) {
-          try {
-            final assignedAtStr = order['driver_assigned_at'] as String;
-            final assignedAt = DateTime.parse(assignedAtStr);
-            final now = DateTime.now().toUtc();
-            final assignedAtUtc = assignedAt.toUtc();
-            final elapsed = now.difference(assignedAtUtc).inSeconds;
-            final remaining = 30 - elapsed;
-            final remainingClamped = remaining.clamp(0, 30);
-            
-            order['timeout_remaining_seconds'] = remainingClamped;
-            
-            print('');
-            print('═══════════════════════════════════════════════════════');
-            print('⏱️  TIMEOUT CALCULATION for order ${order['id']}');
-            print('───────────────────────────────────────────────────────');
-            print('   driver_assigned_at (string): $assignedAtStr');
-            print('   driver_assigned_at (parsed): $assignedAt');
-            print('   driver_assigned_at (UTC)   : $assignedAtUtc');
-            print('   NOW() (UTC)                : $now');
-            print('   Elapsed seconds            : $elapsed');
-            print('   Formula: 30 - $elapsed     : $remaining');
-            print('   Clamped (0-30)            : $remainingClamped');
-            print('═══════════════════════════════════════════════════════');
-            print('');
-          } catch (e) {
-            print('❌ Error calculating timeout: $e');
-            order['timeout_remaining_seconds'] = null;
-          }
-        }
-        
-        // Ensure delivery coords are numeric (avoid nulls/strings causing UI issues)
-        if (order['delivery_latitude'] == null || order['delivery_longitude'] == null) {
-          order['delivery_latitude'] = order['delivery_latitude'] ?? 0.0;
-          order['delivery_longitude'] = order['delivery_longitude'] ?? 0.0;
-        }
-        return OrderModel.fromJson(order);
-      }).toList();
       
       // Clean up timed out orders set - remove IDs that no longer exist in orders
       final currentOrderIds = _orders.map((o) => o.id).toSet();
@@ -557,9 +609,29 @@ class OrderProvider extends ChangeNotifier {
         _timedOutOrders.remove(id);
         print('🧹 Removed non-existent order $id from timed out set');
       }
+      
+      // Invalidate cache when orders are updated
+      final cacheKeyToInvalidate = 'orders_${currentUser.id}_${effectiveRole}_0';
+      await _responseCache.invalidate(cacheKeyToInvalidate);
 
     } catch (e) {
-      _error = e.toString();
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('failed host lookup') ||
+          errorString.contains('socketexception') ||
+          errorString.contains('hostname') ||
+          errorString.contains('no address associated')) {
+        _error = 'لا يمكن الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت / Unable to connect to server. Please check your internet connection.';
+      } else if (errorString.contains('timeout')) {
+        _error = 'انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى / Connection timeout. Please try again.';
+      } else if (errorString.contains('network') || errorString.contains('connection')) {
+        _error = 'مشكلة في الاتصال بالشبكة. يرجى التحقق من اتصال الإنترنت / Network connection problem. Please check your internet connection.';
+      } else {
+        _error = 'حدث خطأ أثناء تحميل الطلبات. يرجى المحاولة مرة أخرى / An error occurred while loading orders. Please try again.';
+      }
+      print('❌ Error in _loadOrders: $e');
+      // Set orders to empty list on error to avoid showing stale data
+      _orders = [];
+      notifyListeners();
     }
   }
 
@@ -581,11 +653,26 @@ class OrderProvider extends ChangeNotifier {
       if (userRole == 'driver') {
         // For drivers, ensure single realtime subscription
         await _ordersSubscription?.cancel();
-        _ordersSubscription = Supabase.instance.client
+        
+        // Bulk orders removed - no longer subscribing to bulk orders
+        
+        // Define stream with error handling for regular orders
+        final stream = Supabase.instance.client
             .from('orders')
             .stream(primaryKey: ['id'])
-            .listen((data) async {
-          
+            .handleError((error) {
+              print('❌ Realtime stream error: $error');
+              // Attempt to reconnect after delay
+              print('🔄 Scheduling stream reconnection...');
+              Future.delayed(const Duration(seconds: 5), () {
+                if (_ordersSubscription != null) { // Only if still active
+                   print('🔄 Reconnecting order stream now...');
+                   _subscribeToOrders();
+                }
+              });
+            });
+
+        _ordersSubscription = stream.listen((data) async {
           // Process each order and fetch items if needed
           final List<OrderModel> processedOrders = [];
           
@@ -596,11 +683,30 @@ class OrderProvider extends ChangeNotifier {
             final orderId = orderData['id'];
             final driverAssignedAt = orderData['driver_assigned_at'];
             
+            // Check for delivery location updates
+            final existingOrder = _orders.where((o) => o.id == orderId).firstOrNull;
+            if (existingOrder != null && driverId == currentUser.id) {
+              final newLat = (orderData['delivery_latitude'] as num?)?.toDouble();
+              final newLng = (orderData['delivery_longitude'] as num?)?.toDouble();
+              final oldLat = existingOrder.deliveryLatitude;
+              final oldLng = existingOrder.deliveryLongitude;
+              
+              // Check if coordinates changed (with small threshold to avoid floating point issues)
+              if (newLat != null && newLng != null && 
+                  ((newLat - oldLat).abs() > 0.0001 || 
+                   (newLng - oldLng).abs() > 0.0001)) {
+                print('📍 Customer location updated for order $orderId');
+                print('   Old: $oldLat, $oldLng');
+                print('   New: $newLat, $newLng');
+                
+                // Refresh the order to get complete data
+                await refreshOrder(orderId);
+              }
+            }
             
             // 🔔 TRIGGER NOTIFICATION: Order newly assigned to this driver
             if (driverId != null && driverId == currentUser.id && status == 'pending') {
               // Check if this is a NEW assignment (not already in our list with this driver)
-              final existingOrder = _orders.where((o) => o.id == orderId).firstOrNull;
               final isNewAssignment = existingOrder == null || existingOrder.driverId != currentUser.id;
               
               if (isNewAssignment) {
@@ -685,6 +791,7 @@ class OrderProvider extends ChangeNotifier {
                 orderData['delivery_latitude'] = orderData['delivery_latitude'] ?? 0.0;
                 orderData['delivery_longitude'] = orderData['delivery_longitude'] ?? 0.0;
               }
+              
               processedOrders.add(OrderModel.fromJson(orderData));
             }
           }
@@ -716,74 +823,108 @@ class OrderProvider extends ChangeNotifier {
       } else {
         // For merchants, listen to their orders with complete data loading
         print('👨‍💼 Setting up merchant realtime subscription for user: ${currentUser.id}');
-        Supabase.instance.client
+        
+        await _ordersSubscription?.cancel();
+        
+        final stream = Supabase.instance.client
             .from('orders')
             .stream(primaryKey: ['id'])
             .eq('merchant_id', currentUser.id)
-            .listen(
+            .order('created_at', ascending: false)
+            .limit(50) // PERFORMANCE FIX: Reduced from 200 to 50 to reduce memory usage
+            .handleError((error) {
+              print('❌ Merchant realtime stream error: $error');
+              print('🔄 Scheduling stream reconnection...');
+              Future.delayed(const Duration(seconds: 5), () {
+                if (_ordersSubscription != null) {
+                   print('🔄 Reconnecting merchant stream now...');
+                   _subscribeToOrders();
+                }
+              });
+            });
+
+        _ordersSubscription = stream.listen(
           (data) async {
           print('📦 Merchant real-time update: ${data.length} orders received');
           print('   Update time: ${DateTime.now()}');
           
           // Process each order and fetch related data
-          final List<OrderModel> processedOrders = [];
           
-          for (var orderData in data) {
-            final orderId = orderData['id'];
-            
-            // Fetch order items if not included
-            if (orderData['items'] == null) {
-              try {
-                final items = await Supabase.instance.client
-                    .from('order_items')
-                    .select()
-                    .eq('order_id', orderId);
-                orderData['items'] = items;
-              } catch (e) {
-                print('❌ Error fetching items for order $orderId: $e');
-                orderData['items'] = [];
+            // Parallelize fetching of order details
+            final futures = data.map((orderData) async {
+              final orderId = orderData['id'];
+              
+              // Reuse existing items if available to save bandwidth
+              final existingOrder = _orders.where((o) => o.id == orderId).firstOrNull;
+              
+              // 1. ITEMS caching - Inject into JSON if missing and available in cache
+              if (orderData['items'] == null) {
+                if (existingOrder != null && existingOrder.items.isNotEmpty) {
+                  // Re-serialize items to JSON format so OrderModel.fromJson can read them
+                  // (OrderModel.fromJson expects 'items' to be List<dynamic> of maps)
+                  orderData['items'] = existingOrder.items.map((i) => i.toJson()).toList();
+                } else {
+                 // No cache, fetch
+                 try {
+                  final items = await Supabase.instance.client
+                      .from('order_items')
+                      .select()
+                      .eq('order_id', orderId);
+                  orderData['items'] = items;
+                } catch (e) {
+                   orderData['items'] = [];
+                }
+               }
               }
-            }
-            
-            // Fetch driver info if order has a driver assigned
-            if (orderData['driver_id'] != null && orderData['driver'] == null) {
-              try {
-                final driverData = await Supabase.instance.client
-                    .from('users')
-                    .select('name, phone')
-                    .eq('id', orderData['driver_id'])
-                    .single();
-                
-                orderData['driver_name'] = driverData['name'];
-                orderData['driver_phone'] = driverData['phone'];
-                print('✅ Loaded driver info for order $orderId: ${driverData['name']}');
-              } catch (e) {
-                print('⚠️ Error fetching driver info for order $orderId: $e');
+
+              // 2. DRIVER INFO caching - Inject into JSON if missing and available in cache
+              if (orderData['driver_id'] != null && orderData['driver'] == null) {
+                 if (existingOrder != null && existingOrder.driverName != null) {
+                    orderData['driver_name'] = existingOrder.driverName;
+                    orderData['driver_phone'] = existingOrder.driverPhone;
+                 } else {
+                    try {
+                      final driverData = await Supabase.instance.client
+                          .from('users')
+                          .select('name, phone')
+                          .eq('id', orderData['driver_id'])
+                          .maybeSingle();
+                      
+                      if (driverData != null) {
+                        orderData['driver_name'] = driverData['name'];
+                        orderData['driver_phone'] = driverData['phone'];
+                      }
+                    } catch (e) {
+                      // Log but don't fail - driver info is optional
+                      print('⚠️ Could not fetch driver info: $e');
+                    }
+                 }
               }
-            }
-            
-            // Calculate timeout for pending orders with driver assigned
-            if (orderData['status'] == 'pending' && 
-                orderData['driver_id'] != null && 
-                orderData['driver_assigned_at'] != null) {
-              try {
-                final assignedAtStr = orderData['driver_assigned_at'] as String;
-                final assignedAt = DateTime.parse(assignedAtStr);
-                final now = DateTime.now().toUtc();
-                final assignedAtUtc = assignedAt.toUtc();
-                final elapsed = now.difference(assignedAtUtc).inSeconds;
-                final remaining = 30 - elapsed;
-                final remainingClamped = remaining.clamp(0, 30);
-                
-                orderData['timeout_remaining_seconds'] = remainingClamped;
-              } catch (e) {
-                print('❌ Error calculating timeout: $e');
-                orderData['timeout_remaining_seconds'] = null;
+              
+              // Calculate timeout for pending orders with driver assigned
+              if (orderData['status'] == 'pending' && 
+                  orderData['driver_id'] != null && 
+                  orderData['driver_assigned_at'] != null) {
+                try {
+                  final assignedAtStr = orderData['driver_assigned_at'] as String;
+                  final assignedAt = DateTime.parse(assignedAtStr);
+                  final now = DateTime.now().toUtc();
+                  final assignedAtUtc = assignedAt.toUtc();
+                  final elapsed = now.difference(assignedAtUtc).inSeconds;
+                  final remaining = 30 - elapsed;
+                  final remainingClamped = remaining.clamp(0, 30);
+                  
+                  orderData['timeout_remaining_seconds'] = remainingClamped;
+                } catch (e) {
+                  orderData['timeout_remaining_seconds'] = null;
+                }
               }
-            }
+              
+              return OrderModel.fromJson(orderData);
+            });
             
-            processedOrders.add(OrderModel.fromJson(orderData));
-          }
+            // Wait for all fetches to complete
+            final processedOrders = await Future.wait(futures);
           
           // Detect status changes for notifications and logging
           for (var newOrder in processedOrders) {
@@ -849,14 +990,16 @@ class OrderProvider extends ChangeNotifier {
       print('✅ Merchant realtime subscription initialized');
       }
     } catch (e) {
-      _error = e.toString();
+      print('❌ Error setting up order subscription: $e');
     }
   }
 
+  // Bulk order subscription removed - bulk orders are no longer supported
+
   // Create new order
-  Future<bool> createOrder({
+  Future<Map<String, dynamic>?> createOrder({
     required String customerName,
-    required String customerPhone,
+    String? customerPhone,
     required String pickupAddress,
     required double pickupLatitude,
     required double pickupLongitude,
@@ -869,6 +1012,7 @@ class OrderProvider extends ChangeNotifier {
     String? vehicleType, // Optional: 'motorbike' (default), 'car', or 'truck'
     DateTime? readyAt, // When order will be ready for pickup
     int? readyCountdown, // Minutes until ready
+    String? assignedDriverId, // Optional: assign to specific driver (e.g., same driver as active order)
   }) async {
     _isLoading = true;
     _error = null;
@@ -878,7 +1022,7 @@ class OrderProvider extends ChangeNotifier {
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser == null) {
         _error = 'المستخدم غير مسجل الدخول';
-        return false;
+        return null;
       }
 
       // Prepare order data
@@ -906,6 +1050,11 @@ class OrderProvider extends ChangeNotifier {
       if (readyCountdown != null) {
         orderData['ready_countdown'] = readyCountdown;
       }
+      // If assignedDriverId is provided, assign directly to that driver
+      if (assignedDriverId != null) {
+        orderData['driver_id'] = assignedDriverId;
+        orderData['driver_assigned_at'] = DateTime.now().toIso8601String();
+      }
       
       // Log the data being sent for debugging
       print('📝 Creating order with data:');
@@ -931,7 +1080,7 @@ class OrderProvider extends ChangeNotifier {
       );
       if (orderResponse == null) {
         _error = _error ?? 'حدث خطأ في إنشاء الطلب. يرجى المحاولة مرة أخرى.';
-        return false;
+        return null;
       }
 
       // Optimistically add order to local state for instant feedback
@@ -942,6 +1091,10 @@ class OrderProvider extends ChangeNotifier {
       } catch (e) {
         print('⚠️ Failed to parse created order: $e');
       }
+      
+      // Invalidate cache when new order is created
+      final cacheKey = 'orders_${currentUser.id}_merchant_0';
+      await _responseCache.invalidate(cacheKey);
 
       // Fire-and-forget refresh + notification (don't block UI)
       unawaited(_loadOrders());
@@ -956,7 +1109,8 @@ class OrderProvider extends ChangeNotifier {
         print('✅ Order created notification sent: $success');
       }));
 
-      return true;
+      // Return the created order data (including ID)
+      return orderResponse;
     } catch (e, stackTrace) {
       // Log detailed error information
       print('❌ Error creating order:');
@@ -984,7 +1138,7 @@ class OrderProvider extends ChangeNotifier {
         _error = detailedError.isNotEmpty ? detailedError : 'حدث خطأ في إنشاء الطلب. يرجى المحاولة مرة أخرى.';
         print('   User-friendly error: $_error');
       }
-      return false;
+      return null;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -1014,13 +1168,14 @@ class OrderProvider extends ChangeNotifier {
         isCritical: true,
         operation: () async {
           try {
-            // Call the database function (returns JSON)
+            // Call the database function with timer support (returns JSON)
             final functionResult = await Supabase.instance.client.rpc(
-              'update_order_status',
+              'update_order_status_with_timer',
               params: {
                 'p_order_id': orderId,
                 'p_new_status': status,
                 'p_user_id': currentUser.id,
+                'p_delivery_time_limit_seconds': null, // Only needed for on_the_way status
               },
             );
             
@@ -1057,7 +1212,7 @@ class OrderProvider extends ChangeNotifier {
               print('   Postgrest details: ${e.details}');
               print('   Postgrest hint: ${e.hint}');
             }
-            throw e;
+            rethrow;
           }
           
           // Fallback: Direct update with verification
@@ -1113,6 +1268,11 @@ class OrderProvider extends ChangeNotifier {
           updatedAt: DateTime.now(),
         );
       }
+      
+      // Invalidate cache when order status is updated
+      final effectiveRole = _cachedUserRole ?? 'merchant';
+      final cacheKey = 'orders_${currentUser.id}_${effectiveRole}_0';
+      await _responseCache.invalidate(cacheKey);
 
       notifyListeners();
       return true;
@@ -1156,6 +1316,14 @@ class OrderProvider extends ChangeNotifier {
                 .toIso8601String(),
           });
 
+      // Invalidate cache
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser != null) {
+        final effectiveRole = _cachedUserRole ?? 'merchant';
+        final cacheKey = 'orders_${currentUser.id}_${effectiveRole}_0';
+        await _responseCache.invalidate(cacheKey);
+      }
+      
       // Load updated orders
       await _loadOrders();
       return true;
@@ -1199,13 +1367,23 @@ class OrderProvider extends ChangeNotifier {
            // NOTE: Merchant notification will be sent by _processOrderUpdate method
            // when the order status changes to 'accepted' to avoid duplicates
 
+      // Invalidate cache
+      final effectiveRole = _cachedUserRole ?? 'driver';
+      final cacheKey = 'orders_${currentUser.id}_${effectiveRole}_0';
+      await _responseCache.invalidate(cacheKey);
+      
       // Reload orders
       await _loadOrders();
 
       notifyListeners();
       return true;
     } catch (e) {
-      _error = e.toString();
+      final msg = e.toString();
+      if (msg.contains('DRIVER_WALLET_NEGATIVE')) {
+        _error = 'رصيد محفظتك بالسالب. يرجى شحن المحفظة أولاً لتسديد العمولة ثم حاول مرة أخرى.';
+      } else {
+        _error = msg;
+      }
       return false;
     }
   }
@@ -1248,6 +1426,11 @@ class OrderProvider extends ChangeNotifier {
            // NOTE: Merchant notification will be sent by _processOrderUpdate method
            // when the order status changes to 'rejected' to avoid duplicates
 
+      // Invalidate cache
+      final effectiveRole = _cachedUserRole ?? 'driver';
+      final cacheKey = 'orders_${currentUser.id}_${effectiveRole}_0';
+      await _responseCache.invalidate(cacheKey);
+      
       // Reload orders
       await _loadOrders();
       return true;
@@ -1260,9 +1443,297 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
-  // Mark order as on the way (being delivered)
-  Future<bool> markOrderOnTheWay(String orderId) async {
-    return await updateOrderStatus(orderId, AppConstants.statusOnTheWay);
+  // Mark order as on the way (being delivered) with location validation and timer setup
+  // PERFORMANCE FIX: Optimized for responsiveness - uses cached location and parallel operations
+  // Update customer phone for an order
+  Future<bool> updateCustomerPhone(String orderId, String customerPhone) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      // Format phone number
+      String formattedPhone = customerPhone.replaceAll(RegExp(r'\D'), '');
+      if (formattedPhone.startsWith('964')) {
+        formattedPhone = formattedPhone.substring(3);
+      }
+      formattedPhone = formattedPhone.replaceFirst(RegExp('^0+'), '');
+      formattedPhone = '+964$formattedPhone';
+
+      // Get order details before updating (needed for WhatsApp request)
+      final order = getOrderById(orderId);
+      final customerName = order?.customerName ?? 'عميلنا العزيز';
+      String? merchantName;
+
+      // Get merchant name
+      if (order?.merchantId != null) {
+        try {
+          final merchantResponse = await Supabase.instance.client
+              .from('users')
+              .select('name, store_name')
+              .eq('id', order!.merchantId)
+              .single();
+          merchantName = merchantResponse['store_name'] as String? ?? 
+                       merchantResponse['name'] as String? ?? 
+                       'متجرنا';
+        } catch (e) {
+          print('⚠️ Could not fetch merchant name: $e');
+          merchantName = 'متجرنا';
+        }
+      } else {
+        merchantName = 'متجرنا';
+      }
+
+      await Supabase.instance.client
+          .from('orders')
+          .update({
+            'customer_phone': formattedPhone,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', orderId);
+
+      // Update local order
+      final orderIndex = _orders.indexWhere((o) => o.id == orderId);
+      if (orderIndex != -1) {
+        _orders[orderIndex] = _orders[orderIndex].copyWith(
+          customerPhone: formattedPhone,
+        );
+      }
+
+      if (_currentOrder?.id == orderId) {
+        _currentOrder = _currentOrder!.copyWith(
+          customerPhone: formattedPhone,
+        );
+      }
+
+      // Trigger WhatsApp location request (fire-and-forget, non-blocking)
+      _sendWhatsAppLocationRequest(
+        orderId: orderId,
+        customerPhone: formattedPhone,
+        customerName: customerName,
+        merchantName: merchantName,
+      );
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = _getErrorMessage(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Send WhatsApp location request (fire-and-forget, non-blocking)
+  void _sendWhatsAppLocationRequest({
+    required String orderId,
+    required String customerPhone,
+    required String customerName,
+    required String merchantName,
+  }) {
+    // Fire-and-forget - don't await, don't block UI
+    Supabase.instance.client.functions.invoke(
+      'send-location-request',
+      body: {
+        'order_id': orderId,
+        'customer_phone': customerPhone,
+        'customer_name': customerName,
+        'merchant_name': merchantName,
+      },
+    ).then((response) {
+      if (response.status == 200) {
+        print('✅ WhatsApp location request sent successfully after phone update');
+      } else {
+        print('⚠️ WhatsApp location request failed: ${response.status}');
+      }
+    }).catchError((error) {
+      print('⚠️ Failed to send WhatsApp location request (non-critical): $error');
+      // Don't show error to user - this is a background operation
+    });
+  }
+
+  Future<bool> markOrderOnTheWay(String orderId, {BuildContext? context}) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        _error = 'User not authenticated';
+        return false;
+      }
+
+      // Get order details
+      final order = getOrderById(orderId);
+      if (order == null) {
+        _error = 'Order not found';
+        return false;
+      }
+
+      // Check if customer phone is missing - if so, return false to trigger dialog
+      if (order.customerPhone == null || order.customerPhone!.isEmpty) {
+        _error = 'CUSTOMER_PHONE_REQUIRED';
+        return false;
+      }
+
+      // PERFORMANCE FIX: Use cached location from LocationProvider (instant) instead of triggering new GPS fix
+      Position? driverPosition;
+      if (context != null) {
+        try {
+          final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+          // Use cached currentPosition if available and recent (within last 30 seconds)
+          if (locationProvider.currentPosition != null) {
+            final positionAge = DateTime.now().difference(
+              locationProvider.currentPosition!.timestamp
+            );
+            if (positionAge.inSeconds < 30) {
+              // Use cached position - much faster!
+              driverPosition = locationProvider.currentPosition;
+              print('✅ Using cached location (age: ${positionAge.inSeconds}s)');
+            } else {
+              print('⚠️ Cached location too old (${positionAge.inSeconds}s), fetching new...');
+            }
+          }
+          
+          // Only fetch new location if cached is not available or too old
+          driverPosition ??= await locationProvider.getCurrentLocation()
+                .timeout(const Duration(seconds: 3), onTimeout: () {
+              print('⚠️ Location fetch timed out, using cached if available');
+              return locationProvider.currentPosition;
+            });
+        } catch (e) {
+          print('⚠️ Could not get location from LocationProvider: $e');
+          // Fallback to cached position if available
+          final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+          driverPosition = locationProvider.currentPosition;
+                }
+      }
+      
+      // Fallback: use Geolocator directly with short timeout
+      if (driverPosition == null) {
+        try {
+          driverPosition = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium, // Reduced from high for speed
+            timeLimit: const Duration(seconds: 3), // Short timeout
+          );
+        } catch (e) {
+          print('❌ Could not get location: $e');
+          _error = 'Unable to get current location. Please enable location services.';
+          return false;
+        }
+      }
+
+      print('📍 Driver location: ${driverPosition.latitude}, ${driverPosition.longitude}');
+      print('📍 Pickup location: ${order.pickupLatitude}, ${order.pickupLongitude}');
+
+      // PERFORMANCE FIX: Start route calculation in parallel with validation
+      // Route calculation can happen in background and doesn't block the status update
+      final routeTimeFuture = RouteTimeService.calculateRouteTime(
+        pickupLatitude: order.pickupLatitude,
+        pickupLongitude: order.pickupLongitude,
+        dropoffLatitude: order.deliveryLatitude,
+        dropoffLongitude: order.deliveryLongitude,
+      );
+
+      // Validate pickup location (must be within 100m) with timeout
+      final validationResult = await Supabase.instance.client.rpc(
+        'validate_pickup_location',
+        params: {
+          'p_order_id': orderId,
+          'p_driver_id': currentUser.id,
+          'p_driver_latitude': driverPosition.latitude,
+          'p_driver_longitude': driverPosition.longitude,
+        },
+      ).timeout(const Duration(seconds: 5), onTimeout: () {
+        print('⚠️ Validation timed out');
+        return {'success': false, 'error': 'TIMEOUT', 'message': 'Validation timed out'};
+      });
+
+      if (validationResult is Map && validationResult['success'] != true) {
+        final error = validationResult['error'] ?? 'VALIDATION_FAILED';
+        final message = validationResult['message'] ?? 'Cannot mark as picked up';
+        _error = message;
+        print('❌ Pickup validation failed: $error - $message');
+        return false;
+      }
+
+      print('✅ Pickup location validated');
+
+      // Wait for route calculation (should be done or nearly done by now)
+      final routeTimeResult = await routeTimeFuture.timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          print('⚠️ Route calculation timed out, using default time limit');
+          return null; // Will use default time limit
+        },
+      );
+
+      // Use default time limit if route calculation failed (non-critical)
+      int? timeLimitSeconds;
+      if (routeTimeResult != null) {
+        timeLimitSeconds = routeTimeResult.timeLimitSeconds;
+        print('✅ Route time calculated: ${routeTimeResult.timeLimitSeconds}s');
+      } else {
+        // Use a reasonable default (e.g., 30 minutes) if route calculation fails
+        timeLimitSeconds = 1800; // 30 minutes default
+        print('⚠️ Using default time limit: ${timeLimitSeconds}s');
+      }
+
+      // Update order status with timer
+      final ok = await ErrorManager.safeExecute<bool>(
+        operationName: 'update-order-status-with-timer',
+        isCritical: true,
+        operation: () async {
+          final functionResult = await Supabase.instance.client.rpc(
+            'update_order_status_with_timer',
+            params: {
+              'p_order_id': orderId,
+              'p_new_status': AppConstants.statusOnTheWay,
+              'p_user_id': currentUser.id,
+              'p_delivery_time_limit_seconds': timeLimitSeconds,
+            },
+          ).timeout(const Duration(seconds: 5), onTimeout: () {
+            return {'success': false, 'error': 'TIMEOUT', 'message': 'Update timed out'};
+          });
+
+          if (functionResult is Map) {
+            if (functionResult['success'] == true) {
+              print('✅ Order status updated with timer');
+              return true;
+            } else {
+              final error = functionResult['error'] ?? 'UNKNOWN_ERROR';
+              final message = functionResult['message'] ?? 'Failed to update order status';
+              print('❌ Update failed: $error - $message');
+              _error = message;
+              return false;
+            }
+          }
+
+          _error = 'Unexpected response from server';
+          return false;
+        },
+        defaultValue: false,
+      );
+
+      if (ok != true) {
+        _error = _error ?? 'تعذر تحديث حالة الطلب.';
+        return false;
+      }
+
+      // PERFORMANCE FIX: Removed _loadOrders() - realtime subscription handles updates
+      // This prevents blocking the UI with a heavy database operation
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = _getErrorMessage(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // Mark order as delivered
@@ -1276,6 +1747,7 @@ class OrderProvider extends ChangeNotifier {
   }
 
   // Upload order proof (driver must upload before delivery completion)
+  // OPTIMIZED: Parallel upload and DB insert, with timeout handling
   Future<bool> uploadOrderProof({
     required String orderId,
     required Uint8List fileBytes,
@@ -1291,12 +1763,28 @@ class OrderProvider extends ChangeNotifier {
       final name = fileName ?? 'proof_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final objectPath = '$orderId/$name';
 
-      // Upload to storage
+      // OPTIMIZATION: Upload to storage first (with timeout), then insert DB record
+      // This ensures we don't create orphaned DB records if upload fails
+      // Using timeout to prevent hanging uploads
       await Supabase.instance.client.storage
           .from('order_proofs')
-          .uploadBinary(objectPath, fileBytes, fileOptions: FileOptions(contentType: contentType, upsert: true));
+          .uploadBinary(
+            objectPath, 
+            fileBytes, 
+            fileOptions: FileOptions(
+              contentType: contentType, 
+              upsert: true,
+              cacheControl: '3600', // Cache for 1 hour
+            ),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw TimeoutException('Storage upload timed out after 30 seconds');
+            },
+          );
 
-      // Record in DB
+      // Insert DB record after successful upload (with timeout)
       await Supabase.instance.client
           .from('order_proofs')
           .insert({
@@ -1305,11 +1793,22 @@ class OrderProvider extends ChangeNotifier {
             'storage_path': objectPath,
             'content_type': contentType,
             'size_bytes': fileBytes.length,
-          });
+          })
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('Database insert timed out after 10 seconds');
+            },
+          );
 
       return true;
+    } on TimeoutException catch (e) {
+      _error = 'انتهت مهلة الرفع. يرجى المحاولة مرة أخرى / Upload timeout. Please try again.';
+      print('❌ Upload timeout: $e');
+      return false;
     } catch (e) {
       _error = _getErrorMessage(e);
+      print('❌ Upload error: $e');
       return false;
     }
   }
@@ -1425,6 +1924,11 @@ class OrderProvider extends ChangeNotifier {
         return false;
       }
 
+      // Invalidate cache
+      final effectiveRole = _cachedUserRole ?? 'merchant';
+      final cacheKey = 'orders_${currentUser.id}_${effectiveRole}_0';
+      await _responseCache.invalidate(cacheKey);
+      
       // Reload orders to get updated list
       await _loadOrders();
       return true;
@@ -1496,11 +2000,53 @@ class OrderProvider extends ChangeNotifier {
     final finalCount = _orders.length;
     
     if (initialCount != finalCount) {
-      print('✅ Order $orderId removed from local state (${initialCount} → ${finalCount} orders)');
+      print('✅ Order $orderId removed from local state ($initialCount → $finalCount orders)');
+      
+      // Invalidate cache when order is removed
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser != null) {
+        final effectiveRole = _cachedUserRole ?? 'merchant';
+        final cacheKey = 'orders_${currentUser.id}_${effectiveRole}_0';
+        _responseCache.invalidate(cacheKey);
+      }
+      
       notifyListeners();
     } else {
       print('⚠️  Order $orderId not found in local state (may already be removed)');
     }
   }
+  
+  /// Load fresh orders and cache them (background operation)
+  Future<void> _loadFreshOrdersAndCache(
+    String userId,
+    String userRole,
+    OptimizedOrderLoader loader,
+    RequestPriority priority,
+    String cacheKey,
+  ) async {
+    try {
+      final orders = await loader.loadOrdersOptimized(
+        userId: userId,
+        userRole: userRole,
+        page: 0,
+        priority: priority,
+      );
+      
+      if (orders.isNotEmpty) {
+        _orders = orders;
+        await _responseCache.cacheResponse(
+          key: cacheKey,
+          data: orders,
+          cacheDuration: const Duration(minutes: 2),
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      // Silently fail - we already have cached data
+      print('⚠️ Background refresh failed: $e');
+    }
+  }
+
+  // Bulk order methods removed - bulk orders are no longer supported
 
 }

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&amp;family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface": "#f8f9fa",
+                        "tertiary-fixed": "#ffdbc8",
+                        "surface-dim": "#d9dadb",
+                        "tertiary-fixed-dim": "#ffb68a",
+                        "surface-bright": "#f8f9fa",
+                        "background": "#f8f9fa",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#6ed6df",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#3755c3",
+                        "on-background": "#191c1d",
+                        "surface-tint": "#006970",
+                        "secondary-fixed": "#dde1ff",
+                        "on-tertiary-fixed": "#321300",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "on-secondary-container": "#00217a",
+                        "on-surface-variant": "#3d494a",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#2e3132",
+                        "surface-container-low": "#f3f4f5",
+                        "surface-container-high": "#e7e8e9",
+                        "tertiary": "#8d4a19",
+                        "on-primary-container": "#f5feff",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed-dim": "#6ed6df",
+                        "outline-variant": "#bdc9ca",
+                        "primary-container": "#00818a",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#ab6230",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "surface-container": "#edeeef",
+                        "secondary-container": "#708cfd",
+                        "on-surface": "#191c1d",
+                        "primary-fixed": "#8cf2fc",
+                        "on-tertiary-fixed-variant": "#733604",
+                        "surface-variant": "#e1e3e4",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#001453",
+                        "primary": "#00666d",
+                        "inverse-on-surface": "#f0f1f2",
+                        "outline": "#6d797a",
+                        "on-tertiary-container": "#fffbff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#002022"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope", "Tajawal"],
+                        "body": ["Manrope", "Tajawal"],
+                        "label": ["Manrope", "Tajawal"],
+                        "tajawal": ["Tajawal"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { background-color: #191c1d; } /* Overriding for Dark Theme context */
+        .glass-panel {
+            background: rgba(46, 49, 50, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+        .text-glow {
+            text-shadow: 0 0 15px rgba(0, 102, 109, 0.4);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body text-on-surface selection:bg-primary-container/30 overflow-x-hidden dark bg-inverse-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-lg flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-teal-700 dark:text-teal-400 active:scale-95 transition-transform" data-icon="menu">menu</button>
+<span class="text-2xl font-black text-teal-800 dark:text-teal-200 tracking-tighter">Hur Delivery</span>
+</div>
+<div class="flex items-center gap-6">
+<!-- Language Toggle -->
+<div class="flex items-center bg-stone-100/50 dark:bg-stone-800/50 p-1 rounded-xl">
+<button class="px-3 py-1 text-xs font-bold text-teal-600 dark:text-teal-400">EN</button>
+<button class="px-3 py-1 text-xs font-bold text-stone-500 dark:text-stone-400 font-tajawal">عربي</button>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container">
+<img alt="Merchant Profile" class="w-full h-full object-cover" data-alt="portrait of a confident middle-eastern businessman in a smart suit with a warm smile and professional studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjH9FaGBxay6yzbync6teQF6gTKI3wjuFSZu-FNWTlVLl6zJnFv0w016cFEJHDYb14MGx8XoJhaqOqzS8dkfkh-Vk7Oa4gPikRB1YIJ3Nt5QDooL2RlCMEFcHMwFa1mKUeeT1sD22kqTJCiBjV8PPWBTjAMZptmj-CsEIlwVzz-S5v2DmPLEm2NhNH9I-e18g-D59sB2Y4PE9kvA8QWdmLQE-_nbA90Bnxu2JFYn6mSGqmBaXjxzmAb47yegkD0ijYjHJrNS5hsfc5"/>
+</div>
+</div>
+</header>
+<main class="relative min-h-screen pt-20 pb-32">
+<!-- Hero Section with Asymmetric Layout -->
+<section class="relative px-6 md:px-12 py-12 flex flex-col md:flex-row gap-12 items-center">
+<div class="flex-1 space-y-6 z-10">
+<div class="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+<span class="text-xs font-bold text-primary tracking-[0.2em] uppercase">Logistics Excellence</span>
+</div>
+<h1 class="text-5xl md:text-7xl font-black text-on-primary-container tracking-tighter leading-none dark:text-white">
+                    Moving <span class="text-primary italic">Faster</span> <br/>Across Iraq.
+                </h1>
+<p class="text-lg text-on-surface-variant max-w-md leading-relaxed dark:text-stone-400">
+                    The premium delivery backbone for Mosul and Najaf. Empowering local merchants and professional drivers with kinetic precision.
+                </p>
+<!-- Dual CTAs -->
+<div class="flex flex-col sm:flex-row gap-4 pt-4">
+<button class="group relative px-8 py-5 rounded-[12px] bg-gradient-to-br from-primary to-primary-container text-white font-bold text-lg overflow-hidden shadow-lg shadow-primary/20 active:scale-95 transition-all">
+<span class="relative z-10 flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+                            I'm a Driver
+                        </span>
+<div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</button>
+<button class="px-8 py-5 rounded-[12px] bg-surface-container-high dark:bg-stone-800 text-on-surface font-bold text-lg border border-outline-variant/20 dark:text-white active:scale-95 transition-all">
+<span class="flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="store">store</span>
+                            I'm a Merchant
+                        </span>
+</button>
+</div>
+</div>
+<!-- Kinetic Illustration Section -->
+<div class="flex-1 relative w-full h-[500px] md:h-[600px]">
+<div class="absolute inset-0 rounded-[40px] overflow-hidden">
+<img alt="Delivery Scene" class="w-full h-full object-cover grayscale opacity-40 dark:opacity-60" data-alt="cinematic night view of a delivery scooter moving through a historical narrow street in Mosul, dramatic orange streetlights and deep shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm2rDlPzk1okTt_4xB_COaaouq3taFuZ9WSo0S55vpfhWO9Ukl4_ovoEwkhT6ZiRQZPYczObNiYTJ-cwgiaqHHZE4Zcte7kweQezWaaUdl68tp_KxyawwOr-WZIB9HWh6EhkG4VJu11R31gkADmkZxF-ZqTwwB11qDK0MpUJEwcCSebOa_umiyIYM-14oZNlvoVwqZwNpZ2K7xMGJ3ElMTdWA6-AHGpywMBZOsDKS0Ve3Cg8ey9ly82A16ArUPGw779Yw-BsjuvNu3"/>
+<!-- Glass Overlays -->
+<div class="absolute top-12 left-12 glass-panel p-6 rounded-2xl border border-white/5 shadow-2xl">
+<div class="flex items-center gap-4">
+<div class="p-3 bg-primary rounded-xl">
+<span class="material-symbols-outlined text-white" data-icon="speed">speed</span>
+</div>
+<div>
+<p class="text-xs text-stone-400 uppercase tracking-widest font-bold">Live Pace</p>
+<p class="text-xl font-black text-white">14.2 min</p>
+</div>
+</div>
+</div>
+<div class="absolute bottom-20 right-8 glass-panel p-6 rounded-2xl border border-white/5 shadow-2xl">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary-container" data-icon="location_on">location_on</span>
+</div>
+<span class="text-white font-bold">Najaf Gateway</span>
+</div>
+<div class="h-24 w-48 rounded-xl bg-stone-900/50 overflow-hidden">
+<img alt="Map snippet" class="w-full h-full object-cover opacity-30" data-alt="abstract dark map interface showing routes and pulsing delivery markers in teal and navy colors" data-location="Najaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3bL05lOPXxDRFKMTJ1Upg2KyLciNDGcWCOp5T7jUMggqRHP1MxtcdMUpmlEq0vh8BDdT6IZNIk-mB1Z-NNksQ3GazB0WOBUYFIFZIPqN8EU-QfKVGVUEBSV_mbHVIicsLmSz2R3oGdFqSTjf-k86PMMV0ivcJCmaZbRcRJVAZmp_c9_CHnQNnTXnOn4O900JdQc_xv1wlZheXuY9LnrswSduQY9zRB4Xhv71-4OYAAJlfj4JeIkIr20vX5BXWLqFeiLrSDQu_hhdZ"/>
+</div>
+</div>
+</div>
+<!-- Decorative Elements -->
+<div class="absolute -z-10 -top-20 -right-20 w-96 h-96 bg-primary/20 blur-[120px] rounded-full"></div>
+<div class="absolute -z-10 -bottom-20 -left-20 w-80 h-80 bg-secondary/10 blur-[100px] rounded-full"></div>
+</div>
+</section>
+<!-- Trust Stats / Bento Grid Lite -->
+<section class="px-6 md:px-12 py-12">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="p-8 rounded-[24px] bg-surface-container-low dark:bg-stone-900/40 border border-outline-variant/10">
+<h3 class="text-sm font-bold text-primary mb-2 uppercase tracking-widest">Active Footprint</h3>
+<p class="text-4xl font-black text-on-surface dark:text-white tracking-tighter">1,200+</p>
+<p class="text-on-surface-variant text-sm mt-2 dark:text-stone-500">Verified merchants across Najaf and Mosul trusting our kinetic network.</p>
+</div>
+<div class="p-8 rounded-[24px] bg-primary text-white shadow-xl shadow-primary/10">
+<h3 class="text-sm font-bold opacity-80 mb-2 uppercase tracking-widest">Fleet Power</h3>
+<p class="text-4xl font-black tracking-tighter">850+</p>
+<p class="opacity-80 text-sm mt-2">Professional drivers equipped with advanced routing tech.</p>
+<div class="mt-6 flex -space-x-3">
+<img alt="User" class="w-10 h-10 rounded-full border-4 border-primary" data-alt="driver portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXGDUGaODgJuTRVsq96INTmqq15_uF5BsH6WLJySw3H_rEX1FuwMUYBUtuNukfaHrmLj7nKWq2w4qP-r6DmPETGzcwPMbB9Yv2oQlhbQIFsX1QbOW2-akK3QPWbAaToGSBtoh2cH0gVmRZLBmpGmQzk2vAu7kDgLki991u_2b6ahIRo7f1GEHMLkTZGPmV2EuAxyIZ37zeOhZRMypTL2Yq2W821JQ_oy5ZTQZlsWGA89G0s_uHMqxAnQlVo5pmyuB2YpW4F-FMBL0f"/>
+<img alt="User" class="w-10 h-10 rounded-full border-4 border-primary" data-alt="driver portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaKFJsp3ByuJ6geU4Hb5hh_BMXL1-B2AsUokZRyWhMdmDzJeRqUMB1cnOntjz96Qok07DT53aU8pylcsXDJtH-b6Q84QR-DN5rAEHsx4sEyzSR9Qjqb2MDDxUl9npUpJV4ReuvMJkPQXznEFSZzmBIC5WAX4ZohiRVIt1lXtSnnfaQwQaKpMcgQ4CVkMw4PfQChVr_tqyBdIMm9u-Wk7lNbo7X6gMYgG-9hRiE3eKXacfZZOI1LjZhCgiM9UzwIH7BjmYLtnWi0ZPL"/>
+<img alt="User" class="w-10 h-10 rounded-full border-4 border-primary" data-alt="driver portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWvd-28m6UYXT_BiNJfaRufCoMjGcpGWAKk9yrymhMjZi2LdqOPKIX7yUQ8gCVFf3qoD8IMSniEgeefSCVZGt9PpegInrRPNmhaqenlqG0P_L8bRzILh2xxKAfaBLBQLti6xiyOUgb-QL5w-xp9xn56LnzyVzv0lg_222ptJJgpMwe6Sn96zaOzexpgx7np118vf80sBa_1XiGTQUvay13B8ciFeaeIs_vjzWKMt_rnG7ERrvQGY-qRU-4anc6eOPfYSOeX_scbNlR"/>
+</div>
+</div>
+<div class="p-8 rounded-[24px] bg-surface-container-low dark:bg-stone-900/40 border border-outline-variant/10">
+<h3 class="text-sm font-bold text-secondary mb-2 uppercase tracking-widest">Success Rate</h3>
+<p class="text-4xl font-black text-on-surface dark:text-white tracking-tighter">99.8%</p>
+<p class="text-on-surface-variant text-sm mt-2 dark:text-stone-500">Industry-leading fulfillment reliability in high-density urban areas.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- NavigationDrawer Overlay (Hidden by Default) -->
+<div class="fixed inset-0 bg-stone-950/40 backdrop-blur-sm z-[60] hidden">
+<div class="h-full w-[280px] bg-white dark:bg-stone-950 rounded-r-3xl flex flex-col py-8 px-6 gap-4 shadow-2xl shadow-stone-900/20">
+<div class="flex flex-col gap-1 mb-8">
+<h2 class="font-tajawal text-lg font-bold tracking-tight text-teal-800 dark:text-teal-100">Ahmed Al-Najafi</h2>
+<p class="text-xs text-stone-500">Premier Merchant</p>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-4 p-3 rounded-xl text-teal-700 dark:text-teal-300 font-bold bg-teal-50/50 dark:bg-teal-900/20 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-tajawal text-base">Switch to Driver</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-xl text-stone-600 dark:text-stone-400 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-tajawal text-base">Wallet</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-xl text-stone-600 dark:text-stone-400 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="support_agent">support_agent</span>
+<span class="font-tajawal text-base">Support</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-stone-100 dark:border-stone-900">
+<a class="flex items-center gap-4 p-3 rounded-xl text-error" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-tajawal text-base">Log Out</span>
+</a>
+</div>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full rounded-t-[32px] z-50 bg-white/70 dark:bg-stone-900/70 backdrop-blur-2xl shadow-[0_-8px_24px_rgba(0,0,0,0.06)] md:hidden">
+<div class="flex justify-around items-center px-4 pb-6 pt-3 w-full max-w-lg mx-auto">
+<button class="flex flex-col items-center justify-center text-stone-400 dark:text-stone-500 px-5 py-2 active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Orders</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-2xl px-5 py-2 active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Menu</span>
+</button>
+<button class="flex flex-col items-center justify-center text-stone-400 dark:text-stone-500 px-5 py-2 active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Analytics</span>
+</button>
+<button class="flex flex-col items-center justify-center text-stone-400 dark:text-stone-500 px-5 py-2 active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Settings</span>
+</button>
+</div>
+</nav>
+</body></html>

@@ -181,22 +181,6 @@ const HowItWorks = () => {
             </motion.div>
           ))}
         </div>
-
-        {/* Commission-Free Highlight for Drivers */}
-        {activeTab === 'driver' && (
-          <motion.div
-            className="commission-free-banner"
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 1 }}
-          >
-            <div className="banner-icon">⚡</div>
-            <div className="banner-content">
-              <h3>{t('how.driver.commissionFree.title')}</h3>
-              <p>{t('how.driver.commissionFree.desc')}</p>
-            </div>
-          </motion.div>
-        )}
       </div>
     </section>
   );

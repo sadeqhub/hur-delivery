@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kinetic Sanctuary - Merchant Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&amp;family=Manrope:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffdbc8",
+                        "on-tertiary-fixed-variant": "#733604",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-primary-container": "#f5feff",
+                        "surface-container-high": "#e7e8e9",
+                        "primary-fixed-dim": "#6ed6df",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "secondary-container": "#708cfd",
+                        "on-primary-fixed": "#002022",
+                        "on-background": "#191c1d",
+                        "tertiary": "#8d4a19",
+                        "on-surface": "#191c1d",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f3f4f5",
+                        "on-secondary-fixed": "#001453",
+                        "surface-tint": "#006970",
+                        "primary-container": "#00818a",
+                        "inverse-primary": "#6ed6df",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary-fixed-dim": "#ffb68a",
+                        "error": "#ba1a1a",
+                        "outline": "#6d797a",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#edeeef",
+                        "primary": "#00666d",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "on-tertiary-container": "#fffbff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "secondary": "#3755c3",
+                        "secondary-fixed": "#dde1ff",
+                        "surface-bright": "#f8f9fa",
+                        "on-tertiary-fixed": "#321300",
+                        "tertiary-container": "#ab6230",
+                        "on-error-container": "#93000a",
+                        "error-container": "#ffdad6",
+                        "surface": "#f8f9fa",
+                        "primary-fixed": "#8cf2fc",
+                        "inverse-surface": "#2e3132",
+                        "outline-variant": "#bdc9ca",
+                        "on-secondary-container": "#00217a",
+                        "on-surface-variant": "#3d494a",
+                        "surface-variant": "#e1e3e4",
+                        "on-error": "#ffffff",
+                        "background": "#f8f9fa",
+                        "surface-dim": "#d9dadb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Tajawal", "Manrope", "sans-serif"],
+                        "body": ["Tajawal", "Manrope", "sans-serif"],
+                        "label": ["Tajawal", "Manrope", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl shadow-sm flex justify-between items-center px-6 h-16 w-full rtl:flex-row-reverse">
+<div class="flex items-center gap-4">
+<button class="text-cyan-700 hover:opacity-80 transition-opacity scale-95 active:duration-150">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-tajawal font-bold text-lg uppercase tracking-wider text-cyan-700">Kinetic Sanctuary</h1>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img class="w-full h-full object-cover" data-alt="professional headshot of a middle-eastern merchant man in a suit with a confident smile, neutral studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnxXQKsnWimq0BUoEvWed7Ql4H3MLwBtQ0iBDBCWegmTtOgv5UMYCblvnig0RG6lOsuVEH1gEAkFnMhS7B_gXHr1NQUwVcj_4ikZ01Dz7AYiv329zBmxejKAueNAMSG4LE0Q4WvSIWgEqfX5cE0dEF5cEM7iIRnph9SF6Ty2fKiO_Io3BPfrbYWjyHfzxIqlWycMfzYmUcVOv7ZA5_W1ALtbtX8Uhky6Y17M9dlyqOxGb2IhMiNIT2bnLTYoFRy-02HhuNYgwW09JN"/>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-2xl mx-auto">
+<!-- Hero Profile Section -->
+<section class="flex flex-col items-center mb-10">
+<div class="relative group">
+<div class="w-32 h-32 rounded-3xl overflow-hidden shadow-2xl border-4 border-surface-container-lowest">
+<img class="w-full h-full object-cover" data-alt="Exterior of a modern high-end boutique storefront with elegant signage and clean glass windows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCB_4QBDpK-mcYok0BmFX6i4Jkqq9KpKCntSSmo60UA4BNuoZ2XLk0pDnKie0uehP4L5qZirUxbrVoIJagT5vvdqSXi5VJb1cchc73Dae7kQGPU4CUcC3vPGjSYCsvkya4NSTRuM_hQxsxWSYHBUEM5JjpTMDljTysUMavxtp-zSV4z8FJJr20bBxBOcG558X1H8t7mnCCOs5KVzt-5gkO2MAiKrY1soTM_tQlIkCizhojsnvqvcycUsS_kSC0ay6lZeqkJOL-1aJIS"/>
+</div>
+<button class="absolute -bottom-2 -right-2 bg-primary text-on-primary p-3 rounded-2xl shadow-lg hover:scale-105 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+</div>
+<h2 class="mt-6 text-2xl font-black text-on-surface tracking-tight">متجر الواحة للتمور</h2>
+<p class="text-on-surface-variant font-medium">أحمد المحمد | معرف التاجر: #8829</p>
+</section>
+<!-- Form Sections -->
+<div class="space-y-6">
+<!-- Basic Info Card -->
+<div class="bg-surface-container-low rounded-[16px] p-6 space-y-5">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary" data-icon="store">store</span>
+<h3 class="font-bold text-on-surface-variant">معلومات المتجر الأساسية</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="space-y-1.5">
+<label class="text-xs font-bold text-outline uppercase px-1">اسم المتجر</label>
+<input class="w-full bg-surface-container-lowest border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary text-on-surface font-medium" type="text" value="متجر الواحة للتمور"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-bold text-outline uppercase px-1">اسم المالك</label>
+<input class="w-full bg-surface-container-lowest border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary text-on-surface font-medium" type="text" value="أحمد المحمد"/>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-bold text-outline uppercase px-1">رقم الهاتف (غير قابل للتعديل)</label>
+<div class="flex items-center bg-surface-dim/30 rounded-xl px-4 py-3 text-on-surface-variant gap-3">
+<span class="material-symbols-outlined text-outline" data-icon="lock">lock</span>
+<span class="font-headline tracking-widest">+964 770 123 4567</span>
+</div>
+</div>
+</div>
+<!-- Address Section -->
+<div class="bg-surface-container-low rounded-[16px] p-6 space-y-5">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary" data-icon="location_on">location_on</span>
+<h3 class="font-bold text-on-surface-variant">تفاصيل العنوان والموقع</h3>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-bold text-outline uppercase px-1">المدينة والمنطقة</label>
+<input class="w-full bg-surface-container-lowest border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary text-on-surface font-medium" placeholder="مثال: النجف الأشرف، حي السعادة" type="text"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-bold text-outline uppercase px-1">العنوان التفصيلي</label>
+<textarea class="w-full bg-surface-container-lowest border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary text-on-surface font-medium" rows="2">شارع المدينة الرئيسي، مقابل جامع الإمام علي، عمارة الكناني، الطابق الأرضي</textarea>
+</div>
+<!-- Location Picker -->
+<div class="relative group cursor-pointer overflow-hidden rounded-2xl aspect-video bg-surface-container-highest">
+<img class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" data-alt="detailed navigation map of Najaf city showing streets and landmarks with a primary teal pin marker" data-location="Najaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBM0lOI3LFQLDZV_r2X9K-iSAr3d37P9N-jwHAHWlDbjykJkKKzk36oWglXGHt5z4DmBdC5R1Jy0dUaRrsUP-sECkLYuj5iW6-DJJQ7QaLTt-nFrq5m5zkDTU1rdGiU-eK2j7E0vR6F0rGyftBDIeaeNUF_UWG7LbaG6EyQUawgcYlWQlkLcZiIzhYXhbuQmAP5PJtTklzIoYMGKRF6a7hkKDyXvCg0nKyuUmd4sQuDYkFq6QEblIxtqFayolbJqspaMAhOBccAsDXN"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end p-4">
+<button class="w-full bg-white/90 backdrop-blur-md text-primary font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-xl">
+<span class="material-symbols-outlined" data-icon="my_location">my_location</span>
+                            تحديث موقع الخريطة الحالي
+                        </button>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="pt-4 flex flex-col gap-3">
+<button class="w-full py-4 rounded-xl bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold text-lg shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform">
+                    حفظ التغييرات
+                </button>
+<button class="w-full py-4 rounded-xl text-primary font-bold hover:bg-primary/5 transition-colors">
+                    إلغاء
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-2xl flex justify-around items-center px-4 pb-6 pt-3 rtl:flex-row-reverse rounded-t-3xl z-50 shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+<a class="flex flex-col items-center justify-center text-slate-400 px-5 py-2 tap-highlight-transparent active:scale-90 transition-transform hover:text-cyan-600" href="#">
+<span class="material-symbols-outlined" data-icon="home_app_logo">home_app_logo</span>
+<span class="font-tajawal text-[10px] font-bold">الرئيسية</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 px-5 py-2 tap-highlight-transparent active:scale-90 transition-transform hover:text-cyan-600" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-tajawal text-[10px] font-bold">طلباتي</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 px-5 py-2 tap-highlight-transparent active:scale-90 transition-transform hover:text-cyan-600" href="#">
+<span class="material-symbols-outlined" data-icon="chat_bubble">chat_bubble</span>
+<span class="font-tajawal text-[10px] font-bold">الرسائل</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-cyan-50 text-cyan-700 rounded-2xl px-5 py-2 tap-highlight-transparent active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="person" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-tajawal text-[10px] font-bold">الحساب</span>
+</a>
+</nav>
+</body></html>

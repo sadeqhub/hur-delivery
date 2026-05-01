@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;500;700;800;900&amp;family=Tajawal:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#6ed6df",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#ffdbc8",
+                        "on-background": "#191c1d",
+                        "outline-variant": "#bdc9ca",
+                        "on-tertiary-container": "#fffbff",
+                        "on-secondary-fixed": "#001453",
+                        "on-primary-container": "#f5feff",
+                        "surface-container": "#edeeef",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "tertiary": "#8d4a19",
+                        "error-container": "#ffdad6",
+                        "primary": "#00666d",
+                        "tertiary-fixed-dim": "#ffb68a",
+                        "surface-tint": "#006970",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#00818a",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "inverse-surface": "#2e3132",
+                        "on-error": "#ffffff",
+                        "on-surface": "#191c1d",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d9dadb",
+                        "surface-container-high": "#e7e8e9",
+                        "surface-container-low": "#f3f4f5",
+                        "on-secondary-container": "#00217a",
+                        "background": "#f8f9fa",
+                        "on-primary-fixed-variant": "#004f54",
+                        "surface-variant": "#e1e3e4",
+                        "secondary": "#3755c3",
+                        "on-surface-variant": "#3d494a",
+                        "secondary-fixed": "#dde1ff",
+                        "primary-fixed": "#8cf2fc",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#002022",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary-container": "#ab6230",
+                        "secondary-container": "#708cfd",
+                        "surface": "#f8f9fa",
+                        "surface-container-highest": "#e1e3e4",
+                        "surface-bright": "#f8f9fa",
+                        "outline": "#6d797a",
+                        "on-tertiary-fixed-variant": "#733604",
+                        "primary-fixed-dim": "#6ed6df",
+                        "on-tertiary-fixed": "#321300"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope", "Tajawal"],
+                        "body": ["Manrope", "Tajawal"],
+                        "label": ["Manrope", "Tajawal"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+        }
+        .map-mesh {
+            background-color: #111827;
+            background-image: radial-gradient(#1f2937 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .glass-dark {
+            background: rgba(31, 41, 55, 0.85);
+            backdrop-filter: blur(16px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-zinc-950 font-body antialiased overflow-hidden">
+<!-- Full-screen Map Context -->
+<div class="fixed inset-0 z-0 map-mesh">
+<div class="absolute inset-0 flex items-center justify-center">
+<!-- Simulated Map Visuals -->
+<div class="relative w-full h-full opacity-60">
+<!-- The "Route Line" requested -->
+<svg class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+<path class="drop-shadow-[0_0_8px_rgba(0,129,138,0.6)]" d="M 200 600 Q 250 450 400 400 T 600 200" fill="none" stroke="#00818a" stroke-linecap="round" stroke-width="6"></path>
+<circle cx="200" cy="600" fill="#3755c3" r="8"></circle>
+<circle cx="600" cy="200" fill="#00818a" r="10"></circle>
+</svg>
+<!-- Map Texture Placeholder -->
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&amp;fit=crop&amp;q=80&amp;w=2074')] bg-cover mix-blend-overlay grayscale contrast-125" data-location="Najaf" style=""></div>
+</div>
+</div>
+</div>
+<!-- Top Navigation Shell (Suppressing BottomNavBar as per Focus Rule) -->
+<header class="fixed top-0 w-full z-50 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.06)] flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 scale-95 active:duration-150">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+</div>
+<h1 class="font-manrope font-bold text-lg tracking-tight text-teal-700 dark:text-teal-400">Current Delivery</h1>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 scale-95 active:duration-150">
+<span class="material-symbols-outlined" data-icon="support_agent">support_agent</span>
+</button>
+</div>
+</header>
+<!-- Content Canvas -->
+<main class="relative z-10 h-screen w-full flex flex-col">
+<!-- Floating Delivery Timer Overlay -->
+<div class="mt-20 mx-6 flex justify-end">
+<div class="glass-dark border border-white/10 rounded-2xl p-4 shadow-2xl flex items-center gap-3">
+<div class="relative flex items-center justify-center">
+<svg class="w-12 h-12 transform -rotate-90">
+<circle class="text-white/10" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" stroke-width="3"></circle>
+<circle class="text-teal-400" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" stroke-dasharray="126" stroke-dashoffset="30" stroke-width="3"></circle>
+</svg>
+<span class="absolute text-[10px] font-black text-white">08</span>
+</div>
+<div>
+<p class="text-[10px] font-bold text-teal-400 uppercase tracking-widest">Est. Arrival</p>
+<p class="text-xl font-black text-white leading-tight">14:22</p>
+</div>
+</div>
+</div>
+<!-- Asymmetric Detail Card (Editorial Choice) -->
+<div class="mt-8 mx-6 self-start glass-dark border border-white/5 rounded-3xl p-6 max-w-xs shadow-2xl">
+<div class="flex items-start gap-4">
+<div class="bg-primary/20 p-2 rounded-xl">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="navigation" style="font-variation-settings: 'FILL' 1;">navigation</span>
+</div>
+<div>
+<h2 class="text-white font-bold text-lg leading-tight">Head North on Al-Sadiq St</h2>
+<p class="text-zinc-400 text-sm mt-1">Then turn right at the fountain</p>
+</div>
+</div>
+</div>
+<!-- Bottom Sheet Task Flow Container -->
+<div class="mt-auto w-full glass-dark rounded-t-[40px] shadow-[0_-12px_48px_rgba(0,0,0,0.4)] border-t border-white/10">
+<!-- Drag Handle -->
+<div class="flex justify-center pt-3 pb-6">
+<div class="w-12 h-1.5 bg-zinc-700 rounded-full"></div>
+</div>
+<div class="px-8 pb-10">
+<!-- Merchant Identity -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<span class="text-teal-400 text-[10px] font-black uppercase tracking-widest bg-teal-400/10 px-3 py-1 rounded-full mb-3 inline-block">Pickup Destination</span>
+<h2 class="text-white text-3xl font-black tracking-tight leading-none mb-1">Al-Zahra Gourmet</h2>
+<p class="text-zinc-400 text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-xs" data-icon="location_on">location_on</span>
+                            Old City, near Imam Ali Shrine, Najaf
+                        </p>
+</div>
+<div class="text-right">
+<div class="text-teal-400 text-3xl font-black tracking-tighter">1.2<span class="text-sm font-bold ml-1 uppercase">km</span></div>
+<div class="text-zinc-500 text-[10px] font-bold uppercase">Remaining</div>
+</div>
+</div>
+<!-- Action Grid (Bento Style) -->
+<div class="grid grid-cols-2 gap-4 mb-8">
+<div class="bg-zinc-800/50 p-5 rounded-3xl flex flex-col justify-between h-32 border border-white/5">
+<span class="material-symbols-outlined text-zinc-400" data-icon="shopping_bag">shopping_bag</span>
+<div>
+<p class="text-zinc-500 text-[10px] font-bold uppercase">Items</p>
+<p class="text-white font-bold">12 Fresh Pastries</p>
+</div>
+</div>
+<div class="bg-zinc-800/50 p-5 rounded-3xl flex flex-col justify-between h-32 border border-white/5">
+<span class="material-symbols-outlined text-zinc-400" data-icon="call">call</span>
+<div>
+<p class="text-zinc-500 text-[10px] font-bold uppercase">Merchant</p>
+<p class="text-white font-bold">+964 780 123 4567</p>
+</div>
+</div>
+</div>
+<!-- Primary Task CTA -->
+<button class="w-full bg-gradient-to-r from-primary to-primary-container h-16 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-primary/20 group active:scale-[0.98] transition-transform">
+<span class="text-white font-black text-lg tracking-wide uppercase">I've Arrived</span>
+<span class="material-symbols-outlined text-white group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Hidden Navigation Suppressed per Task Flow Requirements -->
+<!-- Side Drawer Trigger (Visual Only) -->
+<div class="hidden">
+<div class="name">NavigationDrawer</div>
+<div class="labels">Daily Summary, Vehicle Health, Mosul Zone Map, Najaf Zone Map, Settings</div>
+</div>
+</body></html>

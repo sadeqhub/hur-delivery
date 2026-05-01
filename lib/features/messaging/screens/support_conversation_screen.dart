@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/services/messaging_service.dart';
+import '../../../core/providers/notification_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'messaging_thread_screen.dart';
 import 'messaging_list_screen.dart';
@@ -48,7 +50,7 @@ class _SupportConversationScreenState extends State<SupportConversationScreen> {
 
         if (!mounted) return;
 
-        if (convId == null || convId.isEmpty) {
+        if (convId.isEmpty) {
           // If this is not the last attempt, retry
           if (attempt < maxRetries - 1) {
             await Future.delayed(baseDelay * (attempt + 1));
@@ -71,6 +73,11 @@ class _SupportConversationScreenState extends State<SupportConversationScreen> {
           _conversationId = convId;
           _loading = false;
         });
+        // Ensure the in-app notification listener is bound to this conversation,
+        // in case it didn't exist when NotificationProvider initialized.
+        try {
+          context.read<NotificationProvider>().startSupportMessageListener(convId);
+        } catch (_) {}
         return; // Exit successfully
       } on MessagingException catch (e) {
         print('❌ Support conversation error (attempt ${attempt + 1}/$maxRetries): ${e.code} -> ${e.message}');
@@ -154,6 +161,6 @@ class _SupportConversationScreenState extends State<SupportConversationScreen> {
       );
     }
 
-    return MessagingThreadScreen(conversationId: _conversationId!);
+    return MessagingThreadScreen(conversationId: _conversationId!, isSupport: true);
   }
 }

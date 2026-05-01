@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../core/services/whatsapp_location_service.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_constants.dart';
-import '../../core/utils/responsive_helper.dart';
-import '../../core/utils/responsive_extensions.dart';
-import '../../core/localization/app_localizations.dart';
+import '../../../core/services/whatsapp_location_service.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/responsive_helper.dart';
+import '../../../core/utils/responsive_extensions.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../shared/widgets/responsive_container.dart';
 
 class CustomerLocationSharingWidget extends StatefulWidget {
@@ -15,11 +15,11 @@ class CustomerLocationSharingWidget extends StatefulWidget {
   final VoidCallback? onLocationShared;
 
   const CustomerLocationSharingWidget({
-    Key? key,
+    super.key,
     required this.orderId,
     required this.customerPhone,
     this.onLocationShared,
-  }) : super(key: key);
+  });
 
   @override
   State<CustomerLocationSharingWidget> createState() => _CustomerLocationSharingWidgetState();
@@ -225,15 +225,15 @@ class _CustomerLocationSharingWidgetState extends State<CustomerLocationSharingW
                   color: Colors.green.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.check_circle,
                       color: Colors.green,
                       size: 20,
                     ),
-                    const SizedBox(width: 8),
-                    const Text(
+                    SizedBox(width: 8),
+                    Text(
                       'تم إرسال الموقع بنجاح',
                       style: TextStyle(
                         color: Colors.green,

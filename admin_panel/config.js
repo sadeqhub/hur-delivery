@@ -1,0 +1,45 @@
+// Admin Panel Configuration
+// SECURITY: This file should NOT contain sensitive credentials in production
+// Use environment variables or a secure config management system
+// For development, you can temporarily add credentials here, but NEVER commit them to git
+
+const CONFIG = {
+  // Supabase Configuration
+  // IMPORTANT: In production, load these from environment variables or secure config
+  SUPABASE_URL: window.ENV?.SUPABASE_URL || 'https://bvtoxmmiitznagsbubhg.supabase.co',
+  SUPABASE_ANON_KEY: window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dG94bW1paXR6bmFnc2J1YmhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIwNzk5MTcsImV4cCI6MjA2NzY1NTkxN30.WjdQh_cvOebwL0TG0bzDLZimWCLC4YuP__jtvBD_xv0',
+  
+  // Mapbox Configuration
+  // SECURITY: Public access tokens are OK for client-side use, but should be rotated regularly
+  // Get from: https://account.mapbox.com/access-tokens/
+  MAPBOX_ACCESS_TOKEN: window.ENV?.MAPBOX_ACCESS_TOKEN || '',
+  
+  // App Configuration
+  APP_NAME: 'حر - Hur Delivery',
+  CURRENCY: 'IQD',
+  CURRENCY_SYMBOL: 'د.ع',
+  
+  // Features
+  DEFAULT_DELIVERY_FEE: 5000,
+  ORDER_TIMEOUT_MINUTES: 2,
+  COMMISSION_RATE: 0.10,
+  DEFAULT_CREDIT_LIMIT: -10000,
+  INITIAL_WALLET_BALANCE: 10000,
+  
+  // Map Configuration
+  DEFAULT_LATITUDE: 33.3152, // Baghdad
+  DEFAULT_LONGITUDE: 44.3661,
+  
+  // Pagination
+  ITEMS_PER_PAGE: 20,
+  
+  // Refresh Intervals (milliseconds)
+  DASHBOARD_REFRESH: 30000, // 30 seconds
+  ORDERS_REFRESH: 10000,    // 10 seconds
+  REALTIME_ENABLED: true
+};
+
+// Export for use in other files
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = CONFIG;
+}

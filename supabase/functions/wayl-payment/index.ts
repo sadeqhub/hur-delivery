@@ -1,10 +1,23 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import {
+  applySecurityMiddleware,
+  RateLimitPresets,
+  createErrorResponse,
+  createSuccessResponse,
+  parseJsonSafely,
+  validateUuid,
+  validateNumber,
+  ValidationError,
+  logSecurityEvent,
+  getSecureCorsHeaders,
+} from "../_shared/security.ts"
 
 console.log('[wayl-payment] Module loaded at:', new Date().toISOString());
 
 interface CreatePaymentLinkRequest {
-  merchant_id: string;
+  merchant_id?: string;
+  driver_id?: string;
   amount: number;
   notes?: string;
 }
@@ -37,26 +50,35 @@ interface WaylWebhookPayload {
 
 // Wayl API Configuration
 const WAYL_API_BASE = 'https://api.thewayl.com/api/v1';
-const WAYL_MERCHANT_TOKEN = Deno.env.get('WAYL_MERCHANT_TOKEN') || 'K5XpGRHx/SutpUHR1/J+xQ==:xnW683RPDcI+XHyCetQkhvyz/NnEwOFwDH/J39TX8YcxH9XCn0kRkrTrCY9+PZz09sbpXNYsCgfh+EzV2R+0ZYIK/f3Df5QEHfwjxPLBpn1LhUMEDuGoOfNuWnckHNaeuFDzXxrJ7kV8BhdBR4Dc/DbtF+1gdpobXjgsn1Eho5E=';
-const WAYL_SECRET = Deno.env.get('WAYL_SECRET') || WAYL_MERCHANT_TOKEN; // Use token as secret for webhook verification
+
+// SECURITY: API keys must be set in environment variables
+// Never hardcode sensitive credentials in source code
+const WAYL_MERCHANT_TOKEN = Deno.env.get('WAYL_MERCHANT_TOKEN');
+const WAYL_SECRET = Deno.env.get('WAYL_SECRET') || WAYL_MERCHANT_TOKEN;
+
+if (!WAYL_MERCHANT_TOKEN) {
+  console.error('[wayl-payment] CRITICAL: WAYL_MERCHANT_TOKEN not configured in environment variables');
+}
+
+// CORS headers for responses
+const corsHeaders = getSecureCorsHeaders();
 
 serve(async (req) => {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-wayl-signature-256',
-    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-  };
-
   console.log('[wayl-payment] ==== HANDLER CALLED ====');
   console.log('[wayl-payment] Method:', req.method);
   console.log('[wayl-payment] URL:', req.url);
 
+  // Apply security middleware (rate limiting, CORS, security headers)
+  const securityCheck = await applySecurityMiddleware(req, {
+    rateLimit: RateLimitPresets.MODERATE, // 30 requests per minute
+    maxBodySize: 512 * 1024, // 512KB max body size
+  });
+
+  if (!securityCheck.allowed) {
+    return securityCheck.response!;
+  }
+
   try {
-    // Handle OPTIONS request for CORS
-    if (req.method === 'OPTIONS') {
-      console.log('[wayl-payment] OPTIONS request, returning CORS');
-      return new Response('ok', { headers: corsHeaders });
-    }
 
     const url = new URL(req.url);
     // Extract the path after the function name
@@ -84,10 +106,14 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !serviceRoleKey) {
-      return Response.json(
-        { error: 'Server not configured' },
-        { status: 500, headers: corsHeaders }
-      );
+      logSecurityEvent('missing_env_vars', { vars: ['SUPABASE_URL', 'SERVICE_ROLE_KEY'] }, 'critical');
+      return createErrorResponse('Server not configured', 500);
+    }
+    
+    // Validate Wayl credentials are configured
+    if (!WAYL_MERCHANT_TOKEN) {
+      logSecurityEvent('missing_wayl_token', {}, 'critical');
+      return createErrorResponse('Payment gateway not configured', 500);
     }
 
     // Debug: Log before checking conditions
@@ -175,65 +201,73 @@ serve(async (req) => {
         }
         
         console.log('[wayl-payment] About to extract fields from body');
-        const { merchant_id, amount, notes } = body;
-        console.log('[wayl-payment] Fields extracted - merchant_id:', merchant_id, 'amount:', amount, 'type:', typeof amount);
-
-        console.log('[wayl-payment] Starting validation checks');
-        if (!merchant_id || !amount || amount <= 0) {
-          console.log('[wayl-payment] Validation failed - missing merchant_id or invalid amount');
-          return new Response(
-            JSON.stringify({ error: 'merchant_id and amount (greater than 0) are required' }),
-            {
-              status: 400,
-              headers: {
-                ...corsHeaders,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
+        const { merchant_id, driver_id, amount, notes } = body;
+        
+        // Input validation with security checks
+        try {
+          // Validate that exactly one ID is provided
+          if ((!merchant_id && !driver_id) || (merchant_id && driver_id)) {
+            throw new ValidationError(
+              'Provide exactly one of merchant_id or driver_id',
+              'merchant_id/driver_id',
+              'INVALID_INPUT'
+            );
+          }
+          
+          // Validate UUID format
+          const ownerId = merchant_id || driver_id;
+          validateUuid(ownerId!, merchant_id ? 'merchant_id' : 'driver_id');
+          
+          // Validate amount
+          const validatedAmount = validateNumber(amount, 'amount', {
+            min: 10000,  // Minimum 10,000 IQD
+            max: 100000000,  // Maximum 100M IQD (prevent overflow)
+            integer: true,
+          });
+          
+          // Sanitize notes if provided
+          const sanitizedNotes = notes ? notes.toString().substring(0, 500) : undefined;
+          
+          const walletType = driver_id ? 'driver' : 'merchant';
+          console.log('[wayl-payment] Validation passed - walletType:', walletType, 'ownerId:', ownerId, 'amount:', validatedAmount);
+          
+        } catch (error) {
+          if (error instanceof ValidationError) {
+            logSecurityEvent('validation_failed', {
+              endpoint: 'create-payment-link',
+              error: error.message,
+              field: error.field,
+            }, 'low');
+            return createErrorResponse(error, 400);
+          }
+          throw error;
         }
-        console.log('[wayl-payment] Basic validation passed');
-
-        // Wayl API requires minimum amount of 1000 IQD
-        console.log('[wayl-payment] Checking minimum amount requirement...');
-        if (amount < 1000) {
-          console.log('[wayl-payment] Amount validation failed - amount:', amount, 'is less than 1000');
-          console.log('[wayl-payment] Returning validation error response');
-          return new Response(
-            JSON.stringify({ error: 'Amount must be at least 1000 IQD' }),
-            {
-              status: 400,
-              headers: {
-                ...corsHeaders,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-        }
-        console.log('[wayl-payment] Amount validation passed');
+        
+        const walletType = driver_id ? 'driver' : 'merchant';
+        const ownerId = driver_id || merchant_id;
 
         // Generate unique reference ID
-        const referenceId = `hur_${merchant_id}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const referenceId = `hur_${walletType}_${ownerId}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         
-        // Get merchant info for customer details
-        let merchantName = 'Merchant';
-        let merchantPhone = '';
+        // Get owner info for customer details
+        let ownerName = walletType === 'driver' ? 'Driver' : 'Merchant';
+        let ownerPhone = '';
         try {
-          const merchantRes = await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${merchant_id}&select=name,phone`, {
+          const ownerRes = await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${ownerId}&select=name,phone`, {
             headers: {
               'apikey': serviceRoleKey,
               'Authorization': `Bearer ${serviceRoleKey}`,
             },
           });
-          if (merchantRes.ok) {
-            const merchants = await merchantRes.json();
-            if (merchants && merchants.length > 0) {
-              merchantName = merchants[0].name || merchantName;
-              merchantPhone = merchants[0].phone || '';
+          if (ownerRes.ok) {
+            const owners = await ownerRes.json();
+            if (owners && owners.length > 0) {
+              ownerName = owners[0].name || ownerName;
+              ownerPhone = owners[0].phone || '';
             }
           }
         } catch (e) {
-          console.log('[wayl-payment] Could not fetch merchant info:', e);
+          console.log('[wayl-payment] Could not fetch owner info:', e);
         }
 
         // Build webhook URL
@@ -259,8 +293,8 @@ serve(async (req) => {
           webhookSecret: WAYL_SECRET, // Required by Wayl API for webhook signature verification
           redirectionUrl: redirectionUrl,
           customer: {
-            name: merchantName,
-            phone: merchantPhone,
+            name: ownerName,
+            phone: ownerPhone,
           },
         };
 
@@ -307,8 +341,10 @@ serve(async (req) => {
         }
 
         // Store pending topup in database
-        const pendingTopupData = {
-          merchant_id: merchant_id,
+        const pendingTopupData: Record<string, any> = {
+          wallet_type: walletType,
+          merchant_id: walletType === 'merchant' ? merchant_id : null,
+          driver_id: walletType === 'driver' ? driver_id : null,
           amount: amount,
           wayl_reference_id: referenceId,
           wayl_link_id: linkId,
@@ -348,6 +384,7 @@ serve(async (req) => {
           wayl_link_id: linkId,
           wayl_link_code: linkCode,
           pending_topup_id: pendingTopup[0]?.id,
+          wallet_type: walletType,
         };
         
         console.log('[wayl-payment] Preparing success response:', JSON.stringify(responseData));
@@ -751,15 +788,16 @@ serve(async (req) => {
       console.log('[wayl-payment] Test webhook completed successfully:', JSON.stringify(result, null, 2));
 
       // Get updated wallet balance
-      const walletRes = await fetch(
-        `${supabaseUrl}/rest/v1/merchant_wallets?merchant_id=eq.${pendingTopup.merchant_id}&select=*`,
-        {
-          headers: {
-            'apikey': serviceRoleKey,
-            'Authorization': `Bearer ${serviceRoleKey}`,
-          },
-        }
-      );
+      const walletUrl = pendingTopup.wallet_type === 'driver'
+        ? `${supabaseUrl}/rest/v1/driver_wallets?driver_id=eq.${pendingTopup.driver_id}&select=*`
+        : `${supabaseUrl}/rest/v1/merchant_wallets?merchant_id=eq.${pendingTopup.merchant_id}&select=*`;
+
+      const walletRes = await fetch(walletUrl, {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+        },
+      });
 
       const walletData = await walletRes.json();
       

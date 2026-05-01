@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -71,6 +70,21 @@ class DriverAvailabilityService {
     'on_the_way',
   ];
 
+  static Future<String?> _getUserCity(String userId) async {
+    try {
+      final row = await _client
+          .from('users')
+          .select('city')
+          .eq('id', userId)
+          .maybeSingle();
+      if (row == null) return null;
+      final city = (row['city'] ?? '').toString();
+      return city.isEmpty ? null : city;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<DriverAvailabilityResult> checkAvailability({
     required String merchantId,
     required String vehicleType,
@@ -87,7 +101,11 @@ class DriverAvailabilityService {
         params: params,
       );
       if (response is Map<String, dynamic>) {
-        return DriverAvailabilityResult.fromJson(response);
+        // RPC is not city-aware; enforce city constraints via local fallback.
+        return _fallbackCheck(
+          merchantId: merchantId,
+          vehicleType: normalizedVehicleType,
+        );
       }
     } catch (error, stackTrace) {
       ErrorManager.analyzeError(error, stackTrace);
@@ -105,11 +123,21 @@ class DriverAvailabilityService {
     required String? vehicleType,
   }) async {
     try {
+      final merchantCity = await _getUserCity(merchantId);
+      if (merchantCity == null || merchantCity.isEmpty) {
+        return const DriverAvailabilityResult(
+          available: false,
+          reason: 'no_driver_available',
+          fromFallback: true,
+        );
+      }
+
       var query = _client
           .from('users')
           .select('id')
           .eq('role', 'driver')
-          .eq('is_online', true);
+          .eq('is_online', true)
+          .ilike('city', merchantCity);
 
       if (vehicleType != null) {
         query = query.eq('vehicle_type', vehicleType);
@@ -123,7 +151,7 @@ class DriverAvailabilityService {
           .toList();
 
       if (driverIds.isEmpty) {
-        return DriverAvailabilityResult(
+        return const DriverAvailabilityResult(
           available: false,
           reason: 'fallback_no_online_drivers',
           fromFallback: true,
@@ -181,7 +209,7 @@ class DriverAvailabilityService {
         );
       }
 
-      return DriverAvailabilityResult(
+      return const DriverAvailabilityResult(
         available: false,
         reason: 'no_driver_available',
         fromFallback: true,
@@ -189,7 +217,7 @@ class DriverAvailabilityService {
     } catch (error, stackTrace) {
       ErrorManager.analyzeError(error, stackTrace);
       debugPrint('⚠️ Driver availability fallback failed: $error');
-      return DriverAvailabilityResult(
+      return const DriverAvailabilityResult(
         available: false,
         reason: 'fallback_exception',
         fromFallback: true,
@@ -209,10 +237,20 @@ class DriverAvailabilityService {
   /// Check for online drivers without active orders (for repost functionality)
   /// This bypasses the RPC and directly queries for free drivers
   static Future<DriverAvailabilityResult> checkFreeDriversOnly({
+    required String merchantId,
     required String? vehicleType,
   }) async {
     try {
       final normalizedVehicleType = _normalizeVehicleType(vehicleType);
+
+      final merchantCity = await _getUserCity(merchantId);
+      if (merchantCity == null || merchantCity.isEmpty) {
+        return const DriverAvailabilityResult(
+          available: false,
+          reason: 'no_driver_available',
+          fromFallback: true,
+        );
+      }
       
       // Get all online drivers
       var query = _client
@@ -220,7 +258,7 @@ class DriverAvailabilityService {
           .select('id')
           .eq('role', 'driver')
           .eq('is_online', true)
-          .eq('manual_verified', true);
+          .ilike('city', merchantCity);
 
       if (normalizedVehicleType != null) {
         query = query.eq('vehicle_type', normalizedVehicleType);
@@ -234,7 +272,7 @@ class DriverAvailabilityService {
           .toList();
 
       if (driverIds.isEmpty) {
-        return DriverAvailabilityResult(
+        return const DriverAvailabilityResult(
           available: false,
           reason: 'fallback_no_online_drivers',
           fromFallback: true,
@@ -270,7 +308,7 @@ class DriverAvailabilityService {
         );
       }
 
-      return DriverAvailabilityResult(
+      return const DriverAvailabilityResult(
         available: false,
         reason: 'no_driver_available',
         fromFallback: true,
@@ -278,7 +316,7 @@ class DriverAvailabilityService {
     } catch (error, stackTrace) {
       ErrorManager.analyzeError(error, stackTrace);
       debugPrint('⚠️ Check free drivers failed: $error');
-      return DriverAvailabilityResult(
+      return const DriverAvailabilityResult(
         available: false,
         reason: 'fallback_exception',
         fromFallback: true,

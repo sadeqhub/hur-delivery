@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'flutterfire_notification_service.dart';
 
 /// 🔔 CUTTING-EDGE NOTIFICATION MANAGER
 /// 
@@ -67,16 +66,26 @@ class NotificationManager {
           // Insert notification to database
           // This will trigger the database trigger (trigger_fcm_push)
           // which will automatically call the Edge Function
+          // Ensure data is properly formatted as JSONB
+          final notificationData = {
+            'user_id': targetUserId,
+            'title': title.toString(),
+            'body': body.toString(),
+            'type': type.toString(),
+            'data': data is Map<String, dynamic> ? data : {'raw': data.toString()},
+            'is_read': false,
+          };
+          
+          // Validate required fields
+          if (notificationData['user_id'] == null || 
+              notificationData['title'] == null || 
+              notificationData['body'] == null) {
+            throw Exception('Missing required notification fields');
+          }
+          
           await Supabase.instance.client
               .from('notifications')
-              .insert({
-                'user_id': targetUserId,
-                'title': title,
-                'body': body,
-                'type': type,
-                'data': data,
-                'is_read': false,
-              });
+              .insert(notificationData);
           
           print('✅ Notification inserted to database');
           print('⚡ Database trigger will now call Edge Function automatically');

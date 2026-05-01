@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&amp;family=Manrope:wght@400;600;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f8f9fa",
+                    "tertiary-fixed": "#ffdbc8",
+                    "surface-dim": "#d9dadb",
+                    "tertiary-fixed-dim": "#ffb68a",
+                    "surface-bright": "#f8f9fa",
+                    "background": "#f8f9fa",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#6ed6df",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#3755c3",
+                    "on-background": "#191c1d",
+                    "surface-tint": "#006970",
+                    "secondary-fixed": "#dde1ff",
+                    "on-tertiary-fixed": "#321300",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-secondary-fixed-variant": "#173bab",
+                    "on-secondary-container": "#00217a",
+                    "on-surface-variant": "#3d494a",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#2e3132",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-container-high": "#e7e8e9",
+                    "tertiary": "#8d4a19",
+                    "on-primary-container": "#f5feff",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed-dim": "#6ed6df",
+                    "outline-variant": "#bdc9ca",
+                    "primary-container": "#00818a",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#ab6230",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "surface-container": "#edeeef",
+                    "secondary-container": "#708cfd",
+                    "on-surface": "#191c1d",
+                    "primary-fixed": "#8cf2fc",
+                    "on-tertiary-fixed-variant": "#733604",
+                    "surface-variant": "#e1e3e4",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#001453",
+                    "primary": "#00666d",
+                    "inverse-on-surface": "#f0f1f2",
+                    "outline": "#6d797a",
+                    "on-tertiary-container": "#fffbff",
+                    "on-primary-fixed-variant": "#004f54",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#002022"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Tajawal", "sans-serif"],
+                    "body": ["Tajawal", "sans-serif"],
+                    "label": ["Manrope", "sans-serif"],
+                    "tajawal": ["Tajawal", "sans-serif"],
+                    "manrope": ["Manrope", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #191c1d; /* Using inverse-surface variant for dark mode deep gray */
+            font-family: 'Tajawal', sans-serif;
+        }
+        .glass-card {
+            background: rgba(46, 49, 50, 0.6);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-background bg-inverse-surface min-h-screen pb-32 overflow-x-hidden">
+<!-- TopAppBar Navigation Shell -->
+<header class="fixed top-0 w-full z-50 bg-stone-950/80 backdrop-blur-lg shadow-sm shadow-teal-900/5">
+<div class="flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<button class="text-teal-400 active:scale-95 transition-transform p-2 hover:bg-stone-800/50 rounded-full">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-tajawal text-lg font-bold tracking-tight text-teal-400">ملف التاجر</h1>
+</div>
+<div class="text-2xl font-black text-teal-200 tracking-tighter">Hur Delivery</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-teal-500/30">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="close-up portrait of a professional middle-eastern businessman with a neat beard and friendly expression in soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA78cTQ0HUrI6Di0Vs6_GkZiSHva3VevfK92jYjjCSkFm7jcnCWkAkfw8px7rM9eV1zCmAh7xfq-qhmMs2LWnzTJEGEiWb_uU-w7cXN2Eh5-ULdeSot85YRKpC8C1_aOxs_WEgRxrX0sCRIjC9a1pzc-_aR46KS61N1LXrrihRMM1rBCDD_K9ViQm6Syj1GeEZYoYChQVH2NCAN5hRDKAES8xtrakAR80Mtn2ZbAPYBxw50bcZXozGbSExzAgrEYmgQdl1GvFMJqw1H"/>
+</div>
+</div>
+<div class="bg-stone-900 h-[1px] opacity-10"></div>
+</header>
+<main class="pt-24 px-6 max-w-2xl mx-auto space-y-8">
+<!-- Profile Header & Avatar Section -->
+<section class="flex flex-col items-center gap-6 relative">
+<div class="relative group">
+<div class="w-32 h-32 rounded-[32px] overflow-hidden ring-4 ring-primary/20 bg-surface-container">
+<img alt="Merchant Profile" class="w-full h-full object-cover" data-alt="front view of a high-end restaurant storefront or a premium merchant profile image with clean lighting and professional aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-R-NgG8uMhp9rihTJKFlsW5nHfi-U23QmFvgYkANM8VJqjcnD_hoe-8MMnNucGV_bcIM0skwetcStUgvKG_Uha2ZsmXOnmOAAS-75nYN15bdE0-G-rER9ocnPrZPLO1DQbYBFys3VhRoXSftWf_8PiXUE83cfukQOwTobFrOc2ASX5u3JLR_1E63sWxvbWe-DLepFReFMgPOG2M3eKxCKu6jnjGwhJN5VwNL1NYQ9CeRhikV_D9D2H_lfPscmS2HJIonyT7HEBUUq"/>
+</div>
+<button class="absolute -bottom-2 -right-2 bg-primary p-3 rounded-2xl shadow-xl shadow-primary/30 text-on-primary active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+</div>
+<div class="text-center space-y-1">
+<h2 class="text-2xl font-black text-white">أحمد النجفي</h2>
+<p class="text-teal-400 font-label tracking-widest text-xs uppercase">ID: 99283 • PREMIER MERCHANT</p>
+</div>
+</section>
+<!-- Form Fields Section -->
+<section class="grid grid-cols-1 gap-6">
+<!-- Store Name -->
+<div class="space-y-2">
+<label class="text-stone-400 text-sm font-medium mr-2">اسم المتجر</label>
+<div class="bg-stone-900/50 rounded-2xl p-4 flex items-center gap-4 focus-within:ring-2 ring-primary/50 transition-all">
+<span class="material-symbols-outlined text-stone-500">store</span>
+<input class="bg-transparent border-none focus:ring-0 text-white w-full font-tajawal text-lg outline-none" placeholder="أدخل اسم المتجر" type="text" value="حلويات النجف الأصيلة"/>
+</div>
+</div>
+<!-- Owner Name -->
+<div class="space-y-2">
+<label class="text-stone-400 text-sm font-medium mr-2">اسم المالك</label>
+<div class="bg-stone-900/50 rounded-2xl p-4 flex items-center gap-4 focus-within:ring-2 ring-primary/50 transition-all">
+<span class="material-symbols-outlined text-stone-500">person</span>
+<input class="bg-transparent border-none focus:ring-0 text-white w-full font-tajawal text-lg outline-none" placeholder="اسم المالك بالكامل" type="text" value="أحمد عبد الحسين النجفي"/>
+</div>
+</div>
+<!-- Address Field & Map Preview -->
+<div class="space-y-4">
+<div class="space-y-2">
+<label class="text-stone-400 text-sm font-medium mr-2">موقع المتجر</label>
+<div class="bg-stone-900/50 rounded-2xl p-4 flex items-center gap-4 focus-within:ring-2 ring-primary/50 transition-all">
+<span class="material-symbols-outlined text-stone-500">location_on</span>
+<input class="bg-transparent border-none focus:ring-0 text-white w-full font-tajawal text-lg outline-none" placeholder="عنوان المتجر" type="text" value="النجف الأشرف، حي السعادة، قرب المرقد الشريف"/>
+</div>
+</div>
+<!-- Map Bento Card -->
+<div class="relative h-48 rounded-3xl overflow-hidden group">
+<img alt="Map" class="w-full h-full object-cover grayscale opacity-60 group-hover:scale-105 transition-transform duration-700" data-alt="stylized dark mode topographic map of an urban area with teal highlights for routes and a prominent location marker" data-location="Najaf, Iraq" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxPSj_zHUJ5nlMxsc17i7jnn4iE9tvnm-LwtELgoMMdmkFvbpOFEU3-m3lYXNA8AnJFl1Noo-Ulaon6NE-LysQhviicAk_1JbRQPgfbVUnX9dSpMDFdJuEzc-TrqXiXBv4ckNwB3lYHd0iw0uuQ2b1JAnv7jN0AIWQlthA02o6zpB8iX-Fvg-Zms7qmaUji2SmBMpc3xS4tg3Qm1ydEkQBRgVUybINtBuYSv-fcqQbLgvM7XU8TLzCooXSAFZCBAFqqNh3cLL_54OO"/>
+<div class="absolute inset-0 bg-gradient-to-t from-stone-950/80 to-transparent"></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-12 h-12 bg-primary/20 backdrop-blur-md rounded-full flex items-center justify-center animate-pulse">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+</div>
+<button class="absolute bottom-4 left-4 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">open_in_full</span>
+                        توسيع الخريطة
+                    </button>
+</div>
+</div>
+</section>
+<!-- Save Action -->
+<section class="pt-6">
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary py-5 rounded-[20px] font-tajawal text-xl font-bold shadow-xl shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">save</span>
+                حفظ التغييرات
+            </button>
+<p class="text-center text-stone-500 text-sm mt-6">تم التحديث الأخير في 24 مايو 2024</p>
+</section>
+</main>
+<!-- BottomNavBar Navigation Shell -->
+<nav class="fixed bottom-0 w-full rounded-t-[32px] z-50 bg-stone-900/70 backdrop-blur-2xl shadow-[0_-8px_24px_rgba(0,0,0,0.2)]">
+<div class="flex justify-around items-center px-4 pb-6 pt-3 w-full max-w-lg mx-auto">
+<button class="flex flex-col items-center justify-center text-stone-500 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Orders</span>
+</button>
+<button class="flex flex-col items-center justify-center text-stone-500 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Menu</span>
+</button>
+<button class="flex flex-col items-center justify-center text-stone-500 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Analytics</span>
+</button>
+<!-- Active State: Settings (Profile) -->
+<button class="flex flex-col items-center justify-center bg-teal-900/30 text-teal-300 rounded-2xl px-5 py-2 active:scale-90 duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Settings</span>
+</button>
+</div>
+</nav>
+</body></html>

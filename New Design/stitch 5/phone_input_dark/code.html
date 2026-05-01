@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface": "#f8f9fa",
+                        "tertiary-fixed": "#ffdbc8",
+                        "surface-dim": "#d9dadb",
+                        "tertiary-fixed-dim": "#ffb68a",
+                        "surface-bright": "#f8f9fa",
+                        "background": "#f8f9fa",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#6ed6df",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#3755c3",
+                        "on-background": "#191c1d",
+                        "surface-tint": "#006970",
+                        "secondary-fixed": "#dde1ff",
+                        "on-tertiary-fixed": "#321300",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "on-secondary-container": "#00217a",
+                        "on-surface-variant": "#3d494a",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#2e3132",
+                        "surface-container-low": "#f3f4f5",
+                        "surface-container-high": "#e7e8e9",
+                        "tertiary": "#8d4a19",
+                        "on-primary-container": "#f5feff",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed-dim": "#6ed6df",
+                        "outline-variant": "#bdc9ca",
+                        "primary-container": "#00818a",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#ab6230",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "surface-container": "#edeeef",
+                        "secondary-container": "#708cfd",
+                        "on-surface": "#191c1d",
+                        "primary-fixed": "#8cf2fc",
+                        "on-tertiary-fixed-variant": "#733604",
+                        "surface-variant": "#e1e3e4",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#001453",
+                        "primary": "#00666d",
+                        "inverse-on-surface": "#f0f1f2",
+                        "outline": "#6d797a",
+                        "on-tertiary-container": "#fffbff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#002022"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope", "Tajawal"],
+                        "body": ["Manrope", "Tajawal"],
+                        "label": ["Manrope", "Tajawal"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .kinetic-glass {
+            background: rgba(46, 49, 50, 0.7);
+            backdrop-filter: blur(24px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-inverse-surface text-inverse-on-surface font-body min-h-screen flex flex-col overflow-hidden">
+<!-- Top Navigation Anchor (Asymmetric Layout) -->
+<header class="fixed top-0 w-full z-50 px-6 py-8 flex items-center justify-between">
+<button class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary-fixed text-2xl">arrow_back_ios_new</span>
+</button>
+<div class="flex flex-col items-end">
+<span class="text-xs font-label font-bold tracking-[0.2em] text-primary-fixed/60 uppercase">Step 01</span>
+<span class="font-headline font-black text-xl tracking-tighter text-white">Hur Delivery</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col px-8 pt-32 pb-6 max-w-lg mx-auto w-full relative">
+<!-- Hero Section -->
+<div class="mb-12">
+<h1 class="text-4xl font-headline font-extrabold tracking-tight mb-4 leading-tight">
+                Enter your <br/>
+<span class="text-primary-fixed">Phone Number</span>
+</h1>
+<p class="text-on-surface-variant text-base leading-relaxed max-w-[280px]">
+                We'll send a secure verification code via WhatsApp to get you started.
+            </p>
+</div>
+<!-- Input Section (Editorial Contrast) -->
+<div class="space-y-6">
+<div class="relative group">
+<div class="flex items-center gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 focus-within:border-primary-fixed/30 focus-within:bg-white/10 transition-all duration-300">
+<!-- Country Selector -->
+<div class="flex items-center gap-2 pr-4 border-r border-white/10">
+<img alt="Iraq Flag" class="w-6 h-4 rounded-sm object-cover" data-alt="Close up of the national flag of Iraq showing red white and black horizontal stripes with green calligraphy" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyKhc_PqXy_TjxZ5ins-uyBevhpHVJt-9m6gUe8HOsfGbSgIkGdv2cVunm5qzy4ztWHf4_xSKkwElwYnK7R_DUPMBDqQQ78epFrD_UENO5ZxmClvTVBilrmvWjZyNHLLWzDMWCg0OdIF2FKVsLN32KkoasQ-pxWauPV5hQeT35KSRzWUtz4BCw6HueNR8Pa4MVoVDC1LFfs80T5OnlTH_mgkXOHwDRINbco8TEc11K1RK9bzoOlCUMzy6D1ASHHNnpdlt8HDbQRBS3"/>
+<span class="font-headline font-bold text-lg text-white">+964</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">expand_more</span>
+</div>
+<!-- Input Field -->
+<input class="bg-transparent border-none focus:ring-0 w-full text-2xl font-headline font-semibold text-white placeholder:text-white/10 tracking-wider" maxlength="11" placeholder="07XX XXX XXXX" type="tel"/>
+</div>
+<!-- Ghost Hint -->
+<div class="mt-4 flex items-center gap-2 px-1">
+<span class="material-symbols-outlined text-primary-fixed text-sm" style="font-variation-settings: 'FILL' 1;">info</span>
+<p class="text-xs font-medium text-on-surface-variant/80">Make sure your number is active on WhatsApp</p>
+</div>
+</div>
+</div>
+<!-- Spacer for Keyboard Awareness (Responsive Pivot) -->
+<div class="flex-grow"></div>
+<!-- Primary Actions (The Precision Tool) -->
+<div class="space-y-4 mb-8">
+<button class="w-full py-5 px-6 rounded-2xl bg-gradient-to-br from-[#25D366] to-[#128C7E] flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-[#128C7E]/20">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span class="font-headline font-bold text-white text-lg">Send via WhatsApp</span>
+</button>
+<button class="w-full py-5 px-6 rounded-2xl bg-white/5 flex items-center justify-center gap-3 active:scale-95 transition-all">
+<span class="font-headline font-bold text-white/60 text-base">Other ways to sign in</span>
+</button>
+</div>
+<!-- Decorative Map Background Fragment (Kinetic Sanctuary) -->
+<div class="absolute -bottom-20 -right-20 w-80 h-80 opacity-10 pointer-events-none">
+<img class="w-full h-full object-contain rotate-12" data-alt="Monochrome dark minimalist city map fragment showing intersecting streets and urban grid pattern of Najaf Iraq" data-location="Najaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-wBxujxM_T_trZu7XQ9zgv7RFTylizbUFjIaOBYTigBbs72GwZXPAxD4BQgnScFYbWHzvKYqItDB43kgdSXOUDrOgld8mnrNTvFzaoTqxNK9ZRmDGooJws0Q9GScF22Psdmq3s4y4ujTPYOq1meV8EtHMMrhVVpF3eI80Kl6KWK5MZeso6ZF_dAuRUibUwU21ZYitxsMMRQ_MYUmy1OB9bT-lo9X_5o4Db3bMyMS1Nu2Pd6K2LeWABQvs8RG0fcktvIrMijoKRvWV"/>
+</div>
+</main>
+<!-- Simulated Numeric Keyboard (Task-Focused Design) -->
+<section class="w-full kinetic-glass rounded-t-[40px] px-6 pt-6 pb-10 mt-auto">
+<div class="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-8"></div>
+<div class="grid grid-cols-3 gap-y-4 gap-x-2 max-w-md mx-auto">
+<div class="flex flex-col items-center py-3 active:bg-white/10 rounded-xl transition-colors cursor-pointer">
+<span class="text-2xl font-headline font-bold text-white">1</span>
+<span class="text-[10px] text-white/40 font-bold tracking-widest"> </span>
+</div>
+<div class="flex flex-col items-center py-3 active:bg-white/10 rounded-xl transition-colors cursor-pointer">
+<span class="text-2xl font-headline font-bold text-white">2</span>
+<span class="text-[10px] text-white/40 font-bold tracking-widest uppercase">ABC</span>
+</div>
+<div class="flex flex-col items-center py-3 active:bg-white/10 rounded-xl transition-colors cursor-pointer">
+<span class="text-2xl font-headline font-bold text-white">3</span>
+<span class="text-[10px] text-white/40 font-bold tracking-widest uppercase">DEF</span>
+</div>
+<div class="flex flex-col items-center py-3 active:bg-white/10 rounded-xl transition-colors cursor-pointer">
+<span class="text-2xl font-headline font-bold text-white">4</span>
+<span class="text-[10px] text-white/40 font-bold tracking-widest uppercase">GHI</span>
+</div>
+<div class="flex flex-col items-center py-3 active:bg-white/10 rounded-xl transition-colors cursor-pointer">
+<span class="text-2xl font-headline font-bold text-white">5</span>
+<span class="text-[10px] text-white/40 font-bold tracking-widest uppercase">JKL</span>
+</div>
+<div class="flex flex-col items-center py-3 active:bg-white/10 rounded-xl transition-colors cursor-pointer">
+<span class="text-2xl font-headline font-bold text-white">6</span>
+<span class="text-[10px] text-white/40 font-bold tracking-widest uppercase">MNO</span>
+</div>
+<div class="flex flex-col items-center py-3 active:bg-white/10 rounded-xl transition-colors cursor-pointer">
+<span class="text-2xl font-headline font-bold text-white">7</span>
+<span class="text-[10px] text-white/40 font-bold tracking-widest uppercase">PQRS</span>
+</div>
+<div class="flex flex-col items-center py-3 active:bg-white/10 rounded-xl transition-colors cursor-pointer">
+<span class="text-2xl font-headline font-bold text-white">8</span>
+<span class="text-[10px] text-white/40 font-bold tracking-widest uppercase">TUV</span>
+</div>
+<div class="flex flex-col items-center py-3 active:bg-white/10 rounded-xl transition-colors cursor-pointer">
+<span class="text-2xl font-headline font-bold text-white">9</span>
+<span class="text-[10px] text-white/40 font-bold tracking-widest uppercase">WXYZ</span>
+</div>
+<div class="flex flex-col items-center py-3"></div>
+<div class="flex flex-col items-center py-3 active:bg-white/10 rounded-xl transition-colors cursor-pointer">
+<span class="text-2xl font-headline font-bold text-white">0</span>
+</div>
+<div class="flex flex-col items-center justify-center py-3 active:bg-white/10 rounded-xl transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-white text-2xl">backspace</span>
+</div>
+</div>
+</section>
+</body></html>

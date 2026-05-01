@@ -15,6 +15,8 @@ plugins {
 android {
     namespace = "com.hur.delivery"
     compileSdk = 35  // Android 15 (required for latest plugins)
+    // NDK version 27 supports 16 KB page size alignment
+    // AGP 8.7.0+ automatically handles 16 KB alignment during packaging
     ndkVersion = "27.0.12077973"
 
     compileOptions {

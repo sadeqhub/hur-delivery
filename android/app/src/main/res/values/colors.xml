@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Background color for adaptive icon -->
+    <!-- Using teal to match the app's primary color and icon background -->
+    <color name="ic_launcher_background">#188C93</color>
+</resources>

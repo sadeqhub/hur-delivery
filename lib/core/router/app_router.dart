@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import '../providers/auth_provider.dart';
 import '../services/global_order_notification_service.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/landing_screen.dart';
@@ -15,13 +13,13 @@ import '../../features/auth/screens/id_verification_review_screen.dart';
 import '../../features/auth/screens/verification_pending_screen.dart';
 import '../../features/auth/screens/driver_welcome_screen.dart';
 import '../../features/auth/screens/merchant_welcome_screen.dart';
+import '../../features/auth/screens/driver_walkthrough_screen.dart';
+import '../../features/auth/screens/merchant_walkthrough_screen.dart';
+import '../../features/auth/screens/demo_selection_screen.dart';
 import '../../features/dashboard/screens/merchant_dashboard.dart';
 import '../../features/dashboard/screens/driver_dashboard.dart';
 import '../../features/dashboard/screens/admin_dashboard.dart';
-import '../../features/orders/screens/create_order_screen.dart';
-import '../../features/orders/screens/create_bulk_order_screen.dart';
-import '../../features/orders/screens/create_scheduled_order_screen.dart';
-import '../../features/orders/screens/create_voice_order_screen.dart';
+import '../../features/dashboard/screens/merchant_analytics_screen.dart';
 import '../../features/orders/screens/order_creation_carousel.dart';
 import '../../features/orders/screens/order_details_screen.dart';
 import '../../features/orders/screens/order_tracking_screen.dart';
@@ -30,6 +28,7 @@ import '../../features/driver/screens/profile_screen.dart';
 import '../../features/driver/screens/orders_screen.dart';
 import '../../features/driver/screens/earnings_screen.dart';
 import '../../features/driver/screens/settings_screen.dart';
+import '../../features/driver/screens/rank_screen.dart';
 import '../../features/merchant/screens/edit_profile_screen.dart';
 import '../../features/merchant/screens/notifications_screen.dart';
 import '../../features/merchant/screens/settings_screen.dart'
@@ -39,6 +38,7 @@ import '../../features/messaging/screens/support_conversation_screen.dart';
 import '../../features/wallet/screens/wallet_screen.dart';
 import '../../features/legal/screens/privacy_policy_screen.dart';
 import '../../features/legal/screens/terms_conditions_screen.dart';
+import '../../shared/widgets/verification_guard.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -75,7 +75,7 @@ class AppRouter {
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => PhoneInputScreen(role: 'login'),
+        builder: (context, state) => const PhoneInputScreen(role: 'login'),
       ),
       GoRoute(
         path: '/otp-verification',
@@ -137,12 +137,29 @@ class AppRouter {
         name: 'merchant-welcome',
         builder: (context, state) => const MerchantWelcomeScreen(),
       ),
+      GoRoute(
+        path: '/merchant-walkthrough',
+        name: 'merchant-walkthrough',
+        builder: (context, state) => const MerchantWalkthroughScreen(),
+      ),
+      GoRoute(
+        path: '/driver-walkthrough',
+        name: 'driver-walkthrough',
+        builder: (context, state) => const DriverWalkthroughScreen(),
+      ),
+      GoRoute(
+        path: '/demo-selection',
+        name: 'demo-selection',
+        builder: (context, state) => const DemoSelectionScreen(),
+      ),
       
       // Protected routes (auth required)
       GoRoute(
         path: '/merchant-dashboard',
         name: 'merchant-dashboard',
-        builder: (context, state) => const MerchantDashboard(),
+        builder: (context, state) => const VerificationGuard(
+          child: MerchantDashboard(),
+        ),
         routes: [
           GoRoute(
             path: 'create-order',
@@ -187,6 +204,11 @@ class AppRouter {
                 const merchant_settings.MerchantSettingsScreen(),
           ),
           GoRoute(
+            path: 'analytics',
+            name: 'merchant-analytics',
+            builder: (context, state) => const MerchantAnalyticsScreen(),
+          ),
+          GoRoute(
             path: 'privacy-policy',
             name: 'merchant-privacy-policy',
             builder: (context, state) => const PrivacyPolicyScreen(),
@@ -203,22 +225,18 @@ class AppRouter {
       GoRoute(
         path: '/merchant-wallet',
         name: 'merchant-wallet',
-        builder: (context, state) => const WalletScreen(),
+        builder: (context, state) => const VerificationGuard(
+          child: WalletScreen(),
+        ),
       ),
       
       GoRoute(
         path: '/driver-dashboard',
         name: 'driver-dashboard',
-        builder: (context, state) => const DriverDashboard(),
+        builder: (context, state) => const VerificationGuard(
+          child: DriverDashboard(),
+        ),
         routes: [
-          GoRoute(
-            path: 'order-details/:orderId',
-            name: 'driver-order-details',
-            builder: (context, state) {
-              final orderId = state.pathParameters['orderId']!;
-              return OrderDetailsScreen(orderId: orderId);
-            },
-          ),
           GoRoute(
             path: 'order-tracking/:orderId',
             name: 'driver-order-tracking',
@@ -234,44 +252,72 @@ class AppRouter {
       GoRoute(
         path: '/driver/profile',
         name: 'driver-profile',
-        builder: (context, state) => const DriverProfileScreen(),
+        builder: (context, state) => const VerificationGuard(
+          child: DriverProfileScreen(),
+        ),
       ),
       GoRoute(
         path: '/driver/orders',
         name: 'driver-orders',
-        builder: (context, state) => const DriverOrdersScreen(),
+        builder: (context, state) => const VerificationGuard(
+          child: DriverOrdersScreen(),
+        ),
       ),
       GoRoute(
         path: '/driver/messages',
         name: 'driver-messages',
         builder: (context, state) {
           final orderIdParam = state.uri.queryParameters['orderId'];
-          return SupportConversationScreen(
-            initialOrderId: (orderIdParam != null && orderIdParam.isNotEmpty)
-                ? orderIdParam
-                : null,
+          return VerificationGuard(
+            child: SupportConversationScreen(
+              initialOrderId: (orderIdParam != null && orderIdParam.isNotEmpty)
+                  ? orderIdParam
+                  : null,
+            ),
           );
         },
       ),
       GoRoute(
         path: '/driver/earnings',
         name: 'driver-earnings',
-        builder: (context, state) => const DriverEarningsScreen(),
+        builder: (context, state) => const VerificationGuard(
+          child: DriverEarningsScreen(),
+        ),
       ),
       GoRoute(
         path: '/driver/settings',
         name: 'driver-settings',
-        builder: (context, state) => const DriverSettingsScreen(),
+        builder: (context, state) => const VerificationGuard(
+          child: DriverSettingsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/driver/rank',
+        name: 'driver-rank',
+        builder: (context, state) => const VerificationGuard(
+          child: DriverRankScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/driver/wallet',
+        name: 'driver-wallet',
+        builder: (context, state) => const VerificationGuard(
+          child: WalletScreen(type: WalletScreenType.driver),
+        ),
       ),
       GoRoute(
         path: '/driver/privacy-policy',
         name: 'driver-privacy-policy',
-        builder: (context, state) => const PrivacyPolicyScreen(),
+        builder: (context, state) => const VerificationGuard(
+          child: PrivacyPolicyScreen(),
+        ),
       ),
       GoRoute(
         path: '/driver/terms-conditions',
         name: 'driver-terms-conditions',
-        builder: (context, state) => const TermsConditionsScreen(),
+        builder: (context, state) => const VerificationGuard(
+          child: TermsConditionsScreen(),
+        ),
       ),
       GoRoute(
         path: '/merchant/messages',
@@ -279,11 +325,13 @@ class AppRouter {
         builder: (context, state) {
           final startSupport = state.uri.queryParameters['support'] == 'true';
           final orderIdParam = state.uri.queryParameters['orderId'];
-          return MessagingListScreen(
-            startSupportOnLoad: startSupport,
-            initialOrderId: (orderIdParam != null && orderIdParam.isNotEmpty)
-                ? orderIdParam
-                : null,
+          return VerificationGuard(
+            child: MessagingListScreen(
+              startSupportOnLoad: startSupport,
+              initialOrderId: (orderIdParam != null && orderIdParam.isNotEmpty)
+                  ? orderIdParam
+                  : null,
+            ),
           );
         },
       ),
@@ -292,17 +340,21 @@ class AppRouter {
         name: 'merchant-support',
         builder: (context, state) {
           final orderIdParam = state.uri.queryParameters['orderId'];
-          return SupportConversationScreen(
-            initialOrderId: (orderIdParam != null && orderIdParam.isNotEmpty)
-                ? orderIdParam
-                : null,
+          return VerificationGuard(
+            child: SupportConversationScreen(
+              initialOrderId: (orderIdParam != null && orderIdParam.isNotEmpty)
+                  ? orderIdParam
+                  : null,
+            ),
           );
         },
       ),
       GoRoute(
         path: '/admin-dashboard',
         name: 'admin-dashboard',
-        builder: (context, state) => const AdminDashboard(),
+        builder: (context, state) => const VerificationGuard(
+          child: AdminDashboard(),
+        ),
       ),
       
       // Map routes

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&amp;family=Manrope:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#173bab",
+                        "primary-fixed-dim": "#6ed6df",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary": "#8d4a19",
+                        "on-primary-container": "#f5feff",
+                        "surface-dim": "#d9dadb",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "surface-container-highest": "#e1e3e4",
+                        "tertiary-fixed": "#ffdbc8",
+                        "surface-variant": "#e1e3e4",
+                        "secondary": "#3755c3",
+                        "on-tertiary-fixed": "#321300",
+                        "outline": "#6d797a",
+                        "background": "#f8f9fa",
+                        "tertiary-container": "#ab6230",
+                        "surface-container": "#edeeef",
+                        "surface-container-high": "#e7e8e9",
+                        "on-tertiary": "#ffffff",
+                        "surface": "#f8f9fa",
+                        "outline-variant": "#bdc9ca",
+                        "primary-fixed": "#8cf2fc",
+                        "surface-container-low": "#f3f4f5",
+                        "on-surface-variant": "#3d494a",
+                        "on-secondary-container": "#00217a",
+                        "secondary-container": "#708cfd",
+                        "inverse-primary": "#6ed6df",
+                        "on-tertiary-fixed-variant": "#733604",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#fffbff",
+                        "secondary-fixed": "#dde1ff",
+                        "surface-tint": "#006970",
+                        "surface-bright": "#f8f9fa",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-error": "#ffffff",
+                        "primary-container": "#00818a",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#002022",
+                        "tertiary-fixed-dim": "#ffb68a",
+                        "on-secondary": "#ffffff",
+                        "primary": "#00666d",
+                        "on-background": "#191c1d",
+                        "on-secondary-fixed": "#001453",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#191c1d",
+                        "inverse-surface": "#2e3132"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Tajawal", "Manrope"],
+                        "body": ["Tajawal", "Manrope"],
+                        "label": ["Tajawal", "Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Tajawal', 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-inverse-surface text-on-surface selection:bg-primary-container selection:text-on-primary-container min-h-screen">
+<!-- Top Navigation Anchor (Suppressing SideNav/BottomNav for focused task) -->
+<header class="bg-zinc-900/70 backdrop-blur-xl docked full-width top-0 sticky z-50 shadow-sm dark:shadow-teal-900/10">
+<div class="flex justify-between items-center w-full px-6 py-4 rtl:flex-row-reverse">
+<button class="text-zinc-400 active:scale-95 duration-200 transition-transform">
+<span class="material-symbols-outlined">close</span>
+</button>
+<h1 class="text-teal-500 font-['Tajawal','Manrope'] text-lg font-bold tracking-tight">إنشاء طلب جديد</h1>
+<div class="w-6"></div>
+</div>
+</header>
+<main class="max-w-[390px] mx-auto pb-40 px-5 pt-4 space-y-6">
+<!-- Address & Map Section -->
+<section class="space-y-4">
+<div class="space-y-3">
+<div class="flex items-start gap-4">
+<div class="flex flex-col items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-primary text-xl">radio_button_checked</span>
+<div class="w-0.5 h-10 bg-surface-container-highest rounded-full"></div>
+</div>
+<div class="flex-1">
+<label class="block text-[10px] font-bold text-teal-500 uppercase tracking-wider mb-1">نقطة الاستلام</label>
+<div class="p-4 bg-zinc-800/50 rounded-2xl">
+<p class="text-on-surface text-sm font-bold">شارع الكرادة، بغداد</p>
+<p class="text-zinc-500 text-xs mt-1">الموقع الحالي للشركة</p>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="mt-1">
+<span class="material-symbols-outlined text-secondary text-xl">location_on</span>
+</div>
+<div class="flex-1">
+<label class="block text-[10px] font-bold text-secondary-container uppercase tracking-wider mb-1">نقطة التسليم</label>
+<div class="relative w-full aspect-video rounded-2xl overflow-hidden shadow-sm group">
+<img class="w-full h-full object-cover" data-alt="Dark aesthetic stylized map of Najaf city with teal and blue accents and a centered glowing location pin" data-location="Najaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARlUMgA895XOJvc676xIR5Lcw9EbT3hi6aAne3fitfJMOB8Hx3nAAK-koA1gYS35vyh7RHSFeCH57Vn4AFUKnjiIB1UcwewNfSHdvur6djZCMcYlV3PYH7fczOJzIRMoFWBmlj6LI4ZHdNyC7VRvbjZlbR4WzkU2QvL4ck8GgUbXv7ltR9iJlcFE9bxekIX6vExzl0vWKmqUw-EBgP6a9ZyCXWpqR27uPrtWkifkf6uTD9zvvHhVPYLz28ug1ydr652XvsM1q1J0FF"/>
+<div class="absolute inset-0 bg-gradient-to-t from-zinc-950/40 to-transparent"></div>
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<span class="material-symbols-outlined text-secondary text-4xl" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<button class="absolute bottom-3 left-3 glass-card bg-zinc-900/60 text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">edit_location</span>
+                                تحديد الموقع
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Customer Info Bento -->
+<section class="grid grid-cols-2 gap-3">
+<div class="col-span-2 p-4 bg-zinc-800/50 rounded-2xl border-b-2 border-transparent focus-within:border-primary focus-within:bg-zinc-800 transition-all">
+<label class="block text-[10px] font-bold text-zinc-500 uppercase mb-1">اسم العميل</label>
+<input class="bg-transparent border-none p-0 w-full text-on-surface focus:ring-0 placeholder:text-zinc-600 font-bold" placeholder="أدخل اسم العميل" type="text"/>
+</div>
+<div class="col-span-2 p-4 bg-zinc-800/50 rounded-2xl border-b-2 border-transparent focus-within:border-primary focus-within:bg-zinc-800 transition-all">
+<label class="block text-[10px] font-bold text-zinc-500 uppercase mb-1">رقم الهاتف</label>
+<input class="bg-transparent border-none p-0 w-full text-on-surface focus:ring-0 placeholder:text-zinc-600 font-bold tracking-widest text-left dir-ltr" placeholder="+964 000 000 0000" type="tel"/>
+</div>
+</section>
+<!-- Vehicle Type Selector -->
+<section class="space-y-3">
+<label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest pr-2">نوع المركبة</label>
+<div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+<!-- Motorbike -->
+<button class="flex-shrink-0 w-24 p-4 rounded-2xl bg-teal-900/30 border-2 border-teal-500/50 flex flex-col items-center gap-2 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-teal-400 text-3xl">motorcycle</span>
+<span class="text-xs font-bold text-teal-400">دراجة</span>
+</button>
+<!-- Car -->
+<button class="flex-shrink-0 w-24 p-4 rounded-2xl bg-zinc-800/50 border-2 border-transparent flex flex-col items-center gap-2 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-zinc-500 text-3xl">directions_car</span>
+<span class="text-xs font-bold text-zinc-500">سيارة</span>
+</button>
+<!-- Truck -->
+<button class="flex-shrink-0 w-24 p-4 rounded-2xl bg-zinc-800/50 border-2 border-transparent flex flex-col items-center gap-2 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-zinc-500 text-3xl">local_shipping</span>
+<span class="text-xs font-bold text-zinc-500">شاحنة</span>
+</button>
+</div>
+</section>
+<!-- Order Items Table -->
+<section class="space-y-3">
+<div class="flex justify-between items-center pr-2">
+<label class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">تفاصيل الطلب</label>
+<button class="text-xs font-bold text-primary flex items-center gap-1 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm">add_circle</span>
+                    إضافة مادة
+                </button>
+</div>
+<div class="bg-zinc-800/30 rounded-2xl overflow-hidden">
+<table class="w-full text-right">
+<thead class="bg-zinc-800/50">
+<tr>
+<th class="px-4 py-3 text-[10px] font-bold text-zinc-500">الصنف</th>
+<th class="px-4 py-3 text-[10px] font-bold text-zinc-500 text-center">الكمية</th>
+<th class="px-4 py-3 text-[10px] font-bold text-zinc-500"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-zinc-700/30">
+<tr>
+<td class="px-4 py-3 text-sm font-medium">طرد بريدي كبير</td>
+<td class="px-4 py-3 text-sm text-center">01</td>
+<td class="px-4 py-3 text-center">
+<button class="text-error opacity-70 hover:opacity-100">
+<span class="material-symbols-outlined text-lg">do_not_disturb_on</span>
+</button>
+</td>
+</tr>
+<tr>
+<td class="px-4 py-3 text-sm font-medium">مستندات رسمية</td>
+<td class="px-4 py-3 text-sm text-center">03</td>
+<td class="px-4 py-3 text-center">
+<button class="text-error opacity-70 hover:opacity-100">
+<span class="material-symbols-outlined text-lg">do_not_disturb_on</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Delivery Fee & Instructions -->
+<section class="space-y-4">
+<div class="relative">
+<label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 pr-2">رسوم التوصيل</label>
+<select class="w-full bg-zinc-800/50 border-none rounded-2xl p-4 text-on-surface font-bold focus:ring-2 focus:ring-primary appearance-none">
+<option>توصيل قياسي (5,000 د.ع)</option>
+<option>توصيل سريع (8,000 د.ع)</option>
+<option>توصيل فوري (12,000 د.ع)</option>
+</select>
+<span class="material-symbols-outlined absolute left-4 bottom-4 pointer-events-none text-zinc-500">expand_more</span>
+</div>
+<div class="p-4 bg-zinc-800/50 rounded-2xl">
+<label class="block text-[10px] font-bold text-zinc-500 uppercase mb-1">تعليمات خاصة</label>
+<textarea class="bg-transparent border-none p-0 w-full text-on-surface focus:ring-0 placeholder:text-zinc-600 text-sm leading-relaxed" placeholder="مثلاً: يرجى الاتصال عند الوصول..." rows="3"></textarea>
+</div>
+</section>
+</main>
+<!-- Fixed Summary Footer -->
+<footer class="fixed bottom-0 left-0 right-0 bg-zinc-950/80 backdrop-blur-2xl px-6 pt-5 pb-8 rounded-t-[32px] shadow-[0_-8px_24px_rgba(0,0,0,0.4)] z-50 max-w-[390px] mx-auto">
+<div class="flex items-center justify-between mb-6">
+<div class="space-y-1">
+<span class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest">إجمالي المبلغ</span>
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-black text-on-surface font-headline tracking-tighter">13,000</span>
+<span class="text-xs font-bold text-primary">د.ع</span>
+</div>
+</div>
+<div class="h-10 w-[1px] bg-zinc-800"></div>
+<div class="text-left space-y-1">
+<span class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest">وقت الوصول</span>
+<span class="text-sm font-bold text-on-surface">30-45 دقيقة</span>
+</div>
+</div>
+<button class="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-4 rounded-2xl shadow-xl shadow-teal-900/20 active:scale-[0.98] transition-transform duration-200 flex items-center justify-center gap-3">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bolt</span>
+            تأكيد وطلب الآن
+        </button>
+</footer>
+</body></html>

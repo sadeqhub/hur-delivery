@@ -8,7 +8,7 @@ class LocationProvider extends ChangeNotifier {
   bool _isTracking = false;
   bool _isLoading = false;
   String? _error;
-  List<Position> _locationHistory = [];
+  final List<Position> _locationHistory = [];
   
   // Callback for when location updates (to update database)
   Function(Position)? onLocationUpdate;
@@ -133,55 +133,30 @@ class LocationProvider extends ChangeNotifier {
           _currentPosition = position;
           _addToHistory(position);
           notifyListeners();
-          
-          // Call the callback to update database
-          if (onLocationUpdate != null) {
-            print('🔄 LocationProvider: Triggering database update callback');
-            onLocationUpdate!(position);
-          }
+          onLocationUpdate?.call(position);
         },
         onError: (error) {
-          print('❌ LocationProvider stream error: $error');
           _error = _getErrorMessage(error);
           _isTracking = false;
           notifyListeners();
         },
       );
       
-      print('✅ LocationProvider: Started location tracking stream');
-      
-      // Also start a periodic timer to update every 3 seconds
-      // (the stream only updates when moving 10+ meters)
-      _periodicUpdateTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      // Periodic timer: fires every 30s as a "heartbeat" database update for
+      // stationary drivers (the stream only fires on 10m+ movement).
+      // We do NOT call notifyListeners() here — the stream already handles UI
+      // updates. The timer solely keeps the server-side location fresh.
+      _periodicUpdateTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
         if (!_isTracking) {
           timer.cancel();
           return;
         }
-        
-        print('🔄 LocationProvider: Periodic update (every 3 seconds)');
-        try {
-          final position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high,
-            timeLimit: const Duration(seconds: 5),
-          );
-          
-          if (position != null) {
-            _currentPosition = position;
-            _addToHistory(position);
-            notifyListeners();
-            
-            // Call the callback to update database
-            if (onLocationUpdate != null) {
-              print('🔄 LocationProvider: Triggering database update from periodic timer');
-              onLocationUpdate!(position);
-            }
-          }
-        } catch (e) {
-          print('❌ LocationProvider: Error in periodic update: $e');
+
+        if (onLocationUpdate != null && _currentPosition != null) {
+          // Re-send the last known position as a heartbeat — no GPS query needed.
+          onLocationUpdate!(_currentPosition!);
         }
       });
-      
-      print('✅ LocationProvider: Started periodic update timer (every 3 seconds)');
     } catch (e) {
       print('❌ LocationProvider: Error starting location tracking: $e');
       _error = _getErrorMessage(e);
@@ -198,7 +173,6 @@ class LocationProvider extends ChangeNotifier {
     _periodicUpdateTimer = null;
     _isTracking = false;
     notifyListeners();
-    print('✅ LocationProvider: Stopped location tracking');
   }
   
   @override

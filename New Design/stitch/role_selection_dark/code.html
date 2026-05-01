@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#173bab",
+                    "primary-fixed-dim": "#6ed6df",
+                    "inverse-on-surface": "#f0f1f2",
+                    "tertiary": "#8d4a19",
+                    "on-primary-container": "#f5feff",
+                    "surface-dim": "#d9dadb",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "surface-container-highest": "#e1e3e4",
+                    "tertiary-fixed": "#ffdbc8",
+                    "surface-variant": "#e1e3e4",
+                    "secondary": "#3755c3",
+                    "on-tertiary-fixed": "#321300",
+                    "outline": "#6d797a",
+                    "background": "#f8f9fa",
+                    "tertiary-container": "#ab6230",
+                    "surface-container": "#edeeef",
+                    "surface-container-high": "#e7e8e9",
+                    "on-tertiary": "#ffffff",
+                    "surface": "#f8f9fa",
+                    "outline-variant": "#bdc9ca",
+                    "primary-fixed": "#8cf2fc",
+                    "surface-container-low": "#f3f4f5",
+                    "on-surface-variant": "#3d494a",
+                    "on-secondary-container": "#00217a",
+                    "secondary-container": "#708cfd",
+                    "inverse-primary": "#6ed6df",
+                    "on-tertiary-fixed-variant": "#733604",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#fffbff",
+                    "secondary-fixed": "#dde1ff",
+                    "surface-tint": "#006970",
+                    "surface-bright": "#f8f9fa",
+                    "on-primary-fixed-variant": "#004f54",
+                    "on-error": "#ffffff",
+                    "primary-container": "#00818a",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#002022",
+                    "tertiary-fixed-dim": "#ffb68a",
+                    "on-secondary": "#ffffff",
+                    "primary": "#00666d",
+                    "on-background": "#191c1d",
+                    "on-secondary-fixed": "#001453",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#191c1d",
+                    "inverse-surface": "#2e3132"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Tajawal", "Manrope"],
+                    "body": ["Tajawal", "Manrope"],
+                    "label": ["Tajawal", "Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #191c1d; /* inverse_surface equivalent for dark mode base */
+            color: #f0f1f2;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex items-center justify-center min-h-screen">
+<div class="w-[390px] h-[844px] bg-on-background relative overflow-hidden flex flex-col font-body">
+<!-- Background Decorative Elements -->
+<div class="absolute top-[-10%] right-[-10%] w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+<div class="absolute bottom-[-5%] left-[-10%] w-80 h-80 bg-secondary/5 rounded-full blur-3xl"></div>
+<!-- Header -->
+<header class="pt-16 px-8 pb-8 z-10">
+<div class="flex items-center justify-between mb-8">
+<span class="text-primary-fixed-dim font-black text-2xl tracking-tighter">Hur Delivery</span>
+<button class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-on-surface-variant hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
+</div>
+<h1 class="text-3xl font-black text-white leading-tight mb-2">اختر هويتك</h1>
+<p class="text-on-surface-variant text-base">ابدأ رحلتك معنا في النجف والموصل كشريك استراتيجي</p>
+</header>
+<!-- Role Cards Container -->
+<main class="flex-1 px-6 space-y-6 z-10 overflow-y-auto pb-32">
+<!-- Driver Card -->
+<div class="group relative cursor-pointer active:scale-[0.98] transition-all duration-300">
+<!-- Selection Ring (Animated Border Effect) -->
+<div class="absolute -inset-0.5 bg-primary rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]"></div>
+<div class="relative bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 flex flex-col items-start">
+<div class="flex items-center justify-between w-full mb-4">
+<div class="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center text-primary-fixed-dim shadow-inner">
+<span class="material-symbols-outlined text-3xl" data-icon="moped">moped</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary-fixed-dim text-2xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<h2 class="text-xl font-bold text-white mb-4">كابتن توصيل</h2>
+<ul class="space-y-3">
+<li class="flex items-center gap-3 text-on-surface-variant text-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_#00666d]"></span>
+                            ساعات عمل مرنة تناسب جدولك
+                        </li>
+<li class="flex items-center gap-3 text-on-surface-variant text-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_#00666d]"></span>
+                            أرباح فورية ونظام مكافآت مجزي
+                        </li>
+<li class="flex items-center gap-3 text-on-surface-variant text-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_#00666d]"></span>
+                            تأمين شامل ودعم فني على مدار الساعة
+                        </li>
+</ul>
+<!-- Illustrative Element (Pseudo image) -->
+<div class="mt-6 w-full h-24 rounded-xl overflow-hidden relative">
+<img alt="Driver Illustration" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 opacity-40 group-hover:opacity-80" data-alt="dynamic close up of a modern delivery motorcycle parked on a clean urban street at night with neon city lights reflected in the chrome" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD29SunWlFYxEa1DYrJFSWol-kbrqGUY91HEY3Ey9yVGjnt2d_LbpH6Z22FJe2OEj7GdLtjrGyqNNIhKdXuNUEBEs4K1ErdcnAKuRK59FlDGl1ZV8YyE5oSCdoCfIril5iPhAXqwtY7Cu_OLmIdDqdjAHpfWP-w0RTPXlirVrfZ2C2BQrdVvkIq4YBuNNC_pcQGOwiDSQgKskTWhZJnrnCHXmtjkOz6bGK-nd7vuR9pHuhomCUERyIKXp92dkWBKsmIsx53npsd41dv"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+</div>
+</div>
+</div>
+<!-- Merchant Card -->
+<div class="group relative cursor-pointer active:scale-[0.98] transition-all duration-300">
+<div class="absolute -inset-0.5 bg-primary rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]"></div>
+<div class="relative bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 flex flex-col items-start">
+<div class="flex items-center justify-between w-full mb-4">
+<div class="w-14 h-14 rounded-2xl bg-secondary/20 flex items-center justify-center text-secondary-fixed-dim shadow-inner">
+<span class="material-symbols-outlined text-3xl" data-icon="storefront">storefront</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary-fixed-dim text-2xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<h2 class="text-xl font-bold text-white mb-4">شريك تجاري</h2>
+<ul class="space-y-3">
+<li class="flex items-center gap-3 text-on-surface-variant text-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary shadow-[0_0_8px_#3755c3]"></span>
+                            زيادة مبيعاتك بنسبة تصل إلى 40٪
+                        </li>
+<li class="flex items-center gap-3 text-on-surface-variant text-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary shadow-[0_0_8px_#3755c3]"></span>
+                            إدارة متقدمة للطلبات والمخزون
+                        </li>
+<li class="flex items-center gap-3 text-on-surface-variant text-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary shadow-[0_0_8px_#3755c3]"></span>
+                            وصول مباشر لآلاف العملاء في منطقتك
+                        </li>
+</ul>
+<!-- Illustrative Element (Pseudo image) -->
+<div class="mt-6 w-full h-24 rounded-xl overflow-hidden relative">
+<img alt="Merchant Illustration" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 opacity-40 group-hover:opacity-80" data-alt="luxury boutique storefront interior with warm ambient lighting soft shadows and elegant product displays through a polished glass window" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZJqrYmLSis00y8d1M2Wbw0C-kSONcIShMgqayJPTwY7Br7LDGC7Vi48riHZoD0BoJOCYzKtoefiDhWmGAMvcGldwXctlykZP8G6YdjSuZTPzmxDtXA7plS56Rbpr14rjsY0o98WjTOaziL6H2R76Cuxd9PO8D193gJNdRdaMEA_nBJp8zsuIPNlCqthyv2l4XGwB4SvD4hg1epKELbPUbWe2wcNNqo5MvV2hvlxSeyc_C6mlbeZpvihbNVncrOsKU45oJ-u-f-Kn5"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- CTA Section -->
+<footer class="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-on-background via-on-background to-transparent z-20">
+<button class="w-full h-14 bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition-transform duration-200 flex items-center justify-center gap-2">
+<span>الاستمرار</span>
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="mt-4 text-center">
+<p class="text-xs text-on-surface-variant">بالضغط على الاستمرار، أنت توافق على <a class="text-primary-fixed-dim underline" href="#">شروط الخدمة</a></p>
+</div>
+</footer>
+</div>
+</body></html>

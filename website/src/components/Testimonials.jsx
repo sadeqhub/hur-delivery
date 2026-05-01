@@ -24,8 +24,8 @@ const Testimonials = () => {
       role: i18n.language === 'ar' ? 'سائق توصيل' : 'Delivery Driver',
       image: '🏍️',
       content: i18n.language === 'ar'
-        ? 'أفضل شيء أنه بدون عمولة! أخيراً تطبيق يحترم السائقين. دفع سريع ودعم ممتاز'
-        : 'Best thing is it\'s commission-free! Finally an app that respects drivers. Fast payment and excellent support',
+        ? 'أخيراً تطبيق يحترم السائقين. دفع سريع ودعم ممتاز'
+        : 'Finally an app that respects drivers. Fast payment and excellent support',
       rating: 5,
     },
     {

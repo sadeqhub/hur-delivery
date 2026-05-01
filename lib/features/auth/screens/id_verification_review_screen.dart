@@ -7,9 +7,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/config/env.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -93,9 +90,8 @@ class _IdVerificationReviewScreenState
       if (currentUser == null) return false;
       
       final response = await Supabase.instance.client
-          .from('users')
+          .from('my_profile')
           .select('id_number')
-          .eq('id', currentUser.id)
           .maybeSingle();
       
       if (response != null && response['id_number'] != null) {
@@ -326,7 +322,11 @@ class _IdVerificationReviewScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Theme(
+      data: ThemeData.light().copyWith(
+        primaryColor: AppColors.primary,
+      ),
+      child: Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).reviewIdData),
         centerTitle: true,
@@ -476,7 +476,7 @@ class _IdVerificationReviewScreenState
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.preview,
+                          const Icon(Icons.preview,
                               color: AppColors.primary, size: 20),
                           const SizedBox(width: 8),
                           Text(
@@ -554,6 +554,7 @@ class _IdVerificationReviewScreenState
             ),
           ),
         ),
+      ),
       ),
     );
   }

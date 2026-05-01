@@ -5,18 +5,18 @@ import 'responsive_helper.dart';
 class ResponsiveHelperEnhanced {
   /// Get responsive width as percentage of screen width
   static double widthPercent(BuildContext context, double percent) {
-    return MediaQuery.of(context).size.width * (percent / 100);
+    return MediaQuery.sizeOf(context).width * (percent / 100);
   }
   
   /// Get responsive height as percentage of screen height
   static double heightPercent(BuildContext context, double percent) {
-    return MediaQuery.of(context).size.height * (percent / 100);
+    return MediaQuery.sizeOf(context).height * (percent / 100);
   }
   
   /// Get responsive size maintaining aspect ratio
   static Size responsiveSize(BuildContext context, double baseWidth, double baseHeight) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
     
     double width = baseWidth;
     double height = baseHeight;
@@ -95,7 +95,7 @@ class ResponsiveHelperEnhanced {
   
   /// Get responsive dialog width
   static double getResponsiveDialogWidth(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     if (ResponsiveHelper.isVerySmallScreen(context)) {
       return screenWidth * 0.9;
     } else if (ResponsiveHelper.isSmallScreen(context)) {
@@ -109,7 +109,7 @@ class ResponsiveHelperEnhanced {
   
   /// Get responsive bottom sheet height
   static double getResponsiveBottomSheetHeight(BuildContext context, double percent) {
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenHeight = MediaQuery.sizeOf(context).height;
     return screenHeight * (percent / 100);
   }
   
@@ -146,7 +146,7 @@ class ResponsiveHelperEnhanced {
   
   /// Get responsive max width for content containers
   static double getMaxContentWidth(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     if (ResponsiveHelper.isDesktop(context)) {
       return 1200;
     } else if (ResponsiveHelper.isTablet(context)) {
@@ -158,7 +158,7 @@ class ResponsiveHelperEnhanced {
   
   /// Get responsive horizontal padding for screens
   static EdgeInsets getScreenHorizontalPadding(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     double padding;
     
     if (ResponsiveHelper.isVerySmallScreen(context)) {
@@ -176,7 +176,7 @@ class ResponsiveHelperEnhanced {
   
   /// Get responsive vertical padding for screens
   static EdgeInsets getScreenVerticalPadding(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenHeight = MediaQuery.sizeOf(context).height;
     double padding;
     
     if (ResponsiveHelper.isVerySmallScreen(context)) {

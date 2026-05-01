@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../widgets/customer_location_sharing_widget.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/utils/responsive_helper.dart';
-import '../../core/utils/responsive_extensions.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/responsive_helper.dart';
+import '../../../core/utils/responsive_extensions.dart';
 import '../../../shared/widgets/responsive_container.dart';
 
 class CustomerLocationTestScreen extends StatefulWidget {
-  const CustomerLocationTestScreen({Key? key}) : super(key: key);
+  const CustomerLocationTestScreen({super.key});
 
   @override
   State<CustomerLocationTestScreen> createState() => _CustomerLocationTestScreenState();
@@ -124,41 +124,41 @@ class _CustomerLocationTestScreenState extends State<CustomerLocationTestScreen>
             const SizedBox(height: 24),
             
             // Instructions Card
-            Card(
+            const Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'كيفية الاستخدام',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
+                    SizedBox(height: 12),
+                    Text(
                       '1. أدخل رقم الطلب ورقم الهاتف أعلاه',
                       style: TextStyle(fontSize: 14),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: 8),
+                    Text(
                       '2. انقر على "مشاركة موقعي الحالي"',
                       style: TextStyle(fontSize: 14),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: 8),
+                    Text(
                       '3. امنح التطبيق إذن الوصول للموقع',
                       style: TextStyle(fontSize: 14),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: 8),
+                    Text(
                       '4. سيتم إرسال موقعك تلقائياً إلى الخادم',
                       style: TextStyle(fontSize: 14),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: 8),
+                    Text(
                       '5. ستتلقى رسالة تأكيد عند نجاح العملية',
                       style: TextStyle(fontSize: 14),
                     ),
@@ -170,41 +170,41 @@ class _CustomerLocationTestScreenState extends State<CustomerLocationTestScreen>
             const SizedBox(height: 16),
             
             // System Status Card
-            Card(
+            const Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'حالة النظام',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Row(
                       children: [
-                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                        const SizedBox(width: 8),
-                        const Text('قاعدة البيانات: متصلة'),
+                        Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        SizedBox(width: 8),
+                        Text('قاعدة البيانات: متصلة'),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                        const SizedBox(width: 8),
-                        const Text('خدمة الموقع: متاحة'),
+                        Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        SizedBox(width: 8),
+                        Text('خدمة الموقع: متاحة'),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                        const SizedBox(width: 8),
-                        const Text('WhatsApp: مُكوَّن'),
+                        Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        SizedBox(width: 8),
+                        Text('WhatsApp: مُكوَّن'),
                       ],
                     ),
                   ],

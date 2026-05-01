@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/order_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/models/order_model.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../shared/widgets/empty_state.dart';
 
 class DriverOrdersScreen extends StatefulWidget {
   const DriverOrdersScreen({super.key});
@@ -33,11 +31,11 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).myOrders),
         centerTitle: true,
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.themePrimary,
         foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -100,7 +98,7 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.error_outline,
                           size: 64,
                           color: AppColors.error,
@@ -121,29 +119,23 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
                   );
                 }
 
-                final orders = _filterOrders(orderProvider.orders, _selectedFilter);
                 final driverId = authProvider.user?.id;
+                if (driverId == null) {
+                  return Center(
+                    child: Text(
+                      AppLocalizations.of(context).driverIdNotFound,
+                      style: AppTextStyles.bodyLarge,
+                    ),
+                  );
+                }
+
+                final orders = _filterOrders(orderProvider.orders, _selectedFilter);
 
                 if (orders.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inbox,
-                          size: 64,
-                          color: AppColors.textTertiary,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _getEmptyMessage(_selectedFilter),
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            color: AppColors.textTertiary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+                  return EmptyState(
+                    icon: Icons.receipt_long_outlined,
+                    title: _getEmptyMessage(_selectedFilter),
+                    subtitle: AppLocalizations.of(context).noOrdersYet,
                   );
                 }
 
@@ -165,31 +157,40 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
 
   Widget _buildFilterChip(String value, String label, IconData icon) {
     final isSelected = _selectedFilter == value;
-    return FilterChip(
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: isSelected ? Colors.white : AppColors.primary),
-          const SizedBox(width: 4),
-          Text(label),
-        ],
-      ),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() {
-          _selectedFilter = value;
-        });
+    return Builder(
+      builder: (context) {
+        return FilterChip(
+          label: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: isSelected ? Colors.white : context.themePrimary),
+              const SizedBox(width: 4),
+              Text(label),
+            ],
+          ),
+          selected: isSelected,
+          onSelected: (selected) {
+            setState(() {
+              _selectedFilter = value;
+            });
+          },
+          backgroundColor: context.themeSurfaceVariant,
+          selectedColor: context.themePrimary,
+          labelStyle: AppTextStyles.bodySmall.copyWith(
+            color: isSelected ? Colors.white : context.themePrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        );
       },
-      backgroundColor: AppColors.surfaceVariant,
-      selectedColor: AppColors.primary,
-      labelStyle: AppTextStyles.bodySmall.copyWith(
-        color: isSelected ? Colors.white : AppColors.primary,
-        fontWeight: FontWeight.w600,
-      ),
     );
   }
 
   Widget _buildOrderCard(OrderModel order, String? driverId) {
+    // Only show orders assigned to this driver
+    if (driverId != null && order.driverId != driverId) {
+      return const SizedBox.shrink();
+    }
+    
     final isAssignedToMe = order.driverId == driverId;
     final canAccept = order.status == 'pending' && !isAssignedToMe;
     final canComplete = order.status == 'accepted' && isAssignedToMe;
@@ -197,11 +198,14 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.themeSurface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: context.themeColor(
+              light: Colors.black.withOpacity(0.05),
+              dark: Colors.black.withOpacity(0.3),
+            ),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -246,10 +250,10 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${loc.orderNumber}${order.id.substring(0, 8)}',
+                                '${loc.orderNumber}${order.userFriendlyCode ?? order.id.substring(0, 8)}',
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
+                                  color: context.themeTextPrimary,
                                 ),
                               ),
                               Text(
@@ -275,7 +279,7 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
                         Text(
                           loc.orderPrice,
                           style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
+                            color: context.themeTextSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -297,90 +301,50 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
           // Order Details
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Customer Info
-                Builder(
+            child: Builder(
                   builder: (context) {
                     final loc = AppLocalizations.of(context);
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Customer Info
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.person,
-                              color: AppColors.textSecondary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${loc.customerLabel}: ${order.customerName ?? ''}',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
+                    _buildInfoRow(
+                      icon: Icons.person,
+                      iconColor: AppColors.primary,
+                      label: loc.customerLabelColon,
+                      value: order.customerName.isNotEmpty 
+                          ? order.customerName 
+                          : loc.unknown,
                         ),
-                            const SizedBox(height: 8),
-                            // Pickup Location
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  color: AppColors.success,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    loc.fromLabel(order.pickupAddress),
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                    const SizedBox(height: 12),
+                    // Pickup Location (Store Name)
+                    _buildInfoRow(
+                      icon: Icons.store,
+                      iconColor: AppColors.success,
+                      label: loc.pickupLocation,
+                      value: (order.merchantName != null && order.merchantName!.isNotEmpty)
+                          ? order.merchantName!
+                          : (order.pickupAddress.isNotEmpty 
+                              ? order.pickupAddress 
+                              : loc.notAvailable),
                             ),
-                            const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                             // Delivery Location
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  color: AppColors.error,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    loc.toLabel(order.deliveryAddress),
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                    _buildInfoRow(
+                      icon: Icons.location_on,
+                      iconColor: AppColors.error,
+                      label: loc.deliveryLocation,
+                      value: order.deliveryAddress.isNotEmpty 
+                          ? order.deliveryAddress 
+                          : loc.notAvailable,
                             ),
-                            const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                             // Order Time
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time,
-                                  color: AppColors.textSecondary,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  loc.orderTimeLabel(_formatDateTime(order.createdAt)),
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
+                    _buildInfoRow(
+                      icon: Icons.access_time,
+                      iconColor: context.themeTextSecondary,
+                      label: loc.orderTimeLabel('').split(':').first.trim(),
+                      value: _formatDateTime(order.createdAt),
                             ),
                             if (order.notes != null && order.notes!.isNotEmpty) ...[
                               const SizedBox(height: 12),
@@ -397,14 +361,14 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
                                       loc.notesLabel,
                                       style: AppTextStyles.bodySmall.copyWith(
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.textPrimary,
+                                        color: context.themeTextPrimary,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       order.notes!,
                                       style: AppTextStyles.bodySmall.copyWith(
-                                        color: AppColors.textSecondary,
+                                        color: context.themeTextSecondary,
                                       ),
                                     ),
                                   ],
@@ -414,8 +378,6 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
                           ],
                         );
                       },
-                    ),
-                  ],
                 ),
               ),
 
@@ -423,9 +385,9 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
           if (canAccept || canComplete)
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.surfaceVariant,
-                borderRadius: const BorderRadius.only(
+                borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
                 ),
@@ -455,7 +417,7 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
                         label: Text(AppLocalizations.of(context).reject),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.error,
-                          side: BorderSide(color: AppColors.error),
+                          side: const BorderSide(color: AppColors.error),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -486,18 +448,76 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
     );
   }
 
+  Widget _buildInfoRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            icon,
+            color: iconColor,
+            size: 18,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: context.themeTextSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: context.themeTextPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   List<OrderModel> _filterOrders(List<OrderModel> orders, String filter) {
+    final driverId = context.read<AuthProvider>().user?.id;
+    if (driverId == null) return [];
+    
+    // Filter by driver first
+    final driverOrders = orders.where((order) => order.driverId == driverId).toList();
+    
+    // Then filter by status
     switch (filter) {
       case 'pending':
-        return orders.where((order) => order.status == 'pending').toList();
+        return driverOrders.where((order) => order.status == 'pending').toList();
       case 'accepted':
-        return orders.where((order) => order.status == 'accepted' || order.status == 'on_the_way').toList();
+        return driverOrders.where((order) => order.status == 'accepted' || order.status == 'on_the_way').toList();
       case 'delivered':
-        return orders.where((order) => order.status == 'delivered').toList();
+        return driverOrders.where((order) => order.status == 'delivered').toList();
       case 'cancelled':
-        return orders.where((order) => order.status == 'cancelled').toList();
+        return driverOrders.where((order) => order.status == 'cancelled').toList();
       default:
-        return orders;
+        return driverOrders;
     }
   }
 
@@ -595,7 +615,7 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
       hour = 12;
     }
     
-    return '$dateStr ${hour}:$minute $period';
+    return '$dateStr $hour:$minute $period';
   }
 
   Future<void> _acceptOrder(String orderId) async {

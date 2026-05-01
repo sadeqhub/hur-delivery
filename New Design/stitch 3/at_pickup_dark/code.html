@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;500;600;700;800&amp;family=Tajawal:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#6ed6df",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#ffdbc8",
+                        "on-background": "#191c1d",
+                        "outline-variant": "#bdc9ca",
+                        "on-tertiary-container": "#fffbff",
+                        "on-secondary-fixed": "#001453",
+                        "on-primary-container": "#f5feff",
+                        "surface-container": "#edeeef",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "tertiary": "#8d4a19",
+                        "error-container": "#ffdad6",
+                        "primary": "#00666d",
+                        "tertiary-fixed-dim": "#ffb68a",
+                        "surface-tint": "#006970",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#00818a",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "inverse-surface": "#2e3132",
+                        "on-error": "#ffffff",
+                        "on-surface": "#191c1d",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d9dadb",
+                        "surface-container-high": "#e7e8e9",
+                        "surface-container-low": "#f3f4f5",
+                        "on-secondary-container": "#00217a",
+                        "background": "#f8f9fa",
+                        "on-primary-fixed-variant": "#004f54",
+                        "surface-variant": "#e1e3e4",
+                        "secondary": "#3755c3",
+                        "on-surface-variant": "#3d494a",
+                        "secondary-fixed": "#dde1ff",
+                        "primary-fixed": "#8cf2fc",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#002022",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary-container": "#ab6230",
+                        "secondary-container": "#708cfd",
+                        "surface": "#f8f9fa",
+                        "surface-container-highest": "#e1e3e4",
+                        "surface-bright": "#f8f9fa",
+                        "outline": "#6d797a",
+                        "on-tertiary-fixed-variant": "#733604",
+                        "primary-fixed-dim": "#6ed6df",
+                        "on-tertiary-fixed": "#321300"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope", "Tajawal"],
+                        "body": ["Manrope", "Tajawal"],
+                        "label": ["Manrope", "Tajawal"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #121414; /* Tonal background for dark mode */
+        }
+        .glass-panel {
+            background: rgba(25, 28, 29, 0.75);
+            backdrop-filter: blur(24px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body text-on-surface dark:text-inverse-on-surface overflow-hidden">
+<!-- Background Map Layer -->
+<div class="fixed inset-0 z-0 opacity-40 grayscale contrast-125">
+<img alt="City Map" class="w-full h-full object-cover" data-alt="Detailed dark satellite map of an urban city center with glowing street lights and arterial roads at night" data-location="Najaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBr5h4gJFU0onXy88wePIMdnV21gKMvh_rc9NnfGHMjhd4c25AaebBPoceF542XuciHiWu1YiLDV9qcDCne0MVYKeL75CMBBDrKz7U4CiMOZ-p-w8ZkdY6Vd3F07I9kNWaYr8EgjTTtfAYxtNBAbeOkaZO0GYFEDJRJe6uoZkjQDXchAPhdQavw-UWySM8gu-tdn3yP-ZtGqPtDiz9Ih3TJOXnSnp4ux-dj6UdHzfcDokHwoffdxzoV72uTt8_lP5eeKZBUGvDQ7e8"/>
+</div>
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-zinc-900/70 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.06)] flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-zinc-800 transition-colors rounded-full active:duration-150 scale-95">
+<span class="material-symbols-outlined text-teal-400">menu</span>
+</button>
+<h1 class="font-headline font-bold text-lg tracking-tight text-teal-400">Current Delivery</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="bg-teal-900/30 text-teal-300 px-3 py-1 rounded-full text-xs font-bold font-label uppercase tracking-widest">At Pickup</span>
+<button class="p-2 hover:bg-zinc-800 transition-colors rounded-full active:duration-150 scale-95">
+<span class="material-symbols-outlined text-teal-400">support_agent</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="relative z-10 pt-16 h-screen flex flex-col items-center justify-end">
+<!-- Order Floating Summary (Bento Style) -->
+<div class="w-full max-w-md px-6 mb-4">
+<div class="bg-zinc-800/90 backdrop-blur-md rounded-2xl p-4 flex items-center justify-between shadow-2xl border border-white/5">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-xl bg-teal-900/50 flex items-center justify-center">
+<span class="material-symbols-outlined text-teal-400" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+</div>
+<div>
+<p class="text-xs font-label text-zinc-500 uppercase tracking-tighter">Order Code</p>
+<p class="text-lg font-bold font-headline text-white tracking-tight">#HD-8842</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-xs font-label text-zinc-500 uppercase tracking-tighter">Estimated</p>
+<p class="text-lg font-bold font-headline text-teal-400 tracking-tight">4 mins</p>
+</div>
+</div>
+</div>
+<!-- Expanded Bottom Sheet -->
+<section class="w-full max-w-lg bg-[#1F2937] rounded-t-[32px] shadow-[0_-12px_40px_rgba(0,0,0,0.4)] flex flex-col max-h-[663px] overflow-hidden">
+<!-- Drag Handle -->
+<div class="w-full flex justify-center py-4">
+<div class="w-12 h-1.5 bg-zinc-700 rounded-full"></div>
+</div>
+<!-- Content Area -->
+<div class="px-6 pb-24 overflow-y-auto space-y-6">
+<!-- Pickup Header -->
+<div class="flex justify-between items-start">
+<div>
+<h2 class="text-2xl font-black font-headline text-white tracking-tight">Pickup List</h2>
+<p class="text-zinc-400 text-sm font-medium">Al-Hurra Premium Diner • Mosul Zone</p>
+</div>
+<div class="bg-teal-600/20 px-3 py-1.5 rounded-lg border border-teal-500/30">
+<span class="text-teal-400 font-bold text-xs uppercase tracking-widest">Verify Items</span>
+</div>
+</div>
+<!-- Items Grid (High-End Card Style) -->
+<div class="space-y-3">
+<div class="bg-zinc-800/50 rounded-2xl p-4 flex items-center gap-4 group hover:bg-zinc-800 transition-all border border-transparent hover:border-teal-500/20">
+<div class="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0">
+<img alt="Shawarma" class="w-full h-full object-cover" data-alt="Close-up of a delicious chicken shawarma wrap with toasted pita bread and fresh vegetables" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdPd1CopVs-Vcc_kiHToNBvPyvf5qKjz3_kWwkksk1xT22FM8lHitCI5PQtrSmFTYHRrfRzllOpiBxyKSpZiwAuhWaBA4tcmfMV92o-x_8wnVkQvY9nUkRVi2_xjjuOsaqlESUs04-HwAibhmaI1L1PUyIxqEHf9isyuOxMmTwda6kyiQOoc5SIRX8NSSHpHgD1N40hCs94DyuYgKXfohE-3uM7_VC_C65vapbOdkcnS-0GxMjJMgo2ZqIK-p5mNTkXFN_rUP6vdrh"/>
+</div>
+<div class="flex-1">
+<h3 class="text-white font-bold">Shawarma</h3>
+<p class="text-zinc-500 text-sm">Classic Large Wrap</p>
+</div>
+<div class="text-right">
+<span class="text-xl font-black text-teal-400">2x</span>
+</div>
+</div>
+<div class="bg-zinc-800/50 rounded-2xl p-4 flex items-center gap-4 group hover:bg-zinc-800 transition-all border border-transparent hover:border-teal-500/20">
+<div class="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0">
+<img alt="Pepsi" class="w-full h-full object-cover" data-alt="Cold condensation on a classic soda can on a dark background with dramatic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5_2rKtDKwBXbGzTan-v1FxfyCHV8O_mJEz5h2VF1IzDCmSJinz03DF_3bEcNDpqbJyab03tvg81oRzJrv2Ppv9T7YVsVsS66-tQIR1TlZDeGhKUwR45G7qDEhT5OfFUe5hP2edBcLu7DBArEemYArz5QJXDIJH8iI8r6bfKMOQnT8JW29L9q5qS-M0jnUZhlG_xZxoA4sCHZ8LXqNBY0jn8mpOd4Np_T_HIjiAQRqIAzQj_MffjptcWDV_Tx7NJVMye7FL35rz48h"/>
+</div>
+<div class="flex-1">
+<h3 class="text-white font-bold">Pepsi</h3>
+<p class="text-zinc-500 text-sm">330ml Can</p>
+</div>
+<div class="text-right">
+<span class="text-xl font-black text-teal-400">1x</span>
+</div>
+</div>
+</div>
+<!-- Instructions Card -->
+<div class="bg-zinc-800/40 rounded-2xl p-5 border-l-4 border-teal-600">
+<div class="flex items-center gap-2 mb-2 text-teal-400">
+<span class="material-symbols-outlined text-sm">sticky_note_2</span>
+<span class="text-xs font-bold uppercase tracking-widest font-label">Customer Instructions</span>
+</div>
+<p class="text-white text-base leading-relaxed italic">"Please make it extra spicy"</p>
+</div>
+<!-- Action Area -->
+<div class="pt-2">
+<button class="w-full bg-gradient-to-r from-primary to-primary-container text-white h-16 rounded-2xl font-black text-lg shadow-[0_8px_32px_rgba(0,102,109,0.3)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
+                        Confirm Pickup
+                        <span class="material-symbols-outlined">arrow_forward_ios</span>
+</button>
+<p class="text-center text-zinc-500 text-xs mt-4 font-medium">By confirming, you acknowledge all items are correct</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 w-full rounded-t-3xl z-50 bg-zinc-900/80 backdrop-blur-2xl flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.04)]">
+<div class="flex flex-col items-center justify-center bg-teal-900/30 text-teal-300 rounded-2xl px-5 py-2 tap-highlight-none scale-98">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Status</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-500 px-5 py-2 hover:text-teal-600 transition-all">
+<span class="material-symbols-outlined">map</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Route</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-500 px-5 py-2 hover:text-teal-600 transition-all">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Earnings</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-500 px-5 py-2 hover:text-teal-600 transition-all">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Profile</span>
+</div>
+</nav>
+</body></html>

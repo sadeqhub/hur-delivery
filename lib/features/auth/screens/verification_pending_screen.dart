@@ -7,9 +7,7 @@ import 'dart:io';
 import 'dart:convert';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/config/env.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -284,7 +282,11 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
         final user = authProvider.user;
         final isRejected = user?.verificationStatus == 'rejected';
         
-        return Scaffold(
+        return Theme(
+          data: ThemeData.light().copyWith(
+            primaryColor: AppColors.primary,
+          ),
+          child: Scaffold(
           body: SafeArea(
             child: SingleChildScrollView(
               child: Padding(
@@ -327,7 +329,7 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
                                 ? loc.verificationRejectedMessage
                                 : loc.verificationReviewMessage,
                               style: AppTextStyles.bodyLarge.copyWith(
-                                color: AppColors.textSecondary,
+                                color: context.themeTextSecondary,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -379,7 +381,7 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
                         ),
                         child: Column(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.info_outline_rounded,
                               color: AppColors.primary,
                               size: 32,
@@ -441,6 +443,7 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
               ),
             ),
           ),
+          ),
         );
       },
     );
@@ -461,7 +464,7 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.upload_file, color: AppColors.error),
+              const Icon(Icons.upload_file, color: AppColors.error),
               const SizedBox(width: 8),
               Text(
                 AppLocalizations.of(context).uploadNewDocuments,
@@ -476,7 +479,7 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
           Text(
             AppLocalizations.of(context).pleaseUploadClearId,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: context.themeTextSecondary,
             ),
           ),
           const SizedBox(height: 8),
@@ -556,7 +559,7 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
                 ),
               ),
             ),
-            Icon(
+            const Icon(
               Icons.arrow_forward_ios,
               size: 16,
               color: AppColors.textTertiary,

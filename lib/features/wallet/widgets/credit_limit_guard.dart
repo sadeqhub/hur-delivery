@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/wallet_provider.dart';
-import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'top_up_dialog.dart';
 
@@ -61,7 +58,7 @@ class _CreditLimitGuardState extends State<CreditLimitGuard> {
           ),
           title: Column(
             children: [
-              Icon(
+              const Icon(
                 Icons.account_balance_wallet_outlined,
                 size: 48,
                 color: AppColors.error,
@@ -77,7 +74,7 @@ class _CreditLimitGuardState extends State<CreditLimitGuard> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
-                          color: AppColors.textPrimary,
+                          color: context.themeTextPrimary,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -105,14 +102,14 @@ class _CreditLimitGuardState extends State<CreditLimitGuard> {
                         Text(
                           loc.currentBalance,
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: context.themeTextSecondary,
                             fontSize: 14,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           walletProvider.formattedBalance,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
                             color: AppColors.error,
@@ -128,7 +125,7 @@ class _CreditLimitGuardState extends State<CreditLimitGuard> {
                     style: TextStyle(
                       fontSize: 15,
                       height: 1.5,
-                      color: AppColors.textSecondary,
+                      color: context.themeTextSecondary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -171,7 +168,7 @@ class _CreditLimitGuardState extends State<CreditLimitGuard> {
                     // Re-check balance after top-up dialog closes
                     if (walletProvider.balance <= walletProvider.creditLimit) {
                       // Still need to top up, show dialog again
-                      Future.delayed(Duration(milliseconds: 500), () {
+                      Future.delayed(const Duration(milliseconds: 500), () {
                         _dialogShown = false;
                         _showCreditLimitDialog(context, walletProvider);
                       });

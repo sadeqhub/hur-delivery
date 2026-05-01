@@ -27,7 +27,6 @@ const Navbar = () => {
   const navItems = [
     { key: 'home', label: t('nav.home'), href: '#home' },
     { key: 'how', label: t('nav.how'), href: '#how' },
-    { key: 'testimonials', label: t('nav.testimonials'), href: '#testimonials' },
   ];
 
   return (
@@ -84,7 +83,7 @@ const Navbar = () => {
           </motion.a>
 
           <motion.a
-            href="https://wa.me/9647701234567"
+            href="https://wa.me/9647890003093"
             target="_blank"
             rel="noopener noreferrer"
             className="social-btn whatsapp-btn"

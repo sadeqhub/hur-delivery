@@ -36,7 +36,7 @@ const DeleteAccount = () => {
       const normalizedPhone = normalizePhone(phoneNumber);
       
       // Send OTP via Edge Function
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/otp-handler`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/otp-handler-clean`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -2,11 +2,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { timingSafeEqual } from "https://deno.land/std@0.168.0/crypto/timing_safe_equal.ts";
 import { createClient } from 'npm:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import {
+  applySecurityMiddleware,
+  RateLimitPresets,
+  createErrorResponse,
+  createSuccessResponse,
+  parseJsonSafely,
+  ValidationError,
+  logSecurityEvent,
+} from "../_shared/security.ts";
 
 function toHex(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -33,34 +37,55 @@ function safeCompare(a: string | undefined | null, b: string | undefined | null)
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+  // Apply STRICT rate limiting for admin login (prevent brute force attacks)
+  // OWASP: Implement account lockout after failed login attempts
+  const securityCheck = await applySecurityMiddleware(req, {
+    rateLimit: RateLimitPresets.STRICT, // 5 attempts per minute per IP
+    maxBodySize: 5 * 1024, // 5KB max (login requests are tiny)
+  });
+
+  if (!securityCheck.allowed) {
+    logSecurityEvent('admin_login_rate_limit', { 
+      endpoint: 'admin-login',
+      action: 'rate_limit_exceeded'
+    }, 'high');
+    return securityCheck.response!;
   }
 
   // Only allow POST method
   if (req.method !== "POST") {
-    return Response.json(
-      { success: false, error: "Method not allowed. Use POST." },
-      { status: 405, headers: corsHeaders }
-    );
+    return createErrorResponse("Method not allowed. Use POST.", 405);
   }
 
   try {
-    const bodyText = await req.text();
-    let payload: any = {};
-
+    // Parse and validate request body
+    let payload: any;
     try {
-      payload = JSON.parse(bodyText);
+      payload = await parseJsonSafely(req, 5 * 1024);
     } catch (error) {
-      console.error("[admin-login] Invalid JSON", error);
-      return Response.json({ success: false, error: "Invalid JSON payload" }, { status: 400, headers: corsHeaders });
+      logSecurityEvent('admin_login_invalid_json', { error: String(error) }, 'low');
+      return createErrorResponse(error as ValidationError, 400);
     }
 
+    // Validate required fields
     const username = typeof payload.username === "string" ? payload.username.trim() : "";
     const password = typeof payload.password === "string" ? payload.password : "";
 
     if (!username || !password) {
-      return Response.json({ success: false, error: "Username and password are required" }, { status: 400, headers: corsHeaders });
+      logSecurityEvent('admin_login_missing_credentials', { hasUsername: !!username }, 'medium');
+      return createErrorResponse("Username and password are required", 400);
+    }
+    
+    // Validate username format (prevent injection attacks)
+    if (username.length > 50 || !/^[a-zA-Z0-9_-]+$/.test(username)) {
+      logSecurityEvent('admin_login_invalid_username', { username }, 'high');
+      return createErrorResponse("Invalid username format", 400);
+    }
+    
+    // Validate password length
+    if (password.length > 100) {
+      logSecurityEvent('admin_login_password_too_long', {}, 'medium');
+      return createErrorResponse("Invalid password", 400);
     }
 
     // Only require username and password secrets - no user management needed
@@ -97,9 +122,18 @@ serve(async (req) => {
     }
 
     if (!usernameValid || !passwordValid) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      return Response.json({ success: false, error: "Invalid credentials" }, { status: 401, headers: corsHeaders });
+      // OWASP: Add delay to prevent timing attacks and slow down brute force
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Increased to 1 second
+      logSecurityEvent('admin_login_failed', { 
+        username,
+        usernameValid,
+        passwordValid: false // Never log actual password validity
+      }, 'high');
+      return createErrorResponse("Invalid credentials", 401);
     }
+    
+    // Log successful authentication
+    logSecurityEvent('admin_login_success', { username }, 'low');
 
     // Credentials are valid - create/use system admin user for proper session
     // We need a real user in auth.users to generate a valid session token

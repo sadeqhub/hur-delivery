@@ -1,0 +1,578 @@
+{
+  "video_metadata": {
+    "title": "Hur Driver Promotional Video - Style Guide",
+    "duration": "60-90 seconds",
+    "language": "Arabic",
+    "target_audience": "Delivery Drivers",
+    "version": "1.0"
+  },
+  "global_style": {
+    "animation_type": "2D Flat Illustration",
+    "style_description": "Clean, simple, elegant illustration style like modern digital illustrations",
+    "characteristics": [
+      "Flat colors - no complex gradients",
+      "Clean lines - simple and elegant",
+      "Simple shapes - geometric and minimal",
+      "No 3D effects - purely 2D",
+      "Minimal shadows - light shadows only if needed",
+      "Modern digital illustration aesthetic"
+    ],
+    "no_text_on_screen": true,
+    "voiceover_language": "Arabic"
+  },
+  "color_palette": {
+    "primary": {
+      "name": "Teal/Cyan",
+      "hex": "#008C95",
+      "usage": "Main brand color, logo, primary buttons, key elements"
+    },
+    "primary_dark": {
+      "name": "Light Teal",
+      "hex": "#00ADB5",
+      "usage": "Dark mode variant, highlights"
+    },
+    "secondary": {
+      "name": "Blue",
+      "hex": "#1E40AF",
+      "usage": "Secondary elements, backgrounds, accents"
+    },
+    "secondary_dark": {
+      "name": "Light Blue",
+      "hex": "#3B82F6",
+      "usage": "Dark mode variant, highlights"
+    },
+    "success": {
+      "name": "Green",
+      "hex": "#10B981",
+      "usage": "Success states, accept buttons, positive actions"
+    },
+    "warning": {
+      "name": "Orange",
+      "hex": "#F59E0B",
+      "usage": "Warnings, pending states"
+    },
+    "error": {
+      "name": "Red",
+      "hex": "#EF4444",
+      "usage": "Errors, reject buttons, negative actions"
+    },
+    "background_light": {
+      "name": "Light Gray",
+      "hex": "#F9FAFB",
+      "usage": "Light backgrounds"
+    },
+    "background_dark": {
+      "name": "Very Dark Gray",
+      "hex": "#111827",
+      "usage": "Dark backgrounds"
+    },
+    "surface_light": {
+      "name": "White",
+      "hex": "#FFFFFF",
+      "usage": "Light surfaces, cards"
+    },
+    "surface_dark": {
+      "name": "Dark Gray",
+      "hex": "#1F2937",
+      "usage": "Dark surfaces, cards"
+    }
+  },
+  "character_design": {
+    "driver_character": {
+      "style": "Simple illustrated character",
+      "characteristics": [
+        "Flat 2D illustration",
+        "Clean, simple lines",
+        "Friendly and approachable expression",
+        "Consistent design across all scenes",
+        "Simple clothing - delivery driver uniform",
+        "Clear facial expressions - simple but expressive"
+      ],
+      "colors": {
+        "skin": "Natural skin tones (flat)",
+        "clothing": "Primary teal (#008C95) or neutral colors",
+        "accessories": "Simple and minimal"
+      }
+    },
+    "customer_character": {
+      "style": "Simple illustrated character",
+      "characteristics": [
+        "Even simpler than driver",
+        "Minimal details",
+        "Supporting role in scenes"
+      ]
+    }
+  },
+  "animation_guidelines": {
+    "transitions": {
+      "style": "Smooth and clean",
+      "speed": "Moderate to fast - motivating but not rushed",
+      "effects": "Simple fade, slide, or scale - no complex effects"
+    },
+    "movement": {
+      "style": "Smooth and natural",
+      "easing": "Gentle easing curves",
+      "complexity": "Simple movements - no complex physics"
+    },
+    "effects": {
+      "glow": "Light glow only - subtle, not heavy",
+      "stars": "Simple star shapes - minimal",
+      "lines": "Clean animated lines - simple",
+      "shadows": "Minimal or none - flat illustration style"
+    }
+  },
+  "scenes": [
+    {
+      "scene_number": 1,
+      "scene_name": "Opening",
+      "duration": "0-5 seconds",
+      "description": "Mobile phone with Hur logo appearing",
+      "style_requirements": {
+        "background": "Gradient from teal (#008C95) to blue (#1E40AF)",
+        "logo": {
+          "color": "Teal (#008C95) with light glow",
+          "animation": "Smooth entrance, slight rotation, settle with gentle glow",
+          "style": "Clean, simple logo design"
+        },
+        "phone": {
+          "style": "Simple illustrated phone",
+          "details": "Minimal - just basic phone shape"
+        },
+        "effects": "Light glow on logo only, smooth transitions"
+      },
+      "elements": [
+        "Mobile phone (simple illustration)",
+        "Hur logo (visual only, no text)",
+        "Gradient background"
+      ]
+    },
+    {
+      "scene_number": 2,
+      "scene_name": "Driver's Daily Life",
+      "duration": "5-12 seconds",
+      "description": "Driver looking tired, searching for orders",
+      "style_requirements": {
+        "background": {
+          "type": "Simplified Iraqi city",
+          "style": "Simple building shapes, Arabic signs (simplified)",
+          "colors": "Muted, slightly desaturated"
+        },
+        "driver": {
+          "expression": "Tired and worried",
+          "vehicle": "Simple motorcycle or car illustration",
+          "style": "Flat illustration, clean lines"
+        },
+        "icons": {
+          "type": "Negative icons - simple shapes",
+          "examples": ["Late clock", "Little money", "Unclear directions"],
+          "style": "Simple, flat icons"
+        },
+        "thought_bubbles": {
+          "content": "Question marks only (❓)",
+          "style": "Simple bubble shapes, no text"
+        },
+        "effects": "Light frustrated effects - simple wavy lines, muted colors"
+      },
+      "elements": [
+        "Driver character (tired expression)",
+        "Vehicle (simple illustration)",
+        "City background (simplified)",
+        "Negative icons",
+        "Thought bubbles with question marks"
+      ]
+    },
+    {
+      "scene_number": 3,
+      "scene_name": "Discovering Hur App",
+      "duration": "12-20 seconds",
+      "description": "Driver opens Hur app, dashboard appears",
+      "style_requirements": {
+        "background": {
+          "transition": "From muted to bright and colorful",
+          "final_color": "Light background (#F9FAFB or white)"
+        },
+        "app_interface": {
+          "style": "Clean dashboard illustration",
+          "icons": [
+            {
+              "type": "Orders icon",
+              "style": "Flat, simple, colorful"
+            },
+            {
+              "type": "Map icon",
+              "style": "Flat, simple, colorful"
+            },
+            {
+              "type": "Earnings icon",
+              "style": "Flat, simple, colorful"
+            }
+          ],
+          "appearance": "Icons appear one by one smoothly"
+        },
+        "driver": {
+          "expression": "Smiling, face lights up",
+          "style": "Simple expression change"
+        },
+        "effects": "Color spread effect (light, not explosion) - simple and clean"
+      },
+      "elements": [
+        "Phone with app interface",
+        "Dashboard icons (orders, map, earnings)",
+        "Driver character (happy expression)",
+        "Bright background"
+      ]
+    },
+    {
+      "scene_number": 4,
+      "scene_name": "Receiving Orders",
+      "duration": "20-30 seconds",
+      "description": "Phone notification, order details, accept button",
+      "style_requirements": {
+        "notification": {
+          "style": "Simple notification design",
+          "icon": "Notification bell or alert icon",
+          "animation": "Appears with light alert effect",
+          "color": "Teal (#008C95) or primary color"
+        },
+        "order_details": {
+          "display": "Icons and graphics only - no text",
+          "icons": [
+            "Location icon",
+            "Money icon",
+            "Distance icon"
+          ],
+          "appearance": "One by one, smoothly"
+        },
+        "buttons": {
+          "accept": {
+            "color": "Green (#10B981)",
+            "style": "Simple button with checkmark icon or hand icon",
+            "animation": "Light glow, attracts attention",
+            "text": "No text - icon only"
+          },
+          "reject": {
+            "color": "Red (#EF4444)",
+            "style": "Simple button with X icon",
+            "text": "No text - icon only"
+          }
+        },
+        "effects": "Light alert sound visual, success effect on tap (simple)"
+      },
+      "elements": [
+        "Phone screen",
+        "Notification (icon only)",
+        "Order detail icons",
+        "Accept button (green, icon only)",
+        "Reject button (red, icon only)"
+      ]
+    },
+    {
+      "scene_number": 5,
+      "scene_name": "Navigation and Tracking",
+      "duration": "30-42 seconds",
+      "description": "Interactive map with route, driver location, GPS navigation",
+      "style_requirements": {
+        "map": {
+          "style": "Simplified map illustration",
+          "colors": "Light background, simple street lines",
+          "appearance": "Zoom in effect, smooth"
+        },
+        "route": {
+          "line_style": "Blue line (#1E40AF)",
+          "appearance": "Appears gradually, smooth",
+          "thickness": "Moderate - clear but not heavy"
+        },
+        "driver_location": {
+          "marker": "Red dot or simple marker",
+          "animation": "Moves smoothly along route",
+          "style": "Simple, clear marker"
+        },
+        "icons": {
+          "store": "Simple store icon (pickup point)",
+          "house": "Simple house icon (delivery point)",
+          "arrow": "Direction arrow - moves along route"
+        },
+        "gps_voice": {
+          "display": "Audio only - no text bubbles on screen",
+          "language": "Arabic"
+        },
+        "effects": "Smooth movement, clean route visualization"
+      },
+      "elements": [
+        "Map (simplified illustration)",
+        "Blue route line",
+        "Red driver location dot",
+        "Store icon",
+        "House icon",
+        "Direction arrows"
+      ]
+    },
+    {
+      "scene_number": 6,
+      "scene_name": "Delivery and Earnings",
+      "duration": "42-55 seconds",
+      "description": "Driver delivers, takes photo, wallet balance increases",
+      "style_requirements": {
+        "customer": {
+          "style": "Simple cartoon character",
+          "details": "Minimal - supporting role"
+        },
+        "camera": {
+          "style": "Simple camera illustration",
+          "flash": "Light flash effect - simple, not heavy"
+        },
+        "success_mark": {
+          "style": "Large checkmark (✓)",
+          "color": "Green (#10B981)",
+          "animation": "Appears with simple success effect",
+          "size": "Prominent but clean"
+        },
+        "wallet": {
+          "style": "Simple digital wallet illustration",
+          "numbers": {
+            "display": "Numbers only - no currency text",
+            "animation": "Change smoothly: 0 → 15000 → 30000",
+            "style": "Clean, readable numbers"
+          }
+        },
+        "coins": {
+          "style": "Simple coin illustrations",
+          "animation": "Appear and disappear (money effect)",
+          "complexity": "Simple - not complex"
+        },
+        "effects": "Light success effects, smooth number transitions"
+      },
+      "elements": [
+        "Customer character (simple)",
+        "Camera (simple illustration)",
+        "Checkmark (✓)",
+        "Digital wallet",
+        "Numbers (balance)",
+        "Coins (simple illustrations)"
+      ]
+    },
+    {
+      "scene_number": 7,
+      "scene_name": "Additional Features",
+      "duration": "55-70 seconds",
+      "description": "Split screen showing offline mode, trip history, statistics, wallet",
+      "style_requirements": {
+        "layout": {
+          "type": "Split screen - 4 sections",
+          "style": "Clean grid layout"
+        },
+        "sections": [
+          {
+            "name": "Offline Mode",
+            "icon": "WiFi icon with X then checkmark",
+            "style": "Simple icon, clear state change",
+            "text": "No text"
+          },
+          {
+            "name": "Trip History",
+            "display": "Visual list with icons",
+            "style": "Simple list illustration",
+            "text": "No text"
+          },
+          {
+            "name": "Statistics",
+            "display": "Animated earnings charts (graphics only)",
+            "style": "Simple bar or line chart",
+            "animation": "Charts move and grow smoothly",
+            "text": "Numbers only, no labels"
+          },
+          {
+            "name": "Wallet",
+            "display": "Digital wallet with numbers only",
+            "style": "Simple wallet illustration",
+            "text": "Numbers only, no currency text"
+          }
+        ],
+        "animation": "Each section appears alternately with zoom effect",
+        "effects": "Smooth transitions, clean animations"
+      },
+      "elements": [
+        "WiFi icon (offline/online states)",
+        "Trip history list (visual)",
+        "Earnings charts (simple graphics)",
+        "Wallet (numbers only)"
+      ]
+    },
+    {
+      "scene_number": 8,
+      "scene_name": "Success and Satisfaction",
+      "duration": "70-80 seconds",
+      "description": "Happy driver, statistics, success celebration",
+      "style_requirements": {
+        "background": {
+          "style": "Bright and colorful",
+          "colors": "Primary teal and blue tones"
+        },
+        "driver": {
+          "expression": "Happy and relaxed",
+          "pose": "Raising hands in joy",
+          "animation": "Simple, natural movement"
+        },
+        "icons": {
+          "types": ["Star", "Heart", "Checkmark (✓)"],
+          "style": "Simple, positive icons",
+          "colors": "Bright, positive colors"
+        },
+        "statistics": {
+          "display": "Numbers only - no text",
+          "examples": ["50+", "500000+"],
+          "style": "Large, clear numbers",
+          "animation": "Appear with simple effect",
+          "text": "No text labels like 'رحلة' or 'دينار'"
+        },
+        "star": {
+          "style": "Simple star shape",
+          "animation": "Light glow in background",
+          "intensity": "Subtle - not heavy"
+        },
+        "effects": "Light positive effects, smooth number appearance"
+      },
+      "elements": [
+        "Driver character (happy)",
+        "Bright background",
+        "Positive icons (star, heart, ✓)",
+        "Statistics (numbers only)"
+      ]
+    },
+    {
+      "scene_number": 9,
+      "scene_name": "Call to Action",
+      "duration": "80-90 seconds",
+      "description": "Hur logo, app store icons, QR code",
+      "style_requirements": {
+        "logo": {
+          "style": "Large Hur logo (visual only)",
+          "color": "Teal (#008C95)",
+          "animation": "Rotates slowly with light glow",
+          "glow": "Subtle - not heavy"
+        },
+        "app_store_icons": {
+          "types": ["Google Play logo", "App Store logo"],
+          "style": "Official logos - simple representation",
+          "text": "No text - logos only",
+          "animation": "Appear one by one smoothly"
+        },
+        "qr_code": {
+          "style": "Simple QR code illustration",
+          "animation": "Light glow - subtle",
+          "position": "Next to app store icons"
+        },
+        "background": {
+          "style": "Gradient from teal (#008C95) to blue (#1E40AF)",
+          "type": "Smooth gradient"
+        },
+        "effects": "Clean, professional appearance"
+      },
+      "elements": [
+        "Hur logo (large, visual only)",
+        "Google Play logo",
+        "App Store logo",
+        "QR code",
+        "Gradient background"
+      ]
+    }
+  ],
+  "consistency_rules": {
+    "character_consistency": "Driver character must look identical across all scenes",
+    "color_consistency": "Use exact hex colors from color palette",
+    "style_consistency": "All scenes must maintain 2D flat illustration style",
+    "animation_consistency": "All animations should be smooth and clean",
+    "effect_consistency": "Keep effects light and minimal throughout",
+    "no_text_rule": "No text should appear on screen in any scene"
+  },
+  "technical_specifications": {
+    "resolution": "1080p (1920x1080) or 4K (3840x2160)",
+    "aspect_ratio": "16:9 (YouTube) or 9:16 (Instagram/TikTok)",
+    "frame_rate": "30-60 FPS",
+    "audio": "Stereo, 48kHz",
+    "format": "MP4"
+  },
+  "voiceover_script": {
+    "language": "Arabic",
+    "style": "Friendly, professional, motivating",
+    "scenes": [
+      {
+        "scene": 1,
+        "text": "مرحباً بك في حر - منصة التوصيل الذكية"
+      },
+      {
+        "scene": 2,
+        "text": "كنت تبحث عن طلبات توصيل؟ تريد زيادة دخلك بسهولة؟"
+      },
+      {
+        "scene": 3,
+        "text": "مع تطبيق حر، كل شيء أصبح سهلاً. استقبل طلبات توصيل مباشرة على هاتفك"
+      },
+      {
+        "scene": 4,
+        "text": "استقبل إشعارات فورية بطلبات جديدة - اقبل أو ارفض - أنت تتحكم"
+      },
+      {
+        "scene": 5,
+        "text": "ملاحة مباشرة مع خرائط تفاعلية - تتبع دقيق - اعرف أين أنت دائماً"
+      },
+      {
+        "scene": 6,
+        "text": "أرباح فورية - تُضاف تلقائياً لمحفظتك - تتبع كل رحلة وأرباحك بسهولة"
+      },
+      {
+        "scene": 7,
+        "text": "يعمل حتى بدون إنترنت - تتبع إحصائياتك وأرباحك - محفظة رقمية آمنة"
+      },
+      {
+        "scene": 8,
+        "text": "انضم لآلاف السائقين الناجحين - ابدأ رحلتك مع حر اليوم"
+      },
+      {
+        "scene": 9,
+        "text": "حمّل تطبيق حر الآن - ابدأ كسب المال اليوم - حر - توصيل سريع، أرباح مباشرة"
+      }
+    ]
+  },
+  "music_and_sound": {
+    "background_music": {
+      "style": "Upbeat modern Arabic music",
+      "tempo": "Medium to fast",
+      "instruments": "Modern Arabic instruments mix",
+      "progression": "Escalates in positive scenes"
+    },
+    "sound_effects": [
+      {
+        "type": "Alert for new order",
+        "timing": "Scene 4"
+      },
+      {
+        "type": "Success sound for acceptance",
+        "timing": "Scene 4"
+      },
+      {
+        "type": "GPS navigation voice in Arabic",
+        "timing": "Scene 5"
+      },
+      {
+        "type": "Camera shutter",
+        "timing": "Scene 6"
+      },
+      {
+        "type": "Money adding sound",
+        "timing": "Scene 6"
+      }
+    ]
+  }
+}
+
+
+
+
+
+
+
+
+
+
+

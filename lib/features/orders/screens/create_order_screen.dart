@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
 import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/providers/order_provider.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -17,8 +16,12 @@ import '../../../core/widgets/header_notification.dart';
 import '../../../core/services/geocoding_service.dart';
 import '../../../core/services/driver_availability_service.dart';
 import '../../../core/services/najaf_districts_service.dart';
-import '../../../shared/widgets/primary_button.dart';
+import '../../../core/services/delivery_fee_calculator.dart';
+import '../../../core/data/neighborhoods_data.dart';
+import '../../../shared/widgets/neighborhood_dropdown.dart';
+import '../../../shared/widgets/delivery_fee_dropdown.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../shared/widgets/navigation_overlay_system.dart';
 import 'location_picker_screen.dart';
 
 class CreateOrderScreen extends StatefulWidget {
@@ -74,6 +77,26 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   // Vehicle type selection
   String _selectedVehicleType = 'any'; // Default to any vehicle type
 
+  // Advanced settings expansion
+  bool _showAdvancedSettings = false;
+  
+  // Selected neighborhood for delivery
+  Neighborhood? _selectedNeighborhood;
+  
+  // Recommended delivery fee based on distance
+  double? _recommendedDeliveryFee;
+
+  // ValueNotifiers for fields that drive the cost summary — avoids full setState rebuilds
+  late final ValueNotifier<String> _totalAmountNotifier;
+  late final ValueNotifier<String> _deliveryFeeNotifier;
+
+  // Option to assign to same driver as active order
+  bool _assignToSameDriver = false;
+  String? _activeOrderDriverId;
+  String? _activeOrderDriverName;
+  // Support multiple drivers if merchant has multiple active orders
+  List<Map<String, String>> _availableDrivers = []; // List of {id, name}
+
   @override
   void initState() {
     super.initState();
@@ -114,16 +137,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     
     _loadMerchantLocation();
     _checkOnlineDrivers();
+    _checkActiveOrderForSameDriver();
     _subscribeToDriverUpdates();
     _startPeriodicRefresh();
-    
-    // Add listeners for real-time updates
-    _totalAmountController.addListener(() {
-      setState(() {}); // Trigger rebuild to update summary
-    });
-    _deliveryFeeController.addListener(() {
-      setState(() {}); // Trigger rebuild to update summary
-    });
+
+    // ValueNotifiers mirror the text controllers — only the summary widget
+    // subscribes to these, so keystrokes no longer rebuild the entire form.
+    _totalAmountNotifier = ValueNotifier(_totalAmountController.text);
+    _deliveryFeeNotifier = ValueNotifier(_deliveryFeeController.text);
+    _totalAmountController.addListener(
+        () => _totalAmountNotifier.value = _totalAmountController.text);
+    _deliveryFeeController.addListener(
+        () => _deliveryFeeNotifier.value = _deliveryFeeController.text);
 
     // Phone field behaviors: strip leading zero and fetch suggestions
     _customerPhoneController.addListener(() {
@@ -173,6 +198,69 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     NajafDistrictsService.loadDistricts();
   }
   
+  /// Helper method to find neighborhood with improved matching
+  Neighborhood? _findNeighborhoodByName(String name) {
+    if (name.isEmpty) return null;
+    
+    final normalizedName = name.trim();
+    final allNeighborhoods = NeighborhoodsData.getAll();
+    
+    // 1. Try exact match first
+    try {
+      return allNeighborhoods.firstWhere((n) => n.name == normalizedName);
+    } catch (e) {
+      // Continue to fuzzy matching
+    }
+    
+    // 2. Normalize the search name (remove common prefixes/suffixes)
+    String searchName = normalizedName
+        .replaceAll('، النجف', '')
+        .replaceAll(', النجف', '')
+        .replaceAll('النجف', '')
+        .trim();
+    
+    // Remove "حي" prefix if present (but keep it for neighborhoods that start with it)
+    if (searchName.startsWith('حي ')) {
+      // Try with "حي" prefix
+      try {
+        return allNeighborhoods.firstWhere((n) => n.name == searchName);
+      } catch (e) {
+        // Try without "حي" prefix
+        searchName = searchName.substring(3).trim();
+      }
+    }
+    
+    // 3. Try exact match with normalized name
+    try {
+      return allNeighborhoods.firstWhere((n) => n.name == searchName);
+    } catch (e) {
+      // Continue to partial matching
+    }
+    
+    // 4. Try partial matching - check if neighborhood name contains search term or vice versa
+    for (final neighborhood in allNeighborhoods) {
+      final nName = neighborhood.name.trim();
+      if (nName == searchName || 
+          nName.contains(searchName) || 
+          searchName.contains(nName) ||
+          nName.replaceAll('حي ', '').trim() == searchName ||
+          searchName.replaceAll('حي ', '').trim() == nName.replaceAll('حي ', '').trim()) {
+        return neighborhood;
+      }
+    }
+    
+    // 5. Try case-insensitive partial matching (for Arabic, this is less relevant but still useful)
+    final searchLower = searchName.toLowerCase();
+    for (final neighborhood in allNeighborhoods) {
+      final nNameLower = neighborhood.name.toLowerCase();
+      if (nNameLower.contains(searchLower) || searchLower.contains(nNameLower)) {
+        return neighborhood;
+      }
+    }
+    
+    return null;
+  }
+  
   void _prefillFormFromVoiceData(Map<String, dynamic> data) {
     print('📝 Pre-filling form from voice data: $data');
     
@@ -180,10 +268,55 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       _customerNameController.text = data['customer_name'];
     }
     if (data['customer_phone'] != null) {
-      _customerPhoneController.text = data['customer_phone'];
+      // Normalize phone number: if 11 digits starting with 0, remove the leading zero
+      String phone = data['customer_phone'].toString();
+      final digits = phone.replaceAll(RegExp(r'\D'), '');
+      if (digits.length == 11 && digits.startsWith('0')) {
+        phone = digits.substring(1);
+        print('📞 Normalized phone number: removed leading zero');
+      }
+      _customerPhoneController.text = phone;
     }
-    if (data['delivery_address'] != null) {
+    
+    // Prioritize neighborhood field if provided (from voice transcription)
+    if (data['neighborhood'] != null) {
+      final neighborhoodName = data['neighborhood'].toString();
+      print('🏘️ Looking for neighborhood: $neighborhoodName');
+      final neighborhood = _findNeighborhoodByName(neighborhoodName);
+      if (neighborhood != null) {
+        print('✅ Found neighborhood: ${neighborhood.name}');
+        setState(() {
+          _selectedNeighborhood = neighborhood;
+          _deliveryAddressController.text = neighborhood.name;
+          _deliveryLatitude = neighborhood.latitude;
+          _deliveryLongitude = neighborhood.longitude;
+        });
+      } else {
+        print('❌ Neighborhood not found: $neighborhoodName');
+      }
+    }
+    
+    // If neighborhood not set yet, try to detect from delivery address
+    if (_selectedNeighborhood == null && data['delivery_address'] != null) {
       _deliveryAddressController.text = data['delivery_address'];
+      
+      // Try to detect neighborhood from delivery address
+      final deliveryAddress = data['delivery_address'].toString();
+      final detectedNeighborhood = _findNeighborhoodByName(deliveryAddress);
+      if (detectedNeighborhood != null) {
+        setState(() {
+          _selectedNeighborhood = detectedNeighborhood;
+          _deliveryLatitude = detectedNeighborhood.latitude;
+          _deliveryLongitude = detectedNeighborhood.longitude;
+        });
+      }
+      
+      // If neighborhood still not found, try geocoding
+      if (_selectedNeighborhood == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await _geocodeAddress('delivery');
+        });
+      }
     }
     if (data['delivery_fee'] != null) {
       _deliveryFeeController.text = data['delivery_fee'].toString();
@@ -212,6 +345,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     _totalAmountController.dispose();
     _deliveryFeeController.dispose();
     _notesController.dispose();
+    _totalAmountNotifier.dispose();
+    _deliveryFeeNotifier.dispose();
     super.dispose();
   }
 
@@ -357,25 +492,136 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         _deliveryAddressFocusNode.unfocus();
       }
     });
+    // Recalculate delivery fee when location changes
+    _calculateAndUpdateDeliveryFee();
+  }
+
+  /// Calculate and update delivery fee based on pickup and delivery locations
+  void _calculateAndUpdateDeliveryFee() {
+    if (_pickupLatitude != null &&
+        _pickupLongitude != null &&
+        _deliveryLatitude != null &&
+        _deliveryLongitude != null) {
+      final calculatedFee = DeliveryFeeCalculator.calculateFeeFromCoordinates(
+        _pickupLatitude!,
+        _pickupLongitude!,
+        _deliveryLatitude!,
+        _deliveryLongitude!,
+      );
+      
+      // Store recommended fee
+      setState(() {
+        _recommendedDeliveryFee = calculatedFee;
+      });
+      
+      // Update the delivery fee controller
+      _deliveryFeeController.text = calculatedFee.toStringAsFixed(0);
+      
+      print('💰 Calculated delivery fee: $calculatedFee IQD');
+    }
   }
 
   Future<void> _loadMerchantLocation() async {
+    try {
     final authProvider = context.read<AuthProvider>();
     final user = authProvider.user;
-    
-    if (user != null && user.latitude != null && user.longitude != null) {
-      setState(() {
-        _pickupLatitude = user.latitude;
-        _pickupLongitude = user.longitude;
+      final merchantId = user?.id;
+      
+      if (merchantId == null) {
+        // No merchant ID, use defaults
         final loc = AppLocalizations.of(context);
-        _pickupAddressController.text = user.address ?? loc.storeLocation;
-      });
-    } else {
-      // Default to Baghdad
+        setState(() {
+          _pickupLatitude = AppConstants.defaultLatitude;
+          _pickupLongitude = AppConstants.defaultLongitude;
+          _pickupAddressController.text = loc.storeLocation;
+        });
+        return;
+      }
+      
+      double? lat;
+      double? lng;
+      String? address;
+      String? storeName;
+      
+      // First, try to use cached user data if it has location
+    if (user != null && user.latitude != null && user.longitude != null) {
+        lat = user.latitude;
+        lng = user.longitude;
+        address = user.address;
+        storeName = user.storeName;
+      } else {
+        // If cached data doesn't have location, fetch from database
+        final merchantData = await Supabase.instance.client
+            .from('users')
+            .select('latitude, longitude, address, store_name')
+            .eq('id', merchantId)
+            .single();
+        
+        final latValue = merchantData['latitude'];
+        final lngValue = merchantData['longitude'];
+        if (latValue != null && lngValue != null) {
+          lat = double.parse(latValue.toString());
+          lng = double.parse(lngValue.toString());
+        }
+        address = merchantData['address'] as String?;
+        storeName = merchantData['store_name'] as String?;
+            }
+      
+      if (lat != null && lng != null) {
+      setState(() {
+          _pickupLatitude = lat;
+          _pickupLongitude = lng;
+        });
+        
+        final loc = AppLocalizations.of(context);
+        String displayAddress;
+        
+        // PRIORITIZE STORE NAME
+        // If we have a store name, use it as the pickup address.
+        // The lat/long will still be used for routing.
+        if (storeName != null && storeName.isNotEmpty) {
+          displayAddress = storeName;
+          print('✅ Using Store Name as pickup address: $displayAddress');
+        } else {
+          // Fallback logic
+          final storeLocationText = loc.storeLocation;
+          final needsGeocoding = address == null || 
+                                 address.isEmpty || 
+                                 address.trim().isEmpty ||
+                                 address == storeLocationText ||
+                                 address.toLowerCase().contains('store location') ||
+                                 address.toLowerCase().contains('موقع المتجر');
+          
+          if (needsGeocoding) {
+            // Only geocode if we really don't have a name or address
+             print('🔄 Reverse geocoding merchant location...');
+             final geocodedAddress = await GeocodingService.reverseGeocode(lat, lng);
+             displayAddress = geocodedAddress ?? storeLocationText;
+          } else {
+            displayAddress = address ?? storeLocationText;
+          }
+        }
+        
+        setState(() {
+          _pickupAddressController.text = displayAddress;
+        });
+        return;
+      }
+      
+      // Fallback to default location if no merchant location found
+      final loc = AppLocalizations.of(context);
       setState(() {
         _pickupLatitude = AppConstants.defaultLatitude;
         _pickupLongitude = AppConstants.defaultLongitude;
+        _pickupAddressController.text = loc.storeLocation;
+      });
+    } catch (e) {
+      print('Error loading merchant location: $e');
+      // On error, use defaults
         final loc = AppLocalizations.of(context);
+      setState(() {
+        _pickupLatitude = AppConstants.defaultLatitude;
+        _pickupLongitude = AppConstants.defaultLongitude;
         _pickupAddressController.text = loc.storeLocation;
       });
     }
@@ -390,11 +636,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   void _subscribeToDriverUpdates() {
     try {
-      // Subscribe to real-time driver status changes
+      // Optimized: Subscribe only to UPDATE events (not INSERT/DELETE) and filter by role + is_online changes
+      // This reduces Realtime query load by filtering at the database level instead of processing all user changes
       _driversChannel = Supabase.instance.client
-          .channel('driver_status_changes_${DateTime.now().millisecondsSinceEpoch}')
+          .channel('driver_status_changes_optimized')
           .onPostgresChanges(
-            event: PostgresChangeEvent.all,
+            event: PostgresChangeEvent.update, // Only updates, not all events
             schema: 'public',
             table: 'users',
             filter: PostgresChangeFilter(
@@ -403,21 +650,31 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               value: 'driver',
             ),
             callback: (payload) {
-              print('🔄 Driver status changed: ${payload.eventType}');
-              print('📊 Old data: ${payload.oldRecord?['is_online']}');
-              print('📊 New data: ${payload.newRecord?['is_online']}');
-              _checkOnlineDrivers();
+              final oldRecord = payload.oldRecord;
+              final newRecord = payload.newRecord;
+              
+              // Only process if is_online actually changed (filters out other field updates)
+              final oldIsOnline = oldRecord['is_online'] as bool?;
+              final newIsOnline = newRecord['is_online'] as bool?;
+              
+              if (oldIsOnline != newIsOnline) {
+                print('🔄 Driver online status changed: $oldIsOnline -> $newIsOnline');
+                _checkOnlineDrivers();
+              } else {
+                // Silently ignore other field updates (name, phone, etc.) to reduce processing
+                print('🔄 Driver update detected but is_online unchanged - skipping');
+              }
             },
           )
           .subscribe((status, error) {
             if (error != null) {
               print('❌ Subscription error: $error');
             } else {
-              print('✅ Subscription status: $status');
+              print('✅ Subscribed to driver status updates (optimized)');
             }
           });
       
-      print('✅ Subscribed to driver status updates');
+      print('✅ Subscribed to driver status updates (optimized - only is_online changes)');
     } catch (e) {
       print('❌ Failed to subscribe to driver updates: $e');
     }
@@ -429,12 +686,32 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       print('═══════════════════════════════════════');
       print('🔍 CHECKING FOR AVAILABLE DRIVERS (ONLINE & FREE)');
       print('═══════════════════════════════════════');
+
+      final merchantId = Supabase.instance.client.auth.currentUser?.id;
+      final merchantCityRow = merchantId == null
+          ? null
+          : await Supabase.instance.client
+              .from('users')
+              .select('city')
+              .eq('id', merchantId)
+              .maybeSingle();
+      final merchantCity = (merchantCityRow?['city'] ?? '').toString();
+      if (merchantCity.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _onlineDriversCount = 0;
+            _checkingDrivers = false;
+          });
+        }
+        return;
+      }
       
       // First check all drivers to see their status
       final allDrivers = await Supabase.instance.client
           .from('users')
           .select('id, name, is_online, manual_verified, role')
-          .eq('role', 'driver');
+          .eq('role', 'driver')
+          .ilike('city', merchantCity);
       
       print('📊 Total drivers: ${allDrivers.length}');
       for (var driver in allDrivers) {
@@ -443,12 +720,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         print('   ${driver['name']}: online=$online, verified=$verified');
       }
       
-      // Get only online drivers
+      // Get only online drivers — ilike for case-insensitive city matching.
       final onlineDrivers = await Supabase.instance.client
           .from('users')
           .select('id, name, is_online, manual_verified')
           .eq('role', 'driver')
-          .eq('is_online', true);
+          .eq('is_online', true)
+          .ilike('city', merchantCity);
       
       print('');
       print('📋 Online drivers: ${onlineDrivers.length}');
@@ -533,6 +811,68 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     }
   }
 
+  Future<void> _checkActiveOrderForSameDriver() async {
+    try {
+      final merchantId = Supabase.instance.client.auth.currentUser?.id;
+      if (merchantId == null) return;
+
+      // Check if merchant has active orders with assigned drivers
+      final activeOrders = await Supabase.instance.client
+          .from('orders')
+          .select('id, driver_id, driver:users!driver_id(id, name)')
+          .eq('merchant_id', merchantId)
+          .inFilter('status', ['pending', 'accepted', 'on_the_way'])
+          .not('driver_id', 'is', null)
+          .order('created_at', ascending: false);
+
+      if (mounted && activeOrders.isNotEmpty) {
+        // Extract unique drivers (in case merchant has multiple orders with same driver)
+        final Map<String, String> uniqueDrivers = {};
+        
+        for (var order in activeOrders) {
+          final driverId = order['driver_id'] as String?;
+          if (driverId != null) {
+            final driver = order['driver'] as Map<String, dynamic>?;
+            final driverName = driver?['name'] as String? ?? 'السائق';
+            
+            // Only add if not already in map (to avoid duplicates)
+            if (!uniqueDrivers.containsKey(driverId)) {
+              uniqueDrivers[driverId] = driverName;
+            }
+          }
+        }
+
+        final driversList = uniqueDrivers.entries
+            .map((e) => {'id': e.key, 'name': e.value})
+            .toList();
+
+        setState(() {
+          _availableDrivers = driversList;
+          // Set default to first driver if available
+          if (driversList.isNotEmpty) {
+            _activeOrderDriverId = driversList.first['id'];
+            _activeOrderDriverName = driversList.first['name'];
+          }
+        });
+      } else {
+        setState(() {
+          _availableDrivers = [];
+          _activeOrderDriverId = null;
+          _activeOrderDriverName = null;
+        });
+      }
+    } catch (e) {
+      print('⚠️ Error checking active order for same driver: $e');
+      if (mounted) {
+        setState(() {
+          _availableDrivers = [];
+          _activeOrderDriverId = null;
+          _activeOrderDriverName = null;
+        });
+      }
+    }
+  }
+
   Future<void> _pickLocation(String type) async {
     final loc = AppLocalizations.of(context);
     final result = await Navigator.push<Map<String, dynamic>>(
@@ -558,6 +898,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           _deliveryAddressController.text = result['address'] ?? loc.locationSelected;
         }
       });
+        // Recalculate delivery fee when location is picked
+        _calculateAndUpdateDeliveryFee();
     }
   }
 
@@ -573,7 +915,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         _isLoading = true;
       });
 
-      final result = await GeocodingService.geocodeNajafAddress(address);
+      // Get merchant's city
+      final authProvider = context.read<AuthProvider>();
+      final user = authProvider.user;
+      final merchantCity = user?.city;
+
+      final result = await GeocodingService.geocodeAddress(address, city: merchantCity);
 
       if (result != null && mounted) {
         setState(() {
@@ -586,6 +933,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             } else if (result['formatted_address'] != null) {
               _pickupAddressController.text = result['formatted_address'];
             }
+            // Recalculate delivery fee when pickup location is geocoded
+            _calculateAndUpdateDeliveryFee();
           } else {
             _deliveryLatitude = result['latitude'];
             _deliveryLongitude = result['longitude'];
@@ -598,6 +947,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           }
           _isLoading = false;
         });
+        
+        // Recalculate delivery fee after geocoding
+        _calculateAndUpdateDeliveryFee();
 
         if (mounted) {
           final loc = AppLocalizations.of(context);
@@ -637,9 +989,39 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   Future<void> _submitOrder() async {
-    if (!_formKey.currentState!.validate()) return;
+    // Validate form and show errors if validation fails
+    if (!_formKey.currentState!.validate()) {
+      final loc = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.pleaseFillAllRequired),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: loc.ok,
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
+        ),
+      );
+      return;
+    }
     
     final loc = AppLocalizations.of(context);
+    
+    // Prevent order posting in demo mode
+    final authProvider = context.read<AuthProvider>();
+    if (authProvider.isDemoMode) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا يمكن نشر الطلبات في وضع التجربة. يمكنك استكشاف شاشات إنشاء الطلبات ولكن لا يمكنك إرسالها.'),
+          backgroundColor: AppColors.error,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+    
     // Check credit limit first
     final walletProvider = context.read<WalletProvider>();
     if (walletProvider.balance <= walletProvider.creditLimit) {
@@ -653,8 +1035,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       return;
     }
     
-    // Check for online drivers
-    if (_onlineDriversCount == 0) {
+    // Check for online drivers (bypass if assigning to same driver)
+    if (_onlineDriversCount == 0 && !(_assignToSameDriver && _activeOrderDriverId != null)) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -691,36 +1073,39 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       return;
     }
 
-    final availabilityResult = await DriverAvailabilityService.checkAvailability(
-      merchantId: merchantId,
-      vehicleType: _selectedVehicleType,
-    );
+    // Check driver availability (bypass if assigning to same driver)
+    if (!(_assignToSameDriver && _activeOrderDriverId != null)) {
+      final availabilityResult = await DriverAvailabilityService.checkAvailability(
+        merchantId: merchantId,
+        vehicleType: _selectedVehicleType,
+      );
 
-    if (!availabilityResult.available) {
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.warning, color: AppColors.warning, size: context.ri(24)),
-              SizedBox(width: context.rs(8)),
-              ResponsiveText(loc.noDriversAvailable, style: TextStyle(fontSize: context.rf(16))),
+      if (!availabilityResult.available) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.warning, color: AppColors.warning, size: context.ri(24)),
+                SizedBox(width: context.rs(8)),
+                ResponsiveText(loc.noDriversAvailable, style: TextStyle(fontSize: context.rf(16))),
+              ],
+            ),
+            content: ResponsiveText(
+              availabilityResult.userMessage(context),
+              style: TextStyle(fontSize: context.rf(16)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(loc.ok),
+              ),
             ],
           ),
-          content: ResponsiveText(
-            availabilityResult.userMessage(context),
-            style: TextStyle(fontSize: context.rf(16)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(loc.ok),
-            ),
-          ],
-        ),
-      );
-      return;
+        );
+        return;
+      }
     }
     
     if (_pickupLatitude == null || _pickupLongitude == null) {
@@ -748,8 +1133,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     });
 
     try {
-      // Normalize phone to always save with +964 prefix
-      final customerPhone = _formatCustomerPhoneForSave(_customerPhoneController.text);
+      // Normalize phone to always save with +964 prefix (if provided)
+      final customerPhone = _customerPhoneController.text.trim().isNotEmpty
+          ? _formatCustomerPhoneForSave(_customerPhoneController.text)
+          : null;
       final totalAmount = double.tryParse(_totalAmountController.text.trim()) ?? 0.0;
       final deliveryFee = double.tryParse(_deliveryFeeController.text.trim()) ?? 0.0;
 
@@ -763,7 +1150,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
       // Create order (always immediate, but with ready countdown if set)
       final orderProvider = context.read<OrderProvider>();
-      final success = await orderProvider.createOrder(
+      final authProvider = context.read<AuthProvider>();
+      final orderData = await orderProvider.createOrder(
         customerName: _customerNameController.text.trim().isEmpty 
             ? loc.customerNameFallback
             : _customerNameController.text.trim(),
@@ -780,19 +1168,34 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         vehicleType: _selectedVehicleType,
         readyAt: readyAt,
         readyCountdown: readyCountdown > 0 ? readyCountdown : null,
+        assignedDriverId: _assignToSameDriver ? _activeOrderDriverId : null,
       );
 
-      if (success && mounted) {
+      // Send WhatsApp location request (non-blocking, fire-and-forget) - only if phone is provided
+      if (orderData != null && customerPhone != null) {
+        _sendWhatsAppLocationRequest(
+          orderId: orderData['id'],
+          customerPhone: customerPhone,
+          customerName: _customerNameController.text.trim().isEmpty 
+              ? loc.customerNameFallback
+              : _customerNameController.text.trim(),
+          merchantName: authProvider.user?.storeName ?? authProvider.user?.name ?? 'متجرنا',
+        );
+      }
+
+      if (orderData != null && mounted) {
+        HapticFeedback.heavyImpact(); // Satisfying confirmation on success
         showHeaderNotification(
           context,
           title: loc.orderCreated,
-          message: readyCountdown > 0 
+          message: readyCountdown > 0
               ? loc.orderCreatedReadyAfter(readyCountdown)
               : loc.orderCreatedSuccess,
           type: NotificationType.success,
         );
         Navigator.pop(context);
       } else if (mounted) {
+        HapticFeedback.vibrate(); // Alert vibration on failure
         showHeaderNotification(
           context,
           title: loc.error,
@@ -831,6 +1234,34 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return '+964$digits';
   }
 
+  // Send WhatsApp location request (fire-and-forget, non-blocking)
+  void _sendWhatsAppLocationRequest({
+    required String orderId,
+    required String customerPhone,
+    required String customerName,
+    required String merchantName,
+  }) {
+    // Fire-and-forget - don't await, don't block UI
+    Supabase.instance.client.functions.invoke(
+      'send-location-request',
+      body: {
+        'order_id': orderId,
+        'customer_phone': customerPhone,
+        'customer_name': customerName,
+        'merchant_name': merchantName,
+      },
+    ).then((response) {
+      if (response.status == 200) {
+        print('✅ WhatsApp location request sent successfully');
+      } else {
+        print('⚠️ WhatsApp location request failed: ${response.status}');
+      }
+    }).catchError((error) {
+      print('⚠️ Failed to send WhatsApp location request (non-critical): $error');
+      // Don't show error to user - this is a background operation
+    });
+  }
+
   // Check if form has enough information to enable floating button
   bool get _hasEnoughInfoToCreateOrder {
     return _customerPhoneController.text.trim().isNotEmpty &&
@@ -843,10 +1274,51 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
            !_isLoading;
   }
 
+  bool get _hasUnsavedData =>
+      _customerNameController.text.isNotEmpty ||
+      _customerPhoneController.text.isNotEmpty ||
+      _totalAmountController.text.isNotEmpty ||
+      _deliveryFeeController.text.isNotEmpty ||
+      _notesController.text.isNotEmpty ||
+      _pickupLatitude != null ||
+      _deliveryLatitude != null;
+
+  Future<bool> _confirmDiscard(BuildContext context) async {
+    final loc = AppLocalizations.of(context);
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.discardChangesTitle),
+        content: Text(loc.discardChangesMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(loc.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: Text(loc.discardButton),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.surface,
+    return PopScope(
+      canPop: !_hasUnsavedData,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldDiscard = await _confirmDiscard(context);
+        if (shouldDiscard && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       resizeToAvoidBottomInset: true,
       appBar: widget.embedded ? null : AppBar(
         title: Text(AppLocalizations.of(context).createNewOrder),
@@ -856,160 +1328,163 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () async {
+            if (_hasUnsavedData) {
+              final shouldDiscard = await _confirmDiscard(context);
+              if (shouldDiscard && context.mounted) Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
         ),
       ),
-      body: Stack(
-        children: [
-          Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                left: ResponsiveHelper.getResponsiveSpacing(context, 20),
-                right: ResponsiveHelper.getResponsiveSpacing(context, 20),
-                top: ResponsiveHelper.getResponsiveSpacing(context, 20),
-                bottom: _hasEnoughInfoToCreateOrder 
-                    ? 100  // Add padding when button is visible
-                    : ResponsiveHelper.getResponsiveSpacing(context, 20),
-              ),
+      body: NavigationOverlayScope(
+        child: Builder(
+          builder: (context) {
+            final controller = NavigationOverlayScope.of(context);
+            final bottomInset = controller?.bottomInset ?? MediaQuery.of(context).viewPadding.bottom;
+            
+            return Stack(
+              children: [
+                Form(
+                  key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction, // Show errors after user interaction
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      left: ResponsiveHelper.getResponsiveSpacing(context, 20),
+                      right: ResponsiveHelper.getResponsiveSpacing(context, 20),
+                      top: ResponsiveHelper.getResponsiveSpacing(context, 20),
+                      bottom: 100 + bottomInset,  // Always add padding for button
+                    ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Driver Status Banner
-              if (_checkingDrivers)
-                Container(
-                  padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
-                  margin: EdgeInsets.only(bottom: context.rs(16)),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(context.rs(12)),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
+              // Main Fields: Customer Location (Delivery Address) - Dropdown
+              NeighborhoodDropdown(
+                selectedNeighborhood: _selectedNeighborhood,
+                onChanged: (Neighborhood? neighborhood) {
+                  setState(() {
+                    _selectedNeighborhood = neighborhood;
+                    if (neighborhood != null) {
+                      _deliveryAddressController.text = neighborhood.name;
+                      _deliveryLatitude = neighborhood.latitude;
+                      _deliveryLongitude = neighborhood.longitude;
+                    } else {
+                      _deliveryAddressController.clear();
+                      _deliveryLatitude = null;
+                      _deliveryLongitude = null;
+                    }
+                  });
+                  // Calculate delivery fee when neighborhood is selected
+                  _calculateAndUpdateDeliveryFee();
+                },
+                label: AppLocalizations.of(context).deliveryLocation,
+                hint: AppLocalizations.of(context).deliveryLocationHint,
+                isRequired: true,
+                storeLatitude: _pickupLatitude,
+                storeLongitude: _pickupLongitude,
+                onLocationPickerTap: () => _pickLocation('delivery'),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Pricing Section — grouped card
+              Builder(
+                builder: (context) {
+                  final loc = AppLocalizations.of(context);
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: context.themeColor(
+                        light: const Color(0xFFF0FAF7),
+                        dark: const Color(0xFF0D2B22),
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: context.themePrimary.withValues(alpha: 0.15),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: context.ri(20),
-                        height: context.ri(20),
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      SizedBox(width: context.rs(12)),
-                      ResponsiveText(
-                        AppLocalizations.of(context).checkingDrivers,
-                        style: TextStyle(fontSize: context.rf(14)),
-                      ),
-                    ],
-                  ),
-                )
-              else if (_onlineDriversCount == 0)
-                Container(
-                  padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
-                  margin: EdgeInsets.only(bottom: context.rs(16)),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(context.rs(12)),
-                    border: Border.all(
-                      color: AppColors.warning.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_rounded,
-                        color: AppColors.warning,
-                        size: context.ri(24),
-                      ),
-                      SizedBox(width: context.rs(12)),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            ResponsiveText(
-                              AppLocalizations.of(context).noDriversOnline,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.warning,
-                                fontSize: context.rf(15),
-                              ),
+                            Icon(
+                              Icons.payments_outlined,
+                              size: 18,
+                              color: context.themePrimary,
                             ),
-                            SizedBox(height: context.rs(4)),
-                            ResponsiveText(
-                              AppLocalizations.of(context).cannotCreateOrder,
-                              style: TextStyle(
-                                fontSize: context.rf(13),
-                                color: AppColors.textSecondary,
+                            const SizedBox(width: 8),
+                            Text(
+                              loc.prices,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: context.themePrimary,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Container(
-                  padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
-                  margin: EdgeInsets.only(bottom: context.rs(16)),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(context.rs(12)),
-                    border: Border.all(
-                      color: AppColors.success.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: AppColors.success,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          AppLocalizations.of(context).driversAvailableNow,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.success,
-                            fontSize: 14,
-                          ),
+                        const SizedBox(height: 16),
+                        // Order Fee (Total Amount)
+                        _buildTextField(
+                          controller: _totalAmountController,
+                          label: loc.totalAmount,
+                          hint: '0',
+                          icon: Icons.money,
+                          keyboardType: TextInputType.number,
+                          isRequired: true,
+                          suffix: loc.currencySymbol,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return loc.amountRequired;
+                            }
+                            if (double.tryParse(value) == null) {
+                              return loc.enterValidNumber;
+                            }
+                            return null;
+                          },
                         ),
-                      ),
-                      TextButton(
-                        onPressed: _checkOnlineDrivers,
-                        child: Text(AppLocalizations.of(context).refresh),
-                      ),
-                    ],
-                  ),
-                ),
-              
-              // Customer Information Section
-              _buildSectionHeader(AppLocalizations.of(context).customerInfo, Icons.person),
-              const SizedBox(height: 16),
-              
-              _buildTextField(
-                controller: _customerNameController,
-                label: AppLocalizations.of(context).customerNameOptional,
-                hint: AppLocalizations.of(context).enterCustomerName,
-                icon: Icons.person_outline,
-                isRequired: false,
+                        const SizedBox(height: 12),
+                        // Delivery Fee
+                        DeliveryFeeDropdown(
+                          controller: _deliveryFeeController,
+                          label: loc.deliveryFee,
+                          isRequired: true,
+                          recommendedFee: _recommendedDeliveryFee,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return loc.deliveryFeeRequired;
+                            }
+                            if (double.tryParse(value) == null) {
+                              return loc.enterValidNumber;
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
               
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               
+              // Customer Phone Field (Optional) - Right above Advanced Settings
               _buildPhoneField(),
               if (_showPhoneSuggestions && _phoneSuggestions.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.themeSurface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: context.themeBorder),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: context.themeColor(
+                            light: Colors.black.withOpacity(0.05),
+                            dark: Colors.black.withOpacity(0.25),
+                          ),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -1019,15 +1494,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: _phoneSuggestions.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, __) => Divider(
+                        height: 1,
+                        color: context.themeBorder.withOpacity(0.7),
+                      ),
                       itemBuilder: (context, index) {
                         final suggestion = _phoneSuggestions[index];
                         return ListTile(
                           dense: true,
-                          leading: const Icon(Icons.history, color: AppColors.textSecondary, size: 18),
+                          leading: Icon(Icons.history, color: context.themeTextSecondary, size: 18),
                           title: Text(
                             suggestion,
-                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                            style: AppTextStyles.bodyMedium.copyWith(color: context.themeTextPrimary),
                             textDirection: TextDirection.ltr,
                           ),
                           onTap: () {
@@ -1047,15 +1525,145 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       },
                     ),
                   ),
+              ),
+              
+              // Option to assign to same driver if merchant has active order
+              if (_availableDrivers.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _assignToSameDriver,
+                            onChanged: (value) {
+                              setState(() {
+                                _assignToSameDriver = value ?? false;
+                              });
+                            },
+                            activeColor: AppColors.primary,
+                          ),
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(context).assignToSameDriver,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: context.themeTextPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_assignToSameDriver) ...[
+                        const SizedBox(height: 12),
+                        if (_availableDrivers.length == 1)
+                          // Single driver - just show name
+                          Text(
+                            '${AppLocalizations.of(context).currentDriver}: ${_activeOrderDriverName ?? 'غير معروف'}',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: context.themeTextSecondary,
+                            ),
+                          )
+                        else
+                          // Multiple drivers - show dropdown
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _activeOrderDriverId,
+                                isExpanded: true,
+                                icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: context.themeTextPrimary,
+                                ),
+                                items: _availableDrivers.map((driver) {
+                                  return DropdownMenuItem<String>(
+                                    value: driver['id'],
+                                    child: Text(driver['name'] ?? ''),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newDriverId) {
+                                  if (newDriverId != null) {
+                                    setState(() {
+                                      _activeOrderDriverId = newDriverId;
+                                      _activeOrderDriverName = _availableDrivers
+                                          .firstWhere((d) => d['id'] == newDriverId)['name'];
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                      ],
+                    ],
+                  ),
                 ),
+              ],
               
               const SizedBox(height: 24),
               
-              // Location Section
-              _buildSectionHeader(AppLocalizations.of(context).locations, Icons.location_on),
+              // Advanced Settings Expandable Section
+              Container(
+                decoration: BoxDecoration(
+                  color: context.themeSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.themeBorder),
+                ),
+                child: ExpansionTile(
+                  title: Row(
+                    children: [
+                      Icon(
+                        Icons.settings_outlined,
+                        color: context.themePrimary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        AppLocalizations.of(context).advancedSettings,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: context.themeTextPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  initiallyExpanded: false,
+                  onExpansionChanged: (expanded) {
+                    setState(() {
+                      _showAdvancedSettings = expanded;
+                    });
+                  },
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Customer Name (Optional)
+                          _buildTextField(
+                            controller: _customerNameController,
+                            label: AppLocalizations.of(context).customerNameOptional,
+                            hint: AppLocalizations.of(context).enterCustomerName,
+                            icon: Icons.person_outline,
+                            isRequired: false,
+                          ),
+                          
               const SizedBox(height: 16),
               
-              // Pickup Location
+                          // Pickup Location (Auto-set to merchant location, but editable)
               _buildLocationField(
                 controller: _pickupAddressController,
                 label: AppLocalizations.of(context).pickupLocation,
@@ -1066,317 +1674,330 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 type: 'pickup',
               ),
               
+                          const SizedBox(height: 24),
+                          
+                          // Vehicle Type Section
+                          Builder(
+                            builder: (context) {
+                              final loc = AppLocalizations.of(context);
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSectionHeader(loc.vehicleType, Icons.directions_car),
               const SizedBox(height: 16),
-              
-              // Delivery Location
-              _buildLocationField(
-                controller: _deliveryAddressController,
-                label: AppLocalizations.of(context).deliveryLocation,
-                hint: AppLocalizations.of(context).deliveryLocationHint,
-                icon: Icons.location_on,
-                onTap: () => _pickLocation('delivery'),
-                hasLocation: _deliveryLatitude != null && _deliveryLongitude != null,
-                type: 'delivery',
-                isRequired: true,
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Pricing Section
-              _buildSectionHeader(AppLocalizations.of(context).prices, Icons.attach_money),
-              const SizedBox(height: 16),
-              
-              Builder(
-                builder: (context) {
-                  final loc = AppLocalizations.of(context);
-                  return Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _totalAmountController,
-                          label: loc.totalAmount,
-                      hint: '0',
-                      icon: Icons.money,
-                      keyboardType: TextInputType.number,
-                      isRequired: true,
-                          suffix: loc.currencySymbol,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                              return loc.amountRequired;
-                        }
-                        if (double.tryParse(value) == null) {
-                              return loc.enterValidNumber;
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _deliveryFeeController,
-                          label: loc.deliveryFee,
-                      hint: '0',
-                      icon: Icons.local_shipping,
-                      keyboardType: TextInputType.number,
-                      isRequired: true,
-                          suffix: loc.currencySymbol,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                              return loc.deliveryFeeRequired;
-                        }
-                        if (double.tryParse(value) == null) {
-                              return loc.enterValidNumber;
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-                  );
-                },
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Vehicle Type Section
-              Builder(
-                builder: (context) {
-                  final loc = AppLocalizations.of(context);
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader(loc.vehicleType, Icons.directions_car),
-              const SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                              loc.selectVehicleType,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Any Vehicle Option (Default)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: _selectedVehicleType == 'any' ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _selectedVehicleType == 'any' ? AppColors.primary : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: RadioListTile<String>(
-                        title: Row(
-                          children: [
-                            Icon(
-                              Icons.widgets_outlined,
-                              color: _selectedVehicleType == 'any' ? AppColors.primary : AppColors.textSecondary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                                      loc.anyVehicle,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: _selectedVehicleType == 'any' ? FontWeight.w600 : FontWeight.w400,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            if (_selectedVehicleType == 'any')
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.success,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  loc.defaultText,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
+                                  Container(
+                                    padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
+                                    decoration: BoxDecoration(
+                                      color: context.themeBackground,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: context.themeBorder),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          loc.selectVehicleType,
+                                          style: AppTextStyles.bodyMedium.copyWith(
+                                            color: context.themeTextSecondary,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        // Any Vehicle Option (Default)
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: _selectedVehicleType == 'any' ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: _selectedVehicleType == 'any' ? AppColors.primary : Colors.transparent,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: RadioListTile<String>(
+                                            title: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.widgets_outlined,
+                                                  color: _selectedVehicleType == 'any' ? AppColors.primary : AppColors.textSecondary,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  loc.anyVehicle,
+                                                  style: AppTextStyles.bodyMedium.copyWith(
+                                                    color: context.themeTextPrimary,
+                                                    fontWeight: _selectedVehicleType == 'any' ? FontWeight.w600 : FontWeight.w400,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                if (_selectedVehicleType == 'any')
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.success,
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                    child: Text(
+                                                      loc.defaultText,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                            subtitle: Padding(
+                                              padding: const EdgeInsets.only(right: 28, top: 4),
+                                              child: Text(
+                                                loc.anyVehicleHint,
+                                                style: TextStyle(fontSize: 11, color: context.themeTextTertiary),
+                                              ),
+                                            ),
+                                            value: 'any',
+                                            groupValue: _selectedVehicleType,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _selectedVehicleType = value!;
+                                              });
+                                            },
+                                            activeColor: AppColors.primary,
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        // Motorbike Radio Button
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: _selectedVehicleType == 'motorbike' ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: _selectedVehicleType == 'motorbike' ? AppColors.primary : Colors.transparent,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: RadioListTile<String>(
+                                            title: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.two_wheeler,
+                                                  color: _selectedVehicleType == 'motorbike' ? AppColors.primary : AppColors.textSecondary,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  loc.motorbike,
+                                                  style: AppTextStyles.bodyMedium.copyWith(
+                                                    color: context.themeTextPrimary,
+                                                    fontWeight: _selectedVehicleType == 'motorbike' ? FontWeight.w600 : FontWeight.w400,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            value: 'motorbike',
+                                            groupValue: _selectedVehicleType,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _selectedVehicleType = value!;
+                                              });
+                                            },
+                                            activeColor: AppColors.primary,
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        // Car Radio Button
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: _selectedVehicleType == 'car' ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: _selectedVehicleType == 'car' ? AppColors.primary : Colors.transparent,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: RadioListTile<String>(
+                                            title: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.directions_car,
+                                                  color: _selectedVehicleType == 'car' ? AppColors.primary : AppColors.textSecondary,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  loc.car,
+                                                  style: AppTextStyles.bodyMedium.copyWith(
+                                                    color: context.themeTextPrimary,
+                                                    fontWeight: _selectedVehicleType == 'car' ? FontWeight.w600 : FontWeight.w400,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            value: 'car',
+                                            groupValue: _selectedVehicleType,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _selectedVehicleType = value!;
+                                              });
+                                            },
+                                            activeColor: AppColors.primary,
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        // Truck Radio Button
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: _selectedVehicleType == 'truck' ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: _selectedVehicleType == 'truck' ? AppColors.primary : Colors.transparent,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: RadioListTile<String>(
+                                            title: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.local_shipping,
+                                                  color: _selectedVehicleType == 'truck' ? AppColors.primary : AppColors.textSecondary,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  loc.truck,
+                                                  style: AppTextStyles.bodyMedium.copyWith(
+                                                    color: context.themeTextPrimary,
+                                                    fontWeight: _selectedVehicleType == 'truck' ? FontWeight.w600 : FontWeight.w400,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            value: 'truck',
+                                            groupValue: _selectedVehicleType,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _selectedVehicleType = value!;
+                                              });
+                                            },
+                                            activeColor: AppColors.primary,
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(right: 28, top: 4),
-                          child: Text(
-                            loc.anyVehicleHint,
-                            style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                                ],
+                              );
+                            },
                           ),
-                        ),
-                        value: 'any',
-                        groupValue: _selectedVehicleType,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedVehicleType = value!;
-                          });
-                        },
-                        activeColor: AppColors.primary,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Motorbike Radio Button
-                    Container(
-                      decoration: BoxDecoration(
-                        color: _selectedVehicleType == 'motorbike' ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _selectedVehicleType == 'motorbike' ? AppColors.primary : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: RadioListTile<String>(
-                        title: Row(
-                          children: [
-                            Icon(
-                              Icons.two_wheeler,
-                              color: _selectedVehicleType == 'motorbike' ? AppColors.primary : AppColors.textSecondary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              loc.motorbike,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: _selectedVehicleType == 'motorbike' ? FontWeight.w600 : FontWeight.w400,
-                              ),
-                            ),
-                          ],
-                        ),
-                        value: 'motorbike',
-                        groupValue: _selectedVehicleType,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedVehicleType = value!;
-                          });
-                        },
-                        activeColor: AppColors.primary,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Car Radio Button
-                    Container(
-                      decoration: BoxDecoration(
-                        color: _selectedVehicleType == 'car' ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _selectedVehicleType == 'car' ? AppColors.primary : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: RadioListTile<String>(
-                        title: Row(
-                          children: [
-                            Icon(
-                              Icons.directions_car,
-                              color: _selectedVehicleType == 'car' ? AppColors.primary : AppColors.textSecondary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              loc.car,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: _selectedVehicleType == 'car' ? FontWeight.w600 : FontWeight.w400,
-                              ),
-                            ),
-                          ],
-                        ),
-                        value: 'car',
-                        groupValue: _selectedVehicleType,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedVehicleType = value!;
-                          });
-                        },
-                        activeColor: AppColors.primary,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Truck Radio Button
-                    Container(
-                      decoration: BoxDecoration(
-                        color: _selectedVehicleType == 'truck' ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _selectedVehicleType == 'truck' ? AppColors.primary : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: RadioListTile<String>(
-                        title: Row(
-                          children: [
-                            Icon(
-                              Icons.local_shipping,
-                              color: _selectedVehicleType == 'truck' ? AppColors.primary : AppColors.textSecondary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              loc.truck,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: _selectedVehicleType == 'truck' ? FontWeight.w600 : FontWeight.w400,
-                              ),
-                            ),
-                          ],
-                        ),
-                        value: 'truck',
-                        groupValue: _selectedVehicleType,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedVehicleType = value!;
-                          });
-                        },
-                        activeColor: AppColors.primary,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Info text
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              _selectedVehicleType == 'motorbike'
-                                  ? loc.motorbikeHint
-                                  : _selectedVehicleType == 'car'
-                                      ? loc.carHint
-                                      : loc.truckHint,
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.primary,
-                                fontSize: 11,
-                              ),
-                            ),
+                          
+                          const SizedBox(height: 24),
+                          
+                          // Notes Section
+                          Builder(
+                            builder: (context) {
+                              final loc = AppLocalizations.of(context);
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSectionHeader(loc.notesOptional, Icons.note),
+                                  const SizedBox(height: 16),
+                                  _buildTextField(
+                                    controller: _notesController,
+                                    label: loc.additionalNotes,
+                                    hint: loc.addNotesHint,
+                                    icon: Icons.edit_note,
+                                    maxLines: 4,
+                                    isRequired: false,
+                                  ),
+                                ],
+                              );
+                            },
+              ),
+              
+              const SizedBox(height: 24),
+              
+                          // Scheduling Section
+                          Builder(
+                            builder: (context) {
+                              final loc = AppLocalizations.of(context);
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSectionHeader(loc.whenReady, Icons.access_time),
+              const SizedBox(height: 16),
+                                  Container(
+                                    padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 20)),
+                                    decoration: BoxDecoration(
+                                      color: context.themeBackground,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: context.themeBorder),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _scheduledMinutes == 0 
+                                              ? loc.readyNow
+                                              : loc.readyAfterMinutes(_scheduledMinutes.toInt()),
+                                          style: AppTextStyles.heading3.copyWith(
+                                            color: context.themePrimary,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        SliderTheme(
+                                          data: SliderThemeData(
+                                            activeTrackColor: AppColors.primary,
+                                            inactiveTrackColor: AppColors.primary.withOpacity(0.2),
+                                            thumbColor: AppColors.primary,
+                                            overlayColor: AppColors.primary.withOpacity(0.2),
+                                            valueIndicatorColor: AppColors.primary,
+                                            trackHeight: 4,
+                                          ),
+                                          child: Slider(
+                                            value: _scheduledMinutes,
+                                            min: 0,
+                                            max: 60,
+                                            divisions: 6,
+                                            label: _scheduledMinutes == 0 
+                                                ? loc.nowText
+                                                : '${_scheduledMinutes.toInt()} ${loc.minutesText}',
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _scheduledMinutes = value;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              loc.nowText,
+                                              style: TextStyle(
+                                                color: context.themeTextTertiary,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            Text(
+                                              loc.sixtyMinutes,
+                                              style: TextStyle(
+                                                color: context.themeTextTertiary,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -1384,110 +2005,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ],
                 ),
               ),
-                    ],
-                  );
-                },
-              ),
               
-              const SizedBox(height: 24),
-              
-              // Notes Section
-              Builder(
-                builder: (context) {
-                  final loc = AppLocalizations.of(context);
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader(loc.notesOptional, Icons.note),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _notesController,
-                        label: loc.additionalNotes,
-                        hint: loc.addNotesHint,
-                icon: Icons.edit_note,
-                maxLines: 4,
-                isRequired: false,
-              ),
-              const SizedBox(height: 24),
-              // Scheduling Section
-                      _buildSectionHeader(loc.whenReady, Icons.access_time),
-              const SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 20)),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _scheduledMinutes == 0 
-                                  ? loc.readyNow
-                                  : loc.readyAfterMinutes(_scheduledMinutes.toInt()),
-                      style: AppTextStyles.heading3.copyWith(
-                        color: AppColors.primary,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SliderTheme(
-                      data: SliderThemeData(
-                        activeTrackColor: AppColors.primary,
-                        inactiveTrackColor: AppColors.primary.withOpacity(0.2),
-                        thumbColor: AppColors.primary,
-                        overlayColor: AppColors.primary.withOpacity(0.2),
-                        valueIndicatorColor: AppColors.primary,
-                        trackHeight: 4,
-                      ),
-                      child: Slider(
-                        value: _scheduledMinutes,
-                        min: 0,
-                        max: 60,
-                        divisions: 6,
-                        label: _scheduledMinutes == 0 
-                                    ? loc.nowText
-                                    : '${_scheduledMinutes.toInt()} ${loc.minutesText}',
-                        onChanged: (value) {
-                          setState(() {
-                            _scheduledMinutes = value;
-                          });
-                        },
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                                  loc.nowText,
-                                  style: const TextStyle(
-                            color: AppColors.textTertiary,
-                            fontSize: 12,
-                          ),
-                        ),
-                        Text(
-                                  loc.sixtyMinutes,
-                                  style: const TextStyle(
-                            color: AppColors.textTertiary,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-                    ],
-                  );
-                },
-              ),
               const SizedBox(height: 32),
-              // Total Summary Card
-                      Builder(
-                        builder: (context) {
-                          final loc2 = AppLocalizations.of(context);
-                          return Container(
+              // Total Summary Card — uses ValueListenableBuilder so only
+              // this card rebuilds when amounts change, not the whole form.
+              ValueListenableBuilder<String>(
+                valueListenable: _totalAmountNotifier,
+                builder: (context, _, __) => ValueListenableBuilder<String>(
+                  valueListenable: _deliveryFeeNotifier,
+                  builder: (context, __, ___) {
+                    final loc2 = AppLocalizations.of(context);
+                    return Container(
                 padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 20)),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -1510,14 +2038,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                                      loc2.totalAmount,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: Colors.white.withOpacity(0.9),
+                        Flexible(
+                          child: Text(
+                            loc2.totalAmount,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white.withOpacity(0.9),
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
-                                      '${_totalAmountController.text.isEmpty ? "0" : _totalAmountController.text} ${loc2.currencySymbol}',
+                          '${_totalAmountController.text.isEmpty ? "0" : _totalAmountController.text} ${loc2.currencySymbol}',
                           style: AppTextStyles.bodyLarge.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -1529,14 +2061,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                                      loc2.deliveryFee,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: Colors.white.withOpacity(0.9),
+                        Flexible(
+                          child: Text(
+                            loc2.deliveryFee,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white.withOpacity(0.9),
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
-                                      '${_deliveryFeeController.text.isEmpty ? "0" : _deliveryFeeController.text} ${loc2.currencySymbol}',
+                          '${_deliveryFeeController.text.isEmpty ? "0" : _deliveryFeeController.text} ${loc2.currencySymbol}',
                           style: AppTextStyles.bodyLarge.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -1548,60 +2084,100 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                                      loc2.grandTotalLabel,
-                          style: AppTextStyles.heading3.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
+                        Flexible(
+                          child: Text(
+                            loc2.grandTotalLabel,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.heading3.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        Text(
-                                      '${_calculateGrandTotal()} ${loc2.currencySymbol}',
-                          style: AppTextStyles.heading2.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
+                        const SizedBox(width: 8),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '${_calculateGrandTotal()} ${loc2.currencySymbol}',
+                            style: AppTextStyles.heading2.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-                          );
-                        },
+                    );
+                  },
+                ),
               ),
               const SizedBox(height: 16),
             ],
           ),
         ),
-          ),
-          // Floating Create Order Button - appears when enough info is filled
-          if (_hasEnoughInfoToCreateOrder)
-            Positioned(
+                ),
+          // Floating Create Order Button - always visible
+          AdaptivePositioned(
+              bottomOffset: 0,
               left: 0,
               right: 0,
-              bottom: 0,
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.themeSurface,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: context.themeColor(
+                        light: Colors.black.withOpacity(0.1),
+                        dark: Colors.black.withOpacity(0.35),
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, -2),
                     ),
                   ],
                 ),
-                child: SafeArea(
-                  top: false,
-                  child: SizedBox(
+                child: SizedBox(
                 width: double.infinity,
                     height: 56,
                         child: Builder(
                           builder: (context) {
                         final loc = AppLocalizations.of(context);
+                        final hasDrivers = _onlineDriversCount > 0;
+                        // Bypass driver check if assigning to same driver
+                        final canCreateOrder = hasDrivers || (_assignToSameDriver && _activeOrderDriverId != null);
+                        
+                        // If no drivers and not assigning to same driver, show red non-clickable button
+                        if (!_checkingDrivers && !hasDrivers && !(_assignToSameDriver && _activeOrderDriverId != null)) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.error,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.warning, color: Colors.white, size: 22),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    loc.allDriversBusy,
+                                    style: AppTextStyles.buttonLarge.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        
                             return ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _submitOrder,
+                  onPressed: (_isLoading || _checkingDrivers || !canCreateOrder) ? null : _submitOrder,
                   icon: _isLoading 
                       ? const SizedBox(
                           width: 20,
@@ -1632,28 +2208,33 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                             );
                           },
-                ),
-              ),
-          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
-            ),
-        ],
       ),
-    );
+      ), // end Scaffold
+    ); // end PopScope
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {
+    return Builder(
+      builder: (context) {
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+                color: context.themePrimary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             icon,
-            color: AppColors.primary,
+                color: context.themePrimary,
             size: 20,
           ),
         ),
@@ -1661,11 +2242,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         Text(
           title,
           style: AppTextStyles.heading3.copyWith(
-            color: AppColors.textPrimary,
+            color: context.themeTextPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
       ],
+        );
+      },
     );
   }
 
@@ -1688,12 +2271,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             Text(
               label,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: context.themeTextPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
             if (isRequired)
-              Text(
+              const Text(
                 ' *',
                 style: TextStyle(color: AppColors.error),
               ),
@@ -1706,7 +2289,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           maxLines: maxLines,
           validator: validator,
           style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textPrimary,
+            color: context.themeTextPrimary,
           ),
           decoration: InputDecoration(
             hintText: hint,
@@ -1716,26 +2299,26 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             prefixIcon: Icon(icon, color: AppColors.primary),
             suffixText: suffix,
             suffixStyle: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: context.themeTextSecondary,
               fontWeight: FontWeight.w600,
             ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: context.themeSurfaceVariant,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: context.themeBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: context.themeBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.error),
+              borderSide: const BorderSide(color: AppColors.error),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
@@ -1756,71 +2339,88 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             Text(
                   loc.customerPhoneLabel,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: context.themeTextPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            Text(' *', style: TextStyle(color: AppColors.error)),
+            Text(
+              ' (${loc.optional})',
+              style: TextStyle(
+                color: context.themeTextSecondary,
+                fontSize: 13,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 8),
         Directionality(
           textDirection: TextDirection.ltr,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Country code prefix with spacing
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                decoration: BoxDecoration(
+                  color: context.themeSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.themeBorder),
+                ),
+                child: Text(
+                  '+964',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: context.themeTextPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textDirection: TextDirection.ltr,
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Phone input field
+              Expanded(
           child: TextFormField(
             controller: _customerPhoneController,
             focusNode: _customerPhoneFocusNode,
             keyboardType: TextInputType.phone,
             maxLines: 1,
             validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                    return loc.phoneRequired;
-              }
+              // Phone is now optional, but if provided, must be valid
+              if (value != null && value.trim().isNotEmpty) {
               // Enforce Iraqi local format: 7XXXXXXXXX (10 digits)
               final digits = value.replaceAll(RegExp(r'\D'), '');
               if (!(digits.length == 10 && digits.startsWith('7'))) {
                     return loc.phoneInvalidFormat;
+                }
               }
               return null;
             },
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
+              color: context.themeTextPrimary,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
             decoration: InputDecoration(
               hintText: '7XX XXX XXXX',
               hintStyle: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textTertiary,
+                color: context.themeTextTertiary,
               ),
               prefixIcon: const Icon(Icons.phone, color: AppColors.primary),
-              prefixIconConstraints: const BoxConstraints(minWidth: 40),
-              prefix: Container(
-                padding: const EdgeInsets.only(right: 8),
-                child: Text(
-                  '+964',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  textDirection: TextDirection.ltr,
-                ),
-              ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: context.themeSurfaceVariant,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: context.themeBorder),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: context.themeBorder),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.error),
+                borderSide: const BorderSide(color: AppColors.error),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
@@ -1853,6 +2453,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 setState(() => _showPhoneSuggestions = false);
               }
             },
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -1883,12 +2486,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             Text(
               label,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: context.themeTextPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
             if (isRequired)
-              Text(
+              const Text(
                 ' *',
                 style: TextStyle(color: AppColors.error),
               ),
@@ -1900,10 +2503,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.themeSurface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: hasLocation ? AppColors.success : AppColors.border,
+              color: hasLocation ? AppColors.success : context.themeBorder,
               width: hasLocation ? 2 : 1,
             ),
             boxShadow: hasLocation
@@ -1940,7 +2543,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   controller: controller,
                       focusNode: focusNode,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
+                    color: context.themeTextPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                   decoration: InputDecoration(
@@ -2008,7 +2611,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     final district = suggestions[index];
                     return ListTile(
                       dense: true,
-                      leading: Icon(Icons.location_on, color: AppColors.primary, size: 20),
+                      leading: const Icon(Icons.location_on, color: AppColors.primary, size: 20),
                       title: Text(
                         district.name,
                         style: AppTextStyles.bodyMedium.copyWith(

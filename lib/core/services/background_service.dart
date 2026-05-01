@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'notification_manager.dart';
 import 'foreground_service.dart';
 
 /// Background service that keeps the app alive and listens for notifications

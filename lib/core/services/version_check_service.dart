@@ -101,8 +101,12 @@ class VersionCheckService {
     final parts2 = v2.split('.').map((e) => int.tryParse(e) ?? 0).toList();
 
     // Ensure both have 3 parts (major.minor.patch)
-    while (parts1.length < 3) parts1.add(0);
-    while (parts2.length < 3) parts2.add(0);
+    while (parts1.length < 3) {
+      parts1.add(0);
+    }
+    while (parts2.length < 3) {
+      parts2.add(0);
+    }
 
     // Compare major version
     if (parts1[0] != parts2[0]) {

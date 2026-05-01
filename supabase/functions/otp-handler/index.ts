@@ -1,5 +1,16 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import {
+  applySecurityMiddleware,
+  RateLimitPresets,
+  createErrorResponse,
+  createSuccessResponse,
+  parseJsonSafely,
+  validateAndNormalizePhone,
+  validateEnum,
+  ValidationError,
+  logSecurityEvent,
+} from "../_shared/security.ts";
 
 // Module-level logging to verify the file loads
 console.log("[otp-handler] Module loaded at:", new Date().toISOString());
@@ -153,30 +164,32 @@ function isValidPassword(pw: string): boolean {
 }
 
 serve(async (req) => {
-  // CORS headers for browser requests
+  // CORS headers for backward compatibility with existing code
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   };
 
   console.log("[otp-handler] ==== HANDLER CALLED ====");
   console.log("[otp-handler] Method:", req.method);
   console.log("[otp-handler] URL:", req.url);
 
-  try {
-    // Handle OPTIONS request for CORS
-    if (req.method === "OPTIONS") {
-      console.log("[otp-handler] OPTIONS request, returning CORS");
-      return new Response("ok", { headers: corsHeaders });
-    }
+  // Apply security middleware with STRICT rate limiting for OTP operations
+  // OTP endpoints are sensitive and should have aggressive rate limiting
+  const securityCheck = await applySecurityMiddleware(req, {
+    rateLimit: RateLimitPresets.STRICT, // 5 requests per minute per IP
+    maxBodySize: 10 * 1024, // 10KB max body size (OTP requests are small)
+  });
 
+  if (!securityCheck.allowed) {
+    logSecurityEvent('rate_limit_exceeded', { endpoint: 'otp-handler' }, 'medium');
+    return securityCheck.response!;
+  }
+
+  try {
+    // Only POST method allowed (already checked by middleware, but double-check)
     if (req.method !== "POST") {
-      console.log("[otp-handler] Method not allowed:", req.method);
-      return new Response("Method Not Allowed", {
-        status: 405,
-        headers: corsHeaders,
-      });
+      return createErrorResponse("Method Not Allowed", 405);
     }
 
     console.log("[otp-handler] Reading request body...");

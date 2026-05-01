@@ -104,7 +104,7 @@ class GlobalOrderNotificationService {
     final orderId = orderData['id'] as String?;
     final status = orderData['status'] as String?;
     final oldRecord = payload.oldRecord;
-    final oldStatus = oldRecord?['status'] as String?;
+    final oldStatus = oldRecord['status'] as String?;
 
     if (orderId == null || status == null) return;
 
@@ -172,7 +172,7 @@ class GlobalOrderNotificationService {
     final orderId = orderData['id'] as String?;
     final status = orderData['status'] as String?;
     final oldRecord = payload.oldRecord;
-    final oldStatus = oldRecord?['status'] as String?;
+    final oldStatus = oldRecord['status'] as String?;
 
     if (orderId == null || status == null) return;
 

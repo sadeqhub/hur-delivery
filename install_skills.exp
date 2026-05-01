@@ -1,0 +1,11 @@
+#!/usr/bin/expect -f
+set timeout 60
+spawn npx -y skills add supabase/agent-skills
+expect "Ok to proceed?" { send "y\r" }
+expect "Found 2 skills" {
+    sleep 2
+    send "a"
+    sleep 1
+    send "\r"
+}
+expect eof

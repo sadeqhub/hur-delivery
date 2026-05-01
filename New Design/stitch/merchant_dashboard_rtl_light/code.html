@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#173bab",
+                        "primary-fixed-dim": "#6ed6df",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary": "#8d4a19",
+                        "on-primary-container": "#f5feff",
+                        "surface-dim": "#d9dadb",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "surface-container-highest": "#e1e3e4",
+                        "tertiary-fixed": "#ffdbc8",
+                        "surface-variant": "#e1e3e4",
+                        "secondary": "#3755c3",
+                        "on-tertiary-fixed": "#321300",
+                        "outline": "#6d797a",
+                        "background": "#f8f9fa",
+                        "tertiary-container": "#ab6230",
+                        "surface-container": "#edeeef",
+                        "surface-container-high": "#e7e8e9",
+                        "on-tertiary": "#ffffff",
+                        "surface": "#f8f9fa",
+                        "outline-variant": "#bdc9ca",
+                        "primary-fixed": "#8cf2fc",
+                        "surface-container-low": "#f3f4f5",
+                        "on-surface-variant": "#3d494a",
+                        "on-secondary-container": "#00217a",
+                        "secondary-container": "#708cfd",
+                        "inverse-primary": "#6ed6df",
+                        "on-tertiary-fixed-variant": "#733604",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#fffbff",
+                        "secondary-fixed": "#dde1ff",
+                        "surface-tint": "#006970",
+                        "surface-bright": "#f8f9fa",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-error": "#ffffff",
+                        "primary-container": "#00818a",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#002022",
+                        "tertiary-fixed-dim": "#ffb68a",
+                        "on-secondary": "#ffffff",
+                        "primary": "#00666d",
+                        "on-background": "#191c1d",
+                        "on-secondary-fixed": "#001453",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#191c1d",
+                        "inverse-surface": "#2e3132"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Tajawal", "Manrope"],
+                        "body": ["Tajawal", "Manrope"],
+                        "label": ["Tajawal", "Manrope"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Tajawal', 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-[844px] w-[390px] mx-auto overflow-x-hidden pb-24">
+<!-- TopAppBar -->
+<header class="bg-white/70 backdrop-blur-xl docked full-width top-0 sticky z-50 shadow-sm flex justify-between items-center w-full px-6 py-4 rtl:flex-row-reverse">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover border-2 border-primary-fixed" data-alt="professional portrait of a middle-eastern shop owner in a clean modern retail setting, warm lighting, high quality photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUbCZsjNZE9a4rLh66BM2mJPzNdG7y7i-A5xwR9J3g6nY5UpzWlxZvy5iFbXrSGkNWlvmmYjVZE1XxEWAVTwD--BsBEHRYoQV5d7MOuOviW3sdHQudTQLFKdc1GFVjmu12sYDsgOAAqLNud5gGN8p4MRTqgGjvMfwY9tSxHcbmjNLnj1PoLCRipJW7MqCE92aOdqky1HClILPjhFvlyOWyChF0IZcn5qn-7N4b3kxemfXM6W_sdiV4EvQCxM0R25IwmS09IZFa1dNG"/>
+<span class="text-teal-800 font-black text-xl font-['Tajawal','Manrope'] tracking-tight">Hur Delivery</span>
+</div>
+<button class="relative p-2 rounded-xl hover:bg-zinc-100 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-teal-700" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>
+</button>
+</header>
+<main class="px-6 py-6 space-y-8">
+<!-- Stats Row -->
+<section class="grid grid-cols-3 gap-3">
+<div class="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border border-outline-variant/10 text-center">
+<span class="text-on-surface-variant text-[10px] font-bold block mb-1">طلبات اليوم</span>
+<span class="text-primary text-2xl font-black font-['Manrope']">24</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border border-outline-variant/10 text-center">
+<span class="text-on-surface-variant text-[10px] font-bold block mb-1">قيد الانتظار</span>
+<span class="text-tertiary text-2xl font-black font-['Manrope']">08</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border border-outline-variant/10 text-center">
+<span class="text-on-surface-variant text-[10px] font-bold block mb-1">المحفظة</span>
+<div class="flex items-center justify-center gap-0.5">
+<span class="text-secondary text-lg font-black font-['Manrope']">142</span>
+<span class="text-[8px] text-secondary-container font-bold">K</span>
+</div>
+</div>
+</section>
+<!-- Quick Actions Row -->
+<section>
+<div class="grid grid-cols-4 gap-4">
+<button class="flex flex-col items-center gap-2 group active:scale-90 transition-transform">
+<div class="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 text-on-primary">
+<span class="material-symbols-outlined" data-icon="add_circle" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">طلب جديد</span>
+</button>
+<button class="flex flex-col items-center gap-2 group active:scale-90 transition-transform">
+<div class="w-14 h-14 bg-surface-container-high rounded-2xl flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">المجدولة</span>
+</button>
+<button class="flex flex-col items-center gap-2 group active:scale-90 transition-transform">
+<div class="w-14 h-14 bg-surface-container-high rounded-2xl flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="mic">mic</span>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">طلب صوتي</span>
+</button>
+<button class="flex flex-col items-center gap-2 group active:scale-90 transition-transform">
+<div class="w-14 h-14 bg-surface-container-high rounded-2xl flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">التحليلات</span>
+</button>
+</div>
+</section>
+<!-- Active Orders Section -->
+<section>
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-lg font-extrabold text-on-surface">الطلبات النشطة</h2>
+<button class="text-primary text-xs font-bold">عرض الكل</button>
+</div>
+<div class="flex overflow-x-auto gap-4 pb-4 hide-scrollbar snap-x rtl:flex-row-reverse">
+<!-- Order Card 1 -->
+<div class="min-w-[280px] snap-center bg-surface-container-lowest rounded-[24px] p-5 shadow-sm border border-outline-variant/15 space-y-4">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+<div>
+<h3 class="text-sm font-bold text-on-surface">أحمد محمود</h3>
+<span class="text-[10px] text-on-surface-variant font-medium">#ORD-8821</span>
+</div>
+</div>
+<span class="bg-primary-fixed-dim/20 text-primary px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase">قيد التوصيل</span>
+</div>
+<div class="flex items-center justify-between bg-surface-container-low p-3 rounded-xl">
+<div class="flex items-center gap-2">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="close up of a professional delivery driver wearing a teal polo shirt with a friendly smile, outdoor daylight, bokeh city background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASwAsN3fFAfLwxxtVohSR0Dm0KXCJUWcegKU1y1pgo02HjOUZwzstxSYlGuPcUXXax_SsuyzZ3tpl-D-Q0p4LuzQxnD6ZMOHaZf7wRcIqavLrCbENmW_RO8H6Ph4yudg4n90mD8i-kRdl-AJNJVgG1maEvY3YNz6Vb-VQ7YAZWHsmh_CKLXOObtwtysAkXNUJJ_51sicEeu2hWXp0wfHIzxIwUgj68P4xeafT6HfJ3RcBoaZVPSH4cHnoBVtfKw7IHSoZ6qBvp9wUU"/>
+<div>
+<p class="text-[10px] text-on-surface-variant leading-none mb-1">السائق</p>
+<p class="text-[11px] font-bold text-on-surface">سيف جاسم</p>
+</div>
+</div>
+<div class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-sm" data-icon="schedule">schedule</span>
+<span class="text-xs font-black font-['Manrope']">12:45</span>
+</div>
+</div>
+<button class="w-full bg-primary-container text-on-primary-container py-3 rounded-xl font-bold text-sm shadow-md active:scale-[0.98] transition-all">
+                        تتبع الطلب
+                    </button>
+</div>
+<!-- Order Card 2 -->
+<div class="min-w-[280px] snap-center bg-surface-container-lowest rounded-[24px] p-5 shadow-sm border border-outline-variant/15 space-y-4">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+<div>
+<h3 class="text-sm font-bold text-on-surface">سارة علي</h3>
+<span class="text-[10px] text-on-surface-variant font-medium">#ORD-9012</span>
+</div>
+</div>
+<span class="bg-secondary-fixed-dim/20 text-secondary px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase">تم الاستلام</span>
+</div>
+<div class="flex items-center justify-between bg-surface-container-low p-3 rounded-xl">
+<div class="flex items-center gap-2">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="friendly male delivery person with a helmet in hand, professional atmosphere, neutral grey background, high resolution" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAEMCXkIv9wJ3kWx-oMVtILRjmWJKWu_PCg0hdG8glW6Kha5WWI2dhf0LcCLDRew_Srg972-6ROtLcKnkNlkbAI2xQMMPRsJMa-9klmwsF9OepotrLm7EUZAE94vAjbkjZskK6lguZtN6-CQBdgB-wZnuV1R9GiE4POAxno9udOyvfvNbYJSFy0AN3MwgQLYy3dDa8HjrA8gN14xSjVMbPckqSEgcyXjMeRoL8h7f_loBsGfr3SgnkkQop8fM9WRTP7eb8ySqOW3rK"/>
+<div>
+<p class="text-[10px] text-on-surface-variant leading-none mb-1">السائق</p>
+<p class="text-[11px] font-bold text-on-surface">عمر خالد</p>
+</div>
+</div>
+<div class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-sm" data-icon="schedule">schedule</span>
+<span class="text-xs font-black font-['Manrope']">04:20</span>
+</div>
+</div>
+<button class="w-full bg-primary-container text-on-primary-container py-3 rounded-xl font-bold text-sm shadow-md active:scale-[0.98] transition-all">
+                        تتبع الطلب
+                    </button>
+</div>
+</div>
+</section>
+<!-- Insights Bento Section -->
+<section class="grid grid-cols-2 gap-4">
+<div class="bg-primary/5 p-5 rounded-3xl space-y-2 border border-primary/10">
+<div class="w-10 h-10 rounded-2xl bg-white flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined" data-icon="trending_up">trending_up</span>
+</div>
+<p class="text-xs font-bold text-on-surface-variant">نمو المبيعات</p>
+<p class="text-xl font-black text-primary font-['Manrope']">+12%</p>
+</div>
+<div class="bg-secondary/5 p-5 rounded-3xl space-y-2 border border-secondary/10">
+<div class="w-10 h-10 rounded-2xl bg-white flex items-center justify-center text-secondary shadow-sm">
+<span class="material-symbols-outlined" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="text-xs font-bold text-on-surface-variant">التقييم</p>
+<p class="text-xl font-black text-secondary font-['Manrope']">4.8</p>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 backdrop-blur-2xl z-50 rounded-t-[32px] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] rtl:flex-row-reverse">
+<a class="flex flex-col items-center justify-center bg-teal-50 text-teal-700 rounded-2xl px-5 py-2 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-['Tajawal','Manrope'] text-[10px] font-bold uppercase tracking-wider">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-400 px-5 py-2 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="package_2">package_2</span>
+<span class="font-['Tajawal','Manrope'] text-[10px] font-bold uppercase tracking-wider">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-400 px-5 py-2 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Tajawal','Manrope'] text-[10px] font-bold uppercase tracking-wider">Wallet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-400 px-5 py-2 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-['Tajawal','Manrope'] text-[10px] font-bold uppercase tracking-wider">Profile</span>
+</a>
+</nav>
+</body></html>

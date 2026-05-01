@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&amp;family=Manrope:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#ffdbc8",
+                    "on-tertiary-fixed-variant": "#733604",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-primary-container": "#f5feff",
+                    "surface-container-high": "#e7e8e9",
+                    "primary-fixed-dim": "#6ed6df",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "secondary-container": "#708cfd",
+                    "on-primary-fixed": "#002022",
+                    "on-background": "#191c1d",
+                    "tertiary": "#8d4a19",
+                    "on-surface": "#191c1d",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f3f4f5",
+                    "on-secondary-fixed": "#001453",
+                    "surface-tint": "#006970",
+                    "primary-container": "#00818a",
+                    "inverse-primary": "#6ed6df",
+                    "inverse-on-surface": "#f0f1f2",
+                    "tertiary-fixed-dim": "#ffb68a",
+                    "error": "#ba1a1a",
+                    "outline": "#6d797a",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#edeeef",
+                    "primary": "#00666d",
+                    "on-secondary-fixed-variant": "#173bab",
+                    "on-tertiary-container": "#fffbff",
+                    "on-primary-fixed-variant": "#004f54",
+                    "secondary": "#3755c3",
+                    "secondary-fixed": "#dde1ff",
+                    "surface-bright": "#f8f9fa",
+                    "on-tertiary-fixed": "#321300",
+                    "tertiary-container": "#ab6230",
+                    "on-error-container": "#93000a",
+                    "error-container": "#ffdad6",
+                    "surface": "#f8f9fa",
+                    "primary-fixed": "#8cf2fc",
+                    "inverse-surface": "#2e3132",
+                    "outline-variant": "#bdc9ca",
+                    "on-secondary-container": "#00217a",
+                    "on-surface-variant": "#3d494a",
+                    "surface-variant": "#e1e3e4",
+                    "on-error": "#ffffff",
+                    "background": "#f8f9fa",
+                    "surface-dim": "#d9dadb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Tajawal", "Manrope"],
+                    "body": ["Tajawal", "Manrope"],
+                    "label": ["Tajawal", "Manrope"]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .font-tajawal { font-family: 'Tajawal', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen">
+<!-- Top AppBar - Kinetic Sanctuary -->
+<header class="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl shadow-sm flex justify-between items-center px-6 h-16 rtl:flex-row-reverse">
+<div class="flex items-center gap-4">
+<button class="text-cyan-700 hover:opacity-80 transition-opacity active:duration-150 scale-95">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="text-cyan-700 font-black tracking-tighter font-tajawal font-bold text-lg uppercase tracking-wider">Kinetic Sanctuary</h1>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img class="w-full h-full object-cover" data-alt="close up headshot of a friendly professional customer support representative with a neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBP7sYu80Fpw9VHTNeblxKvxIXRrlJlh8nZvotASRxPvUsEPBf2vZ-mhIQxAnNlW3uMaOWAdqKv2vt406zM_BFcviEZ7jnNdpR26iXiLN0bRgcLEvqrIfoy1SQxTjTmWgNvNVLI67uB9Gym6WaIGCEh1woZdBAasyxPxAwWqwWurHgq8wRY4D5WKAVPeSz0aF_lSDADrLC7v41ay-jICBa4RCZe6XZPe9IA1IPtDXndQYiQbyiQ9oQ1XFO4oL9ey7PJRFt9BLS8RZQ7"/>
+</div>
+</header>
+<main class="pt-20 pb-32 px-4 max-w-2xl mx-auto space-y-6">
+<!-- Context Card: Order Details -->
+<section class="bg-surface-container-low rounded-3xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-2xl bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined">local_shipping</span>
+</div>
+<div>
+<h2 class="text-on-surface font-bold text-base">طلب توصيل #8829</h2>
+<p class="text-on-surface-variant text-sm">قيد المعالجة - النجف الأشرف</p>
+</div>
+</div>
+<div class="bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full text-xs font-bold">نشط</div>
+</div>
+<div class="bg-surface-container-lowest rounded-2xl p-4 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-[10px] text-outline uppercase font-bold tracking-widest">تاريخ الطلب</span>
+<span class="text-sm font-medium">اليوم، 10:45 صباحاً</span>
+</div>
+<div class="flex flex-col text-left">
+<span class="text-[10px] text-outline uppercase font-bold tracking-widest">المبلغ الإجمالي</span>
+<span class="text-sm font-bold text-primary">25,000 د.ع</span>
+</div>
+</div>
+</section>
+<!-- Status Bar: Bot to Human Transition -->
+<div class="flex justify-center">
+<div class="bg-surface-container-high px-4 py-2 rounded-full flex items-center gap-2 border border-outline-variant/15">
+<span class="material-symbols-outlined text-sm text-secondary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<span class="text-xs font-medium text-on-surface-variant">تم تحويل المحادثة إلى موظف دعم بشري</span>
+<span class="w-1.5 h-1.5 bg-error rounded-full animate-pulse"></span>
+</div>
+</div>
+<!-- Chat Area -->
+<div class="space-y-6">
+<!-- Agent Message -->
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex-shrink-0 flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-sm">support_agent</span>
+</div>
+<div class="max-w-[80%] space-y-1">
+<div class="bg-white p-4 rounded-2xl rounded-tr-none shadow-sm text-sm leading-relaxed border border-outline-variant/10">
+                        مرحباً أحمد، أنا سارة من فريق الدعم. كيف يمكنني مساعدتك بخصوص طلبك الأخير في مدينة النجف؟
+                    </div>
+<span class="text-[10px] text-outline px-2">11:02 ص</span>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex flex-row-reverse items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-fixed-dim flex-shrink-0 flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-sm">person</span>
+</div>
+<div class="max-w-[80%] space-y-1 text-left">
+<div class="bg-primary text-on-primary p-4 rounded-2xl rounded-tl-none shadow-md text-sm leading-relaxed">
+                        أهلاً سارة، أردت فقط التأكد من وقت الوصول المتوقع. التطبيق يظهر أن السائق قريب لكنه توقف لفترة.
+                    </div>
+<span class="text-[10px] text-outline px-2 flex justify-end gap-1 items-center">
+                        11:04 ص
+                        <span class="material-symbols-outlined text-[12px] text-primary" style="font-variation-settings: 'FILL' 1;">done_all</span>
+</span>
+</div>
+</div>
+<!-- Agent Message with Image -->
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex-shrink-0 flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-sm">support_agent</span>
+</div>
+<div class="max-w-[80%] space-y-3">
+<div class="bg-white p-4 rounded-2xl rounded-tr-none shadow-sm text-sm leading-relaxed border border-outline-variant/10">
+                        لقد قمت بالتحقق من نظام التتبع. السائق حالياً عند نقطة تفتيش مرورية في شارع المدينة. من المتوقع وصوله خلال 8 دقائق.
+                    </div>
+<div class="rounded-2xl overflow-hidden shadow-sm aspect-video relative group">
+<img class="w-full h-full object-cover" data-alt="clean minimal digital map interface showing a delivery route in Najaf city with a teal path and a vehicle icon" data-location="Najaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAC1zzwbWdQJAYirYG1ATuAv0AJaeIfPojrM2l5Ppb388F5vgBoWa3l7PpmFjnTIVwfQ7TTRWLqo6Q1h9ZoPJtkZJiX-m3r_EfcRdH7jzXVBleFrmq2qufsLeqYtVE7njJM8CUZuv0RH_j7qIlSBWeoN1-yhn9ZR9-GXhNJwZi6MUSxzu0i8JiakW2dwOZWz5Ann6rPh-0zB92oP2zUKgIQdhq6Xssfal9zinh709qLgTzizrtwbYOBrbGfQ5G-2anuTB7ZuThZS_O0"/>
+<div class="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
+</div>
+<span class="text-[10px] text-outline px-2">11:05 ص</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Area -->
+<div class="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-2xl z-50 pt-4 pb-8 px-4 rounded-t-3xl shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+<div class="max-w-2xl mx-auto flex items-center gap-3">
+<button class="w-12 h-12 rounded-2xl bg-surface-container-high text-on-surface-variant flex items-center justify-center hover:bg-surface-container-highest transition-colors active:scale-90">
+<span class="material-symbols-outlined">add</span>
+</button>
+<div class="flex-1 relative">
+<input class="w-full bg-surface-container-low border-none rounded-2xl px-6 py-3.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all font-tajawal" placeholder="اكتب رسالتك هنا..." type="text"/>
+<button class="absolute left-3 top-1/2 -translate-y-1/2 text-primary hover:opacity-70 transition-opacity">
+<span class="material-symbols-outlined">sentiment_satisfied</span>
+</button>
+</div>
+<button class="w-12 h-12 rounded-2xl bg-primary text-on-primary flex items-center justify-center shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined -rotate-45" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+<!-- Navigation Drawer (Hidden initially, logic not included as per requirements) -->
+<div class="hidden fixed inset-0 bg-black/20 z-[60] backdrop-blur-sm">
+<aside class="h-full w-80 bg-white shadow-2xl flex flex-col p-6 rounded-l-3xl">
+<div class="flex items-center gap-4 mb-8">
+<img class="w-14 h-14 rounded-2xl object-cover" data-alt="portrait of a middle aged man with professional attire" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXLxX4xlAeLPyjIZ5tk-Wli-xdAbWsLGIrLQMzI0Ejv6jKvVvo1co2VmtdGsz5gAgTODShA0jVbJn3YiwXkvO5Z525M9dSnhtqIiu90ixu1TFDu6jdFyWls3k4j6ovb_pEMZZo51pMjjGNDWQt1JJMoUOlAEWK5wYQ2-gwLLsco3O0XqGMvWXuNP3QNEz79aadldsbMnojGZuv4woVv541L6R6ZBEGu5neb-zvYXE6RoEaqOg0sbXxuT05Ig_fC0PeLt-rZs7NcGdn"/>
+<div>
+<h3 class="font-tajawal font-bold text-cyan-700">أحمد المحمد</h3>
+<p class="text-slate-400 text-xs">معرف السائق: #8829</p>
+</div>
+</div>
+<nav class="space-y-2 flex-1">
+<a class="flex items-center gap-4 px-4 py-3 bg-cyan-50 text-cyan-700 font-bold rounded-xl" href="#">
+<span class="material-symbols-outlined">support_agent</span>
+<span class="font-tajawal text-base">الدعم الفني</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-slate-600 hover:bg-slate-100 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-tajawal text-base">الإعدادات</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-slate-600 hover:bg-slate-100 transition-colors" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-tajawal text-base">المحفظة</span>
+</a>
+</nav>
+<button class="flex items-center gap-4 px-4 py-3 text-error mt-auto">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-tajawal text-base">تسجيل الخروج</span>
+</button>
+</aside>
+</div>
+</body></html>

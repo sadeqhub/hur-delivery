@@ -59,7 +59,7 @@ class DeviceManager {
         return {
           'platform': 'iOS',
           'model': iosInfo.model,
-          'device': '${iosInfo.model}',
+          'device': iosInfo.model,
           'version': 'iOS ${iosInfo.systemVersion}',
         };
       }

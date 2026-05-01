@@ -12,6 +12,8 @@ import '../constants/app_constants.dart';
 import '../services/device_manager.dart';
 import '../services/flutterfire_notification_service.dart';
 import '../services/whatsapp_service.dart';
+import '../services/response_cache_service.dart';
+import '../services/network_quality_service.dart';
 
 class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
   UserModel? _user;
@@ -22,7 +24,12 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
   StreamSubscription? _sessionSubscription;
   Timer? _sessionCheckTimer;
   StreamSubscription? _userRowSubscription;
-  
+  bool _isDemoMode = false; // Demo mode flag
+
+  // PERFORMANCE: Cache service for 4G optimization (selective caching for auth flows)
+  final _responseCache = ResponseCacheService();
+  final _networkQuality = NetworkQualityService();
+
   // WhatsApp OTP integration
   String? _currentOTP;
   String? _currentPhone;
@@ -35,7 +42,8 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isInitialized => _isInitialized;
-  bool get isAuthenticated => _user != null;
+  bool get isAuthenticated => _user != null || _isDemoMode;
+  bool get isDemoMode => _isDemoMode;
   bool get isVerified => _user?.isVerified ?? false;
   String? get verifiedPhone => _verifiedPhone;
   String? get lastVerifiedCode => _lastVerifiedCode;
@@ -53,6 +61,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         } else {
           // User signed out
           _user = null;
+          _isDemoMode = false;
           notifyListeners();
         }
       });
@@ -234,6 +243,9 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
   
   // Monitor for other device logins (will force logout this device)
+  // PERFORMANCE FIX: Removed real-time subscription - using polling only
+  // This reduces ~30 subscriptions (one per user) and WAL polling overhead
+  // Polling every 2 seconds is sufficient for session monitoring
   void _monitorDeviceSessions() {
     if (_user == null || _deviceId == null) return;
     
@@ -241,27 +253,17 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     _sessionSubscription?.cancel();
     _sessionCheckTimer?.cancel();
     
-    // Method 1: Realtime stream (instant detection)
-    _sessionSubscription = Supabase.instance.client
-        .from('device_sessions')
-        .stream(primaryKey: ['id'])
-        .eq('user_id', _user!.id)
-        .listen(
-      (data) {
-        _checkSessionStatus(data);
-      },
-      onError: (error) {
-        print('Session stream error: $error');
-      },
-    );
+    // PERFORMANCE FIX: Removed real-time stream - using polling only
+    // Real-time subscription was redundant since we're already polling every 2 seconds
+    // This reduces subscription overhead by ~30 subscriptions
     
-    // Method 2: Aggressive polling (every 2 seconds)
-    // This ensures detection even if realtime fails
-    _sessionCheckTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+    // Polling (every 15 seconds) - sufficient for session monitoring
+    // 2s was 1,800 DB queries/hour per user; 15s reduces this to 240.
+    _sessionCheckTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       _checkSessionStatusDirectly();
     });
     
-    // Method 3: Immediate check after registration
+    // Immediate check after registration
     Future.delayed(const Duration(milliseconds: 500), () {
       _checkSessionStatusDirectly();
     });
@@ -431,6 +433,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       // Silent fail - continue with local cleanup
     }
     
+    _isDemoMode = false;
     _isLoggingOut = false;
     notifyListeners();
   }
@@ -603,30 +606,6 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         // This ensures users aren't blocked by client-side validation errors
       }
       
-      // Check if phone is a test number (96478000000XX for drivers, 96477000000XX for merchants)
-      final testCheck = _isTestNumber(cleaned);
-      final isTestNumber = testCheck != null;
-      
-      if (isTestNumber) {
-        print('🧪 [TEST MODE] Test number detected: $cleaned');
-        print('🧪 [TEST MODE] Role: ${testCheck!['role']}');
-        print('🧪 [TEST MODE] OTP will be 000000 (not sent via SMS)');
-        print('🧪 [TEST MODE] Will use test-login edge function');
-        
-        // For test numbers, we don't need to send OTP - just store the phone
-        // The actual login will happen in verifyOtpViaOtpiq when OTP 000000 is entered
-        _currentPhone = phone;
-        print('✅ [TEST MODE] Test number ready for verification');
-        return true;
-      }
-      
-      // Legacy test number check (964999)
-      final isLegacyTestNumber = cleaned.startsWith('964999');
-      if (isLegacyTestNumber) {
-        print('🧪 [TEST MODE] Legacy test number detected: $cleaned');
-        print('🧪 [TEST MODE] OTP will be 999999 (not sent via SMS)');
-      }
-      
       // Call Supabase Edge Function
       print('📤 [DEBUG] Sending OTP via Edge Function');
       print('📤 [DEBUG] Phone: $cleaned, Purpose: $purpose');
@@ -658,23 +637,6 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       print('✅ [DEBUG] OTP send response status: ${response.status}');
       print('✅ [DEBUG] OTP send response data: ${response.data}');
       
-      // TEST MODE: Extract and log test OTP from response
-      if (isLegacyTestNumber) {
-        final responseData = response.data as Map<String, dynamic>?;
-        if (responseData?['testMode'] == true) {
-          final testOtp = responseData?['otpCode'] ?? '999999';
-          print('═══════════════════════════════════════');
-          print('🧪 [TEST MODE] TEST NUMBER DETECTED');
-          print('🧪 [TEST MODE] Phone: $cleaned');
-          print('🧪 [TEST MODE] OTP CODE: $testOtp');
-          print('🧪 [TEST MODE] Enter this OTP to login');
-          print('🧪 [TEST MODE] No SMS was sent');
-          print('═══════════════════════════════════════');
-        } else {
-          print('🧪 [TEST MODE] Use OTP: 999999 for phone: $cleaned');
-        }
-      }
-      
       _otpRetryAfterSeconds = null;
       
       if (response.status != 200) {
@@ -682,14 +644,27 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
           final data = response.data as Map<String, dynamic>?;
           print('❌ [ERROR] Edge Function error response: $data');
           
-          final retry = (data?['retry_after'] is num)
-              ? (data!['retry_after'] as num).toInt()
-              : null;
-          if (response.status == 429 && retry != null && retry > 0) {
-            _otpRetryAfterSeconds = retry;
-            _error = 'الرجاء الانتظار $retry ثانية قبل إعادة الإرسال';
+          final errorMsg = data?['error'] as String?;
+          
+          // Handle rate limit (429) - prioritize error message from edge function
+          if (response.status == 429) {
+            final retry = (data?['retry_after'] is num)
+                ? (data!['retry_after'] as num).toInt()
+                : null;
+            
+            // If there's a retry_after, show countdown message
+            if (retry != null && retry > 0) {
+              _otpRetryAfterSeconds = retry;
+              _error = 'الرجاء الانتظار $retry ثانية قبل إعادة الإرسال';
+            } else if (errorMsg != null && errorMsg.isNotEmpty) {
+              // Use the Arabic error message from edge function (IP rate limit)
+              _error = errorMsg;
+            } else {
+              // Fallback message
+              _error = 'عذرًا لقد تجاوزت الحد المسموح من المحاولات. يرجى اعادة المحاولة لاحقًا.';
+            }
           } else {
-            final errorMsg = data?['error'] as String?;
+            // For other errors, use the error message from response or fallback
             _error = errorMsg?.isNotEmpty == true
                 ? errorMsg!
                 : 'فشل إرسال رمز التحقق، الرجاء المحاولة لاحقاً';
@@ -738,96 +713,6 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
     try {
       final cleaned = _cleanPhoneNumber(phone).replaceAll('+', '');
-      
-      // Check if phone is a test number (96478000000XX for drivers, 96477000000XX for merchants)
-      final testCheck = _isTestNumber(cleaned);
-      final isTestNumber = testCheck != null;
-      
-      if (isTestNumber) {
-        // For test numbers, use test-login function with OTP 000000
-        if (code != '000000') {
-          _error = 'رمز التحقق غير صحيح. أرقام الاختبار تستخدم الرمز: 000000';
-          return false;
-        }
-        
-        print('🧪 [TEST MODE] Authenticating test number via test-login function');
-        print('🧪 [TEST MODE] Phone: $cleaned, Role: ${testCheck!['role']}');
-        
-        final response = await Supabase.instance.client.functions.invoke(
-          'test-login',
-          body: {
-            'phoneNumber': cleaned,
-            'code': '000000',
-          },
-        ).timeout(const Duration(seconds: 30));
-        
-        print('✅ [TEST MODE] test-login response status: ${response.status}');
-        print('✅ [TEST MODE] test-login response data: ${response.data}');
-        
-        if (response.status != 200) {
-          final data = response.data as Map<String, dynamic>?;
-          _error = (data?['error'] as String?) ?? 'فشل تسجيل الدخول كرقم اختبار';
-          return false;
-        }
-        
-        final data = response.data as Map<String, dynamic>?;
-        final success = data?['success'] as bool? ?? false;
-        
-        if (!success) {
-          _error = (data?['error'] as String?) ?? 'فشل تسجيل الدخول كرقم اختبار';
-          return false;
-        }
-        
-        // Extract session tokens from response
-        final sessionData = data?['session'] as Map<String, dynamic>?;
-        
-        if (sessionData != null && 
-            sessionData['access_token'] != null && 
-            sessionData['refresh_token'] != null) {
-          print('🔐 [TEST MODE] Using session tokens from test-login function');
-          
-          try {
-            final refreshToken = sessionData['refresh_token'] as String;
-            
-            final authResponse = await Supabase.instance.client.auth.setSession(
-              refreshToken,
-            );
-            
-            if (authResponse.session == null || authResponse.user == null) {
-              print('❌ [TEST MODE] Failed to set session - no user or session returned');
-              _error = 'فشل تسجيل الدخول';
-              return false;
-            }
-            
-            print('✅ [TEST MODE] Session set successfully');
-            print('   User ID: ${authResponse.user?.id}');
-            
-            final currentUser = Supabase.instance.client.auth.currentUser;
-            if (currentUser == null) {
-              print('❌ [TEST MODE] Session was set but currentUser is still null!');
-              _error = 'فشل تسجيل الدخول';
-              return false;
-            }
-            print('✅ [TEST MODE] Current user confirmed: ${currentUser.id}');
-            
-            // Load user profile
-            print('📥 [TEST MODE] Loading user profile...');
-            await _loadUserProfile();
-            print('✅ [TEST MODE] Profile loading complete');
-            
-            _verifiedPhone = phone;
-            _lastVerifiedCode = code;
-            return true;
-          } catch (e) {
-            print('❌ [TEST MODE] Error setting session: $e');
-            _error = 'فشل تسجيل الدخول';
-            return false;
-          }
-        } else {
-          _error = 'فشل الحصول على جلسة تسجيل الدخول';
-          return false;
-        }
-      }
       
       // Use unified authenticate action - verifies OTP and creates/updates auth account
       print(
@@ -1058,17 +943,14 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         // Don't try to reset password again - OTP is already consumed
         final cleaned = _cleanPhoneNumber(phoneE164).replaceAll('+', '');
         
-        // Try to get id_number from existing profile to construct deterministic password
+        // Derive deterministic password via SECURITY DEFINER RPC.
+        // The RPC returns the password string only; id_number is never sent
+        // to the client.
         try {
-          final profileRes = await Supabase.instance.client
-              .from('users')
-              .select('id_number')
-              .or('phone.eq.$cleaned,phone.eq.${cleaned.replaceAll("+", "")}')
-              .maybeSingle();
-          
-          if (profileRes != null && profileRes['id_number'] != null) {
-            final idNumber = profileRes['id_number'].toString();
-            final deterministicPassword = '$cleaned@$idNumber';
+          final deterministicPassword = await Supabase.instance.client
+              .rpc('derive_legacy_password', params: {'p_phone': cleaned});
+
+          if (deterministicPassword is String && deterministicPassword.isNotEmpty) {
             print(
                 '🔐 Attempting login with deterministic password (phone@idNumber)');
             final loginOk =
@@ -1189,7 +1071,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
           .select()
           .or('phone.eq.$cleaned,phone.eq.$noPlus')
           .limit(1);
-      if (candidates is List && candidates.isNotEmpty) {
+      if (candidates.isNotEmpty) {
         final row = Map<String, dynamic>.from(candidates.first as Map);
         final oldId = row['id'] as String?;
         if (oldId == null || oldId == currentUser.id) return false;
@@ -1500,30 +1382,6 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     return '+$cleaned';
   }
 
-  // Check if phone is a test number and return role if it is
-  // Driver test numbers: 96478000000XX (where XX is 00-99)
-  // Merchant test numbers: 96477000000XX (where XX is 00-99)
-  Map<String, dynamic>? _isTestNumber(String phone) {
-    final cleaned = phone.replaceAll(RegExp(r'[^\d]'), '');
-    
-    // Driver test numbers: 96478000000XX
-    if (cleaned.startsWith('96478000000') && cleaned.length == 13) {
-      final lastTwo = cleaned.substring(11);
-      if (RegExp(r'^\d{2}$').hasMatch(lastTwo)) {
-        return {'isTest': true, 'role': 'driver'};
-      }
-    }
-    
-    // Merchant test numbers: 96477000000XX
-    if (cleaned.startsWith('96477000000') && cleaned.length == 13) {
-      final lastTwo = cleaned.substring(11);
-      if (RegExp(r'^\d{2}$').hasMatch(lastTwo)) {
-        return {'isTest': true, 'role': 'merchant'};
-      }
-    }
-    
-    return null;
-  }
 
   // Generate deterministic password for Supabase based on phone
   String _generatePasswordForPhone(String phone) {
@@ -1551,6 +1409,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   // Load user profile
+  // PERFORMANCE: Cache for 3 minutes (only on slow connections, keep auth flows fresh)
   Future<void> _loadUserProfile() async {
     try {
       final currentUser = Supabase.instance.client.auth.currentUser;
@@ -1559,8 +1418,22 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         return;
       }
 
+      final cacheKey = 'user_profile_${currentUser.id}';
+
+      // Only use cache on slow connections to keep auth fresh
+      if (_networkQuality.isSlowConnection) {
+        final cached = _responseCache.get<Map<String, dynamic>>(cacheKey);
+        if (cached != null) {
+          print('✅ Using cached user profile (slow connection)');
+          _user = UserModel.fromJson(cached);
+          await _saveUserToPrefs();
+          notifyListeners();
+          return; // Return cached, don't refresh on slow connection
+        }
+      }
+
       print('🔍 Loading user profile for: ${currentUser.id}');
-      
+
       // First try to find by auth user ID
       var response = await Supabase.instance.client
           .from('users')
@@ -1769,7 +1642,12 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         
         _user = UserModel.fromJson(response);
         await _saveUserToPrefs();
-        
+
+        // PERFORMANCE: Cache profile for 3 minutes (on slow connections only)
+        final cacheKey = 'user_profile_${currentUser.id}';
+        _responseCache.set(cacheKey, response, const Duration(minutes: 3));
+        print('💾 Cached user profile');
+
         // Register device session and start monitoring (logout other devices)
         await _registerDeviceSession();
         _monitorDeviceSessions();
@@ -2005,7 +1883,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         return false;
       }
       
-      String? _normalizeRole(String? value) {
+      String? normalizeRole(String? value) {
         if (value == null) return null;
         final normalized = value.trim().toLowerCase();
         const allowed = {'driver', 'merchant', 'customer', 'admin'};
@@ -2017,11 +1895,11 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       }
 
       // Validate and normalize role from userData
-      final desiredRole = _normalizeRole(userData['role'] as String?);
+      final desiredRole = normalizeRole(userData['role'] as String?);
       
       // Fallback role priority: widget role > existing user role > default
-      final fallbackRole = _normalizeRole(_user?.role) ??
-          _normalizeRole(currentUser.userMetadata?['role'] as String?) ??
+      final fallbackRole = normalizeRole(_user?.role) ??
+          normalizeRole(currentUser.userMetadata?['role'] as String?) ??
           'merchant'; // Default to merchant instead of driver for safety
 
       // Get existing user data to only update missing fields
@@ -2053,8 +1931,8 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       }
       
       // Add document URLs if provided
-      if (idFrontUrl != null) upsertData['id_card_front_url'] = idFrontUrl;
-      if (idBackUrl != null) upsertData['id_card_back_url'] = idBackUrl;
+      upsertData['id_card_front_url'] = idFrontUrl;
+      upsertData['id_card_back_url'] = idBackUrl;
       if (selfieUrl != null) upsertData['selfie_with_id_url'] = selfieUrl;
       
       // CRITICAL: Always set role from userData if provided (registration flow)
@@ -2065,22 +1943,13 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         upsertData['role'] = desiredRole;
       } else if (existingUser == null) {
         // New user - must have a role, use fallback
-        if (fallbackRole != null) {
-          print('⚠️ New user - using fallback role: $fallbackRole');
-        upsertData['role'] = fallbackRole;
-        } else {
-          // Last resort: use widget role if available (should be passed from registration screen)
-          print('⚠️ No role available - this should not happen during registration');
-          _error = 'يجب تحديد نوع المستخدم (تاجر أو سائق)';
-          return false;
-        }
-      } else if (existingUser['role'] == null || (existingUser['role'] as String).trim().isEmpty) {
+        print('⚠️ New user - using fallback role: $fallbackRole');
+      upsertData['role'] = fallbackRole;
+            } else if (existingUser['role'] == null || (existingUser['role'] as String).trim().isEmpty) {
         // Existing user without role - use fallback
-        if (fallbackRole != null) {
-          print('⚠️ Existing user without role - using fallback: $fallbackRole');
-          upsertData['role'] = fallbackRole;
-        }
-      } else {
+        print('⚠️ Existing user without role - using fallback: $fallbackRole');
+        upsertData['role'] = fallbackRole;
+            } else {
         // Keep existing role if no new role is provided
         final existingRole = (existingUser['role'] as String).trim().toLowerCase();
         if (['driver', 'merchant', 'customer', 'admin'].contains(existingRole)) {
@@ -2088,10 +1957,8 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         } else {
           // Invalid role in database - fix it
           print('⚠️ Invalid role in database: $existingRole, fixing to fallback: $fallbackRole');
-          if (fallbackRole != null) {
-            upsertData['role'] = fallbackRole;
-          }
-        }
+          upsertData['role'] = fallbackRole;
+                }
       }
       
       // Final validation: ensure role is set before insert/update
@@ -2121,6 +1988,23 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       print('📝 Phone: ${upsertData['phone']}');
       print('📝 ID Number: ${upsertData['id_number']}');
       
+      // Validate ID number format if document_type is national_id
+      if (upsertData.containsKey('id_number') && upsertData['id_number'] != null) {
+        final documentType = upsertData['document_type'] as String? ?? 
+                            existingUser?['document_type'] as String?;
+        if (documentType == 'national_id') {
+          final idNumber = upsertData['id_number'] as String;
+          final cleanedIdNumber = idNumber.replaceAll(RegExp(r'[^0-9]'), '');
+          if (cleanedIdNumber.length != 12) {
+            print('❌ ID number must be exactly 12 digits for national_id. Got: ${cleanedIdNumber.length} digits');
+            _error = 'رقم الهوية الوطني يجب أن يكون 12 رقمًا بالضبط عندما يكون نوع الوثيقة هو البطاقة الوطنية';
+            return false;
+          }
+          // Use cleaned version
+          upsertData['id_number'] = cleanedIdNumber;
+        }
+      }
+      
       Map<String, dynamic> response;
       
       if (existingUser != null) {
@@ -2129,17 +2013,18 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         
         // Check ID number uniqueness if it's being updated
         if (upsertData.containsKey('id_number') && upsertData['id_number'] != existingUser['id_number']) {
-      final existingByIdNumber = await Supabase.instance.client
-          .from('users')
-              .select('id')
-          .eq('id_number', upsertData['id_number'])
-              .neq('id', userId)
-          .maybeSingle();
-      
-      if (existingByIdNumber != null) {
+          final taken = await Supabase.instance.client.rpc(
+            'is_id_number_taken',
+            params: {
+              'p_id_number': upsertData['id_number'],
+              'p_excluding': userId,
+            },
+          );
+
+          if (taken == true) {
             print('❌ ID number already registered to a different user');
             _error = 'رقم الهوية الوطني مسجل بالفعل لحساب آخر. لا يمكن استخدام نفس الهوية لأكثر من حساب.';
-          return false;
+            return false;
           }
         }
         
@@ -2153,13 +2038,15 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         } else {
         // New user - check ID number uniqueness before insert
         if (upsertData.containsKey('id_number')) {
-          final existingByIdNumber = await Supabase.instance.client
-              .from('users')
-              .select('id')
-              .eq('id_number', upsertData['id_number'])
-              .maybeSingle();
-          
-          if (existingByIdNumber != null) {
+          final taken = await Supabase.instance.client.rpc(
+            'is_id_number_taken',
+            params: {
+              'p_id_number': upsertData['id_number'],
+              'p_excluding': null,
+            },
+          );
+
+          if (taken == true) {
             print('❌ ID number already registered to another user');
             _error = 'رقم الهوية الوطني مسجل بالفعل لحساب آخر. لا يمكن استخدام نفس الهوية لأكثر من حساب.';
             return false;
@@ -2304,6 +2191,12 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
   // Set online status
   Future<void> setOnlineStatus(bool isOnline) async {
     if (_user == null) return;
+    
+    // Prevent going online in demo mode
+    if (_isDemoMode) {
+      print('⚠️ Cannot set online status in demo mode');
+      return;
+    }
 
     try {
       // If going offline, auto-reject any pending orders assigned to this driver
@@ -2354,6 +2247,10 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       notifyListeners();
     } catch (e) {
       _error = _getErrorMessage(e);
+      if (_getErrorMessage(e).contains('DRIVER_WALLET_NEGATIVE')) {
+        throw Exception('DRIVER_WALLET_NEGATIVE');
+      }
+      rethrow;
     }
   }
 
@@ -2363,6 +2260,14 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
 
     try {
+      // If in demo mode, just clear demo state
+      if (_isDemoMode) {
+        exitDemoMode();
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
       // Set offline status
       if (_user != null) {
         await setOnlineStatus(false);
@@ -2400,6 +2305,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       _verifiedPhone = null;
       _currentOTP = null;
       _currentPhone = null;
+      _isDemoMode = false;
       await _clearUserFromPrefs();
     } catch (e) {
       _error = _getErrorMessage(e);
@@ -2589,12 +2495,55 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
           .eq('id', _user!.id)
           .single();
 
-      if (response != null) {
-        _user = UserModel.fromJson(response);
-        notifyListeners();
-      }
-    } catch (e) {
+      _user = UserModel.fromJson(response);
+      notifyListeners();
+        } catch (e) {
       print('Error refreshing user: $e');
     }
+  }
+
+  // Enter demo mode with a demo user
+  Future<void> enterDemoMode(String role) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Create a demo user model
+      _user = UserModel(
+        id: 'demo_${role}_${DateTime.now().millisecondsSinceEpoch}',
+        name: role == 'merchant' ? 'تاجر تجريبي' : 'سائق تجريبي',
+        phone: '+964000000000',
+        role: role,
+        isOnline: false,
+        manualVerified: true,
+        verificationStatus: 'approved',
+        address: 'عنوان تجريبي',
+        latitude: 33.3152, // Default to Najaf coordinates
+        longitude: 44.3661,
+        city: 'najaf',
+        storeName: role == 'merchant' ? 'متجر تجريبي' : null,
+        vehicleType: role == 'driver' ? 'motorbike' : null,
+        merchantWalkthroughCompleted: true,
+        driverWalkthroughCompleted: true,
+        createdAt: DateTime.now(),
+      );
+
+      _isDemoMode = true;
+      _isLoading = false;
+      notifyListeners();
+      print('✅ Demo mode activated for role: $role');
+    } catch (e) {
+      _error = 'Failed to enter demo mode: $e';
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Exit demo mode
+  void exitDemoMode() {
+    _isDemoMode = false;
+    _user = null;
+    notifyListeners();
+    print('✅ Demo mode exited');
   }
 }

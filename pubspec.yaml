@@ -2,7 +2,7 @@ name: hur_delivery
 description: "Hur Delivery - Complete Flutter Delivery App"
 publish_to: 'none'
 
-version: 1.0.4+11
+version: 1.3.1+27
 
 environment:
   sdk: '>=3.4.4 <4.0.0'
@@ -17,7 +17,7 @@ dependencies:
   supabase_flutter: ^2.0.0
   
   # Maps & Location
-  mapbox_maps_flutter: ^2.0.0
+  mapbox_maps_flutter: ^2.17.0
   geolocator: ^10.1.0
   
   # Permissions
@@ -65,17 +65,21 @@ dependencies:
   timeago: ^3.6.1
   webview_flutter: ^4.4.2
   
+  # Video
+  video_player: ^2.9.2
+
   # UI
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.0.9
   flutter_markdown: ^0.6.18
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
   flutter_launcher_icons: ^0.13.1
-  device_preview: ^1.1.0
 
 flutter:
   uses-material-design: true
@@ -84,6 +88,9 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/fonts/
+    - assets/notification.mp3
+    - assets/bird.webm
+    - assets/bird_ios.mp4
     - legal/
   
   fonts:
@@ -124,17 +131,21 @@ dependency_overrides:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/icons/icon.png"
+  remove_alpha_ios: true
+  background_color_ios: "#188C93"
+  image_path: "assets/images/logo.png"
   min_sdk_android: 21
+  adaptive_icon_background: "#188C93"
+  adaptive_icon_foreground: "assets/images/logo.png"
   web:
     generate: true
-    image_path: "assets/icons/icon.png"
-    background_color: "#hexcode"
-    theme_color: "#hexcode"
+    image_path: "assets/images/logo.png"
+    background_color: "#188C93"
+    theme_color: "#188C93"
   windows:
     generate: true
-    image_path: "assets/icons/icon.png"
+    image_path: "assets/images/logo.png"
     icon_size: 48
   macos:
     generate: true
-    image_path: "assets/icons/icon.png"
+    image_path: "assets/images/logo.png"

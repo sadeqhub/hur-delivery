@@ -10,7 +10,7 @@ class AnnouncementProvider extends ChangeNotifier {
   
   Timer? _checkTimer;
   List<AnnouncementModel> _announcements = [];
-  Set<String> _shownAnnouncementIds = {};
+  final Set<String> _shownAnnouncementIds = {};
   
   String? _userRole;
   String? _userId;

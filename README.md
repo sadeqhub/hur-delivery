@@ -52,6 +52,32 @@ Edge functions and database migrations for the Supabase backend.
 
 ---
 
+## 🔒 Security
+
+This application implements comprehensive security measures following OWASP best practices:
+
+- ✅ **Rate Limiting** - All endpoints protected (5-1000 req/min based on sensitivity)
+- ✅ **Input Validation** - Strict validation and sanitization of all user inputs
+- ✅ **API Key Security** - No hardcoded credentials, environment variables only
+- ✅ **Security Headers** - OWASP-recommended headers on all responses
+- ✅ **CSRF Protection** - Admin panel protected against CSRF attacks
+- ✅ **Request Size Limits** - DoS protection via payload size limits
+- ✅ **Security Logging** - Comprehensive audit trail and monitoring
+
+### 📚 Security Documentation
+
+- **Quick Start:** [SECURITY_QUICK_START.md](./SECURITY_QUICK_START.md) - 5-minute setup guide
+- **Full Guide:** [SECURITY.md](./SECURITY.md) - Comprehensive security documentation
+- **Implementation:** [SECURITY_IMPLEMENTATION_SUMMARY.md](./SECURITY_IMPLEMENTATION_SUMMARY.md) - Technical details
+
+### 🚨 Security Issues
+
+To report security vulnerabilities:
+- **Email:** security@hur.delivery
+- **Do NOT** disclose publicly until addressed
+
+---
+
 ## 🛠️ Technical Stack
 
 ### Mobile App

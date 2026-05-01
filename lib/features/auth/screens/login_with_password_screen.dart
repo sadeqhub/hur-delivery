@@ -7,8 +7,6 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
 import '../../../shared/widgets/language_switcher.dart';
 import '../../../core/localization/app_localizations.dart';
 
@@ -65,7 +63,7 @@ class _LoginWithPasswordScreenState extends State<LoginWithPasswordScreen> {
           builder: (ctx) => AlertDialog(
             title: Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: AppColors.error),
+                const Icon(Icons.warning_amber_rounded, color: AppColors.error),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -114,7 +112,15 @@ class _LoginWithPasswordScreenState extends State<LoginWithPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    return Scaffold(
+    return Theme(
+
+      data: ThemeData.light().copyWith(
+
+        primaryColor: AppColors.primary,
+
+      ),
+
+      child: Scaffold(
       backgroundColor: AppColors.primary,
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).loginWithPassword),
@@ -130,36 +136,36 @@ class _LoginWithPasswordScreenState extends State<LoginWithPasswordScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.06),
+          padding: EdgeInsets.all(MediaQuery.sizeOf(context).width * 0.06),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Logo and branding (same style as signup)
-                SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+                SizedBox(height: MediaQuery.sizeOf(context).height * 0.05),
                 Center(
                   child: Container(
-                    width: ResponsiveHelper.getResponsiveLogoSize(context, MediaQuery.of(context).size.width * 0.5),
-                    height: ResponsiveHelper.getResponsiveLogoSize(context, MediaQuery.of(context).size.width * 0.5),
+                    width: ResponsiveHelper.getResponsiveLogoSize(context, MediaQuery.sizeOf(context).width * 0.5),
+                    height: ResponsiveHelper.getResponsiveLogoSize(context, MediaQuery.sizeOf(context).width * 0.5),
                     decoration: BoxDecoration(
                       color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.05),
+                      borderRadius: BorderRadius.circular(MediaQuery.sizeOf(context).width * 0.05),
                     ),
                     child: Image.asset(
-                      'assets/images/logo.png',
+                      'assets/icons/icon.png',
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) {
                         return Icon(
                           Icons.local_shipping_rounded,
-                          size: ResponsiveHelper.getResponsiveIconSize(context, MediaQuery.of(context).size.width * 0.2),
+                          size: ResponsiveHelper.getResponsiveIconSize(context, MediaQuery.sizeOf(context).width * 0.2),
                           color: Colors.white,
                         );
                       },
                     ),
                   ),
                 ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.03),
+                SizedBox(height: MediaQuery.sizeOf(context).height * 0.03),
                 Builder(
                   builder: (context) {
                     final loc = AppLocalizations.of(context);
@@ -170,7 +176,7 @@ class _LoginWithPasswordScreenState extends State<LoginWithPasswordScreen> {
                           style: AppTextStyles.responsiveHeading2(context).copyWith(color: Colors.white),
                           textAlign: TextAlign.center,
                         ),
-                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                        SizedBox(height: MediaQuery.sizeOf(context).height * 0.01),
                         Text(
                           loc.enterPhonePassword,
                           style: AppTextStyles.responsiveBodyMedium(context).copyWith(color: Colors.white70),
@@ -180,11 +186,12 @@ class _LoginWithPasswordScreenState extends State<LoginWithPasswordScreen> {
                     );
                   },
                 ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.06),
+                SizedBox(height: MediaQuery.sizeOf(context).height * 0.06),
 
                 // Phone
                 Container(
                   width: ResponsiveHelper.getFormElementWidth(context),
+                  height: ResponsiveHelper.getFormElementHeight(context),
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
                   child: Row(
                     children: [
@@ -194,9 +201,18 @@ class _LoginWithPasswordScreenState extends State<LoginWithPasswordScreen> {
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
                           textDirection: TextDirection.ltr,
+                          textAlignVertical: TextAlignVertical.center,
                           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                           maxLength: 10,
-                          decoration: const InputDecoration(border: InputBorder.none, hintText: '7XX XXX XXXX', counterText: '', contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14)),
+                          style: TextStyle(fontSize: context.rf(18), height: 1.0, color: Colors.black),
+                          decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              filled: true,
+                              fillColor: Colors.white,
+                              hintText: '7XX XXX XXXX',
+                              counterText: '',
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4)),
                           validator: (v) {
                             final loc = AppLocalizations.of(context);
                             final val = (v ?? '').trim();
@@ -207,16 +223,35 @@ class _LoginWithPasswordScreenState extends State<LoginWithPasswordScreen> {
                         ),
                       ),
                       // Divider
-                      Container(width: 1, height: 30, color: Colors.black12),
+                      Container(width: 1, height: 28, color: Colors.black12),
                       // Country code on the right
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                        child: Text('+964', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600)),
+                      Container(
+                        width: context.rs(76),
+                        height: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(12),
+                            bottomRight: Radius.circular(12),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '+964',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w600,
+                              fontSize: context.rf(18),
+                              height: 1.0,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                SizedBox(height: MediaQuery.sizeOf(context).height * 0.02),
 
                 // Password
                 Container(
@@ -225,9 +260,10 @@ class _LoginWithPasswordScreenState extends State<LoginWithPasswordScreen> {
                   child: TextFormField(
                     controller: _passwordController,
                     obscureText: _obscure,
-                    textAlign: TextAlign.center,
                     decoration: InputDecoration(
                       border: InputBorder.none,
+                      filled: true,
+                      fillColor: Colors.white,
                       hintText: AppLocalizations.of(context).password,
                       suffixIcon: IconButton(onPressed: () => setState(() => _obscure = !_obscure), icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off)),
                       contentPadding: context.rp(horizontal: 16, vertical: 14),
@@ -236,7 +272,7 @@ class _LoginWithPasswordScreenState extends State<LoginWithPasswordScreen> {
                   ),
                 ),
 
-                SizedBox(height: MediaQuery.of(context).size.height * 0.03),
+                SizedBox(height: MediaQuery.sizeOf(context).height * 0.03),
                 SizedBox(
                   width: ResponsiveHelper.getFormElementWidth(context),
                   height: ResponsiveHelper.getFormElementHeight(context),
@@ -247,11 +283,12 @@ class _LoginWithPasswordScreenState extends State<LoginWithPasswordScreen> {
                       foregroundColor: Colors.black,
                       disabledBackgroundColor: Colors.white,
                       disabledForegroundColor: Colors.black54,
+                      // Force white background regardless of theme
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: auth.isLoading
-                        ? SizedBox(width: context.ri(20), height: context.ri(20), child: CircularProgressIndicator(strokeWidth: 2))
+                        ? SizedBox(width: context.ri(20), height: context.ri(20), child: const CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.black)))
                         : Text(AppLocalizations.of(context).loginWithPassword),
                   ),
                 ),
@@ -267,6 +304,7 @@ class _LoginWithPasswordScreenState extends State<LoginWithPasswordScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

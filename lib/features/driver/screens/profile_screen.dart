@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/utils/responsive_extensions.dart';
 import '../../../shared/widgets/responsive_container.dart';
@@ -76,7 +76,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(loc.profileSavedSuccess),
-            backgroundColor: AppColors.success,
+            backgroundColor: context.themeSuccess,
           ),
         );
       }
@@ -86,7 +86,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.error ?? loc.errorSavingProfile),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.themeError,
           ),
         );
       }
@@ -96,16 +96,16 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       resizeToAvoidBottomInset: true, // Allow keyboard to resize the screen
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).profile),
         centerTitle: true,
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: context.themePrimary,
+        foregroundColor: context.themeOnPrimary,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios, color: context.themeOnPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -136,13 +136,13 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   Icon(
                     Icons.person_off,
                     size: 64,
-                    color: AppColors.textTertiary,
+                    color: context.themeTextTertiary,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     AppLocalizations.of(context).noUserData,
                     style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.textTertiary,
+                      color: context.themeTextTertiary,
                     ),
                   ),
                 ],
@@ -168,14 +168,14 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          AppColors.primary,
-                          AppColors.primary.withOpacity(0.8),
+                          context.themePrimary,
+                          context.themePrimary.withOpacity(0.8),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: context.themePrimary.withOpacity(0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -195,7 +195,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                               width: 3,
                             ),
                           ),
-                          child: Icon(
+                          child: const Icon(
                             Icons.person,
                             color: Colors.white,
                             size: 40,
@@ -213,7 +213,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: user.isOnline ? AppColors.success : AppColors.error,
+                            color: user.isOnline ? context.themeSuccess : context.themeError,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -256,7 +256,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   Text(
                             loc.accountInfo,
                     style: AppTextStyles.heading3.copyWith(
-                      color: AppColors.textPrimary,
+                      color: context.themeTextPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -297,7 +297,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   Text(
                             loc.accountStatus,
                     style: AppTextStyles.heading3.copyWith(
-                      color: AppColors.textPrimary,
+                      color: context.themeTextPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -305,10 +305,10 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
+                      color: context.themeSurfaceVariant,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.border,
+                        color: context.themeBorder,
                         width: 1,
                       ),
                     ),
@@ -317,21 +317,21 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                         _buildStatusRow(
                                   loc.verificationStatus,
                                   user.manualVerified ? loc.verified : loc.notVerified,
-                          user.manualVerified ? AppColors.success : AppColors.warning,
+                          user.manualVerified ? context.themeSuccess : context.themeWarning,
                           user.manualVerified ? Icons.verified : Icons.pending,
                         ),
                         const SizedBox(height: 12),
                         _buildStatusRow(
                                   loc.status,
                                   user.isOnline ? loc.online : loc.offline,
-                          user.isOnline ? AppColors.success : AppColors.error,
+                          user.isOnline ? context.themeSuccess : context.themeError,
                           user.isOnline ? Icons.wifi : Icons.wifi_off,
                         ),
                         const SizedBox(height: 12),
                         _buildStatusRow(
                                   loc.registrationDate,
                           _formatDate(user.createdAt),
-                          AppColors.textSecondary,
+                          context.themeTextSecondary,
                           Icons.calendar_today,
                         ),
                       ],
@@ -375,8 +375,8 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                             });
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
+                            backgroundColor: context.themePrimary,
+                            foregroundColor: context.themeOnPrimary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(context.rs(12)),
@@ -425,7 +425,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         ResponsiveText(
           label,
           style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textPrimary,
+            color: context.themeTextPrimary,
             fontWeight: FontWeight.w600,
           ).responsive(context),
         ),
@@ -435,31 +435,31 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           enabled: isEditable,
           maxLines: maxLines,
           validator: validator,
-          style: AppTextStyles.bodyMedium,
+          style: AppTextStyles.bodyMedium.copyWith(color: context.themeTextPrimary),
           decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: AppColors.primary),
+            prefixIcon: Icon(icon, color: context.themePrimary),
             hintText: isEditable ? AppLocalizations.of(context).enterLabel(label) : '',
             helperText: helperText,
             helperStyle: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textTertiary,
+              color: context.themeTextTertiary,
             ),
             filled: true,
-            fillColor: isEditable ? AppColors.surface : AppColors.surfaceVariant,
+            fillColor: context.themeSurfaceVariant,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: context.themeBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: context.themeBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
+              borderSide: BorderSide(color: context.themeBorderFocus, width: 2),
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.border.withOpacity(0.5)),
+              borderSide: BorderSide(color: context.themeBorder.withOpacity(0.5)),
             ),
           ),
         ),
@@ -480,7 +480,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           child: Text(
             label,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: context.themeTextSecondary,
             ),
           ),
         ),

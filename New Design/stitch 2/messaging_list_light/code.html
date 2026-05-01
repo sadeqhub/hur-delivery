@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hur Delivery - Messages</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&amp;family=Manrope:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f8f9fa",
+                    "tertiary-fixed": "#ffdbc8",
+                    "surface-dim": "#d9dadb",
+                    "tertiary-fixed-dim": "#ffb68a",
+                    "surface-bright": "#f8f9fa",
+                    "background": "#f8f9fa",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#6ed6df",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#3755c3",
+                    "on-background": "#191c1d",
+                    "surface-tint": "#006970",
+                    "secondary-fixed": "#dde1ff",
+                    "on-tertiary-fixed": "#321300",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-secondary-fixed-variant": "#173bab",
+                    "on-secondary-container": "#00217a",
+                    "on-surface-variant": "#3d494a",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#2e3132",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-container-high": "#e7e8e9",
+                    "tertiary": "#8d4a19",
+                    "on-primary-container": "#f5feff",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed-dim": "#6ed6df",
+                    "outline-variant": "#bdc9ca",
+                    "primary-container": "#00818a",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#ab6230",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "surface-container": "#edeeef",
+                    "secondary-container": "#708cfd",
+                    "on-surface": "#191c1d",
+                    "primary-fixed": "#8cf2fc",
+                    "on-tertiary-fixed-variant": "#733604",
+                    "surface-variant": "#e1e3e4",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#001453",
+                    "primary": "#00666d",
+                    "inverse-on-surface": "#f0f1f2",
+                    "outline": "#6d797a",
+                    "on-tertiary-container": "#fffbff",
+                    "on-primary-fixed-variant": "#004f54",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#002022"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope", "Tajawal", "sans-serif"],
+                    "body": ["Manrope", "Tajawal", "sans-serif"],
+                    "label": ["Manrope", "Tajawal", "sans-serif"],
+                    "tajawal": ["Tajawal", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-lg shadow-sm shadow-teal-900/5">
+<div class="flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform text-teal-700 dark:text-teal-400 p-2 hover:bg-stone-100/50 dark:hover:bg-stone-800/50 rounded-full">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="text-2xl font-black text-teal-800 dark:text-teal-200 tracking-tighter font-tajawal">Hur Delivery</h1>
+</div>
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img alt="Merchant Profile" class="w-full h-full object-cover" data-alt="portrait of a middle-aged professional merchant with a friendly expression in soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuApqCOdWhNGnDL6mj7qVamz5XcniKuNTPDu4a_Tr1TymF_1i_C7CKmCuO4-HbXRGH4DLh5-kS1F-HG-mUhL8Q8LiktuNfWxB8loAiq1uen-nEzhAeG6wHxQxsHocADe_Lgw4KJUUow90W-16Q0NnauZvG4IAd-pC4HfdAxbyPMGoGjYQLBay1A1rICwEZXtazL29eHbO5wyFY5KO6liHGM9XuNRXx5n4fhPhg93iRkQYbKPsNm98J4F1SDQyuQp9MEhu0yzk50HQjlP"/>
+</div>
+</div>
+</div>
+<div class="bg-stone-100 dark:bg-stone-900 h-[1px] opacity-10"></div>
+</header>
+<main class="pt-24 px-6 max-w-2xl mx-auto">
+<!-- Search Section -->
+<section class="mb-8">
+<div class="relative group">
+<div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="w-full bg-surface-container-low border-none rounded-2xl py-4 pr-12 pl-4 text-on-surface focus:ring-2 focus:ring-primary/20 transition-all font-tajawal text-right" placeholder="البحث عن المحادثات..." type="text"/>
+</div>
+</section>
+<!-- Active Contacts / Online Now (Horizontal Bento) -->
+<section class="mb-10">
+<h2 class="font-tajawal font-bold text-lg mb-4 text-primary">المتصلون الآن</h2>
+<div class="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+<!-- Contact Bubble 1 -->
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<div class="relative">
+<div class="w-16 h-16 rounded-2xl overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="close up headshot of a delivery professional in a clean uniform outdoors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBK0NZHYuRMM0eHnqWjEc46DCQuMagedYfrddfCJBhKeiTlmlIaya4NREztud9Clpgkp0RHV_ssrwSP3L2ZFSNbvh1mZanfahg-dWR_btO3rceXgDR2Siv53jCpR0zGFBmF0b8D72G2BoYjYSm7LhHaiH5DZXsHlpmQ7Ez7wBFaaO-9TA4QIhjEPbpmWFWWkfxfD4FqUdhV4Z2qisbCljBkL1ZQvwkDkicHoOrx_rv8Eus0dHlWx4VoG1c3lqdpDdTYtr2rE58154Rj"/>
+</div>
+<span class="absolute bottom-1 left-1 w-4 h-4 bg-teal-500 border-2 border-surface rounded-full"></span>
+</div>
+<span class="text-xs font-tajawal font-medium">سالم ح.</span>
+</div>
+<!-- Contact Bubble 2 -->
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<div class="relative">
+<div class="w-16 h-16 rounded-2xl overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="portrait of a female support agent with headset in bright modern office environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZW0uHGEu0DhinvM7cgjpK6SkVaJk8zMc8ihC6Fpmy6LdqEaoOu3ZZ6GDNQ4WFjstf-qyqeK2bn_xS7LIOR1Ud3xEJSeIt7DJwO-1kvle3NNhd9822AboudGYpVzVBY3UUfcQlm_Gj973NCpqQTumo40mF5rjIlPboU5waGToWpMvb3eVw3dITSjEdde5C_vaiqv9vBmUB0buBRnWdSUlz6VU0tEJxC5tRBRbk9ruhZHzC1HKrcLudaczp97bqjsc_mhVCWVbxcvR_"/>
+</div>
+<span class="absolute bottom-1 left-1 w-4 h-4 bg-teal-500 border-2 border-surface rounded-full"></span>
+</div>
+<span class="text-xs font-tajawal font-medium">مركز الدعم</span>
+</div>
+<!-- Contact Bubble 3 -->
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<div class="relative">
+<div class="w-16 h-16 rounded-2xl overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="young man smiling wearing a casual shirt with urban background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnDmqhfVtwwLkR1C01pzjmKoCTRccNUAwrNn165Holxr_RvDK6iOBELfYpC7B84heo-vced5DhMJN10gXn_VRGxwaSZ5A_0DT0p2VwFoeANrLjmPuFvDv6i7qxrh7ANlQBbKku2h7VjaVkB7MDm_eGg_lQIsEeyIkZAwSMnd2mfZWC9ip8-L6yYpNhw0RzP7omktSHIZBua_Ik8ckG9iX-I9gfr0xdRiztN2m3lO4bkKiVkBlFuOzItpTZsc2iZvuGwTDH3jW5zK2z"/>
+</div>
+<span class="absolute bottom-1 left-1 w-4 h-4 bg-teal-500 border-2 border-surface rounded-full"></span>
+</div>
+<span class="text-xs font-tajawal font-medium">علي جاسم</span>
+</div>
+</div>
+</section>
+<!-- Conversation List -->
+<section class="space-y-2">
+<h2 class="font-tajawal font-bold text-lg mb-4 text-primary">المحادثات الأخيرة</h2>
+<!-- Conversation Item 1 (Unread) -->
+<div class="group flex items-center gap-4 p-4 rounded-[24px] bg-surface-container-lowest hover:bg-surface-container-low transition-all duration-300 cursor-pointer shadow-sm shadow-teal-900/5">
+<div class="relative flex-shrink-0">
+<div class="w-14 h-14 rounded-xl overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="friendly driver avatar in bright professional lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqs6jI6pb3tqP5It9Buo1ehnfynHr-eV0-I5Qkk2PRz-SGltO-yClaRsj0CU6dQfIvb6eLuek82OnrQ_2rbjwkH5I-s9HtrAfMLGpwYLnMerjIHVk8z0Qi0zu85e87rToy5gbNAy6KHrGygVBa65xH_8YhdX56w3SaEdZEqlP8F7PTQQRx4JCJw1-ZX74UzNxWUVxgQORbukIy9wP9mnWNVdWawr7qFGdWNeXfBdFyjfPpja-eC1aUxPXH6TafO8otlefMemRc5VYv"/>
+</div>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-center mb-1">
+<h3 class="font-tajawal font-bold text-on-surface truncate">أحمد العراقي (سائق)</h3>
+<span class="text-[10px] font-bold text-primary font-headline uppercase tracking-tighter">12:45 PM</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-sm font-tajawal text-on-surface-variant truncate pr-2">لقد وصلت إلى موقع الاستلام، أين أنت؟</p>
+<span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-on-primary text-[10px] font-bold">2</span>
+</div>
+</div>
+</div>
+<!-- Conversation Item 2 -->
+<div class="group flex items-center gap-4 p-4 rounded-[24px] bg-surface-container-low/40 hover:bg-surface-container-low transition-all duration-300 cursor-pointer">
+<div class="relative flex-shrink-0">
+<div class="w-14 h-14 rounded-xl overflow-hidden opacity-80">
+<img class="w-full h-full object-cover" data-alt="female customer support representative with professional smile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGqQwUmCVq2yHcwVCuSx9THcpBA_hZ4NG2Xv8BCp_zk2D41Ase0mNjt869pU8oGsEitpUa9n6Ur6Eg2YSd6203TeKgRwWauxcfJnEY_wK6wZOK9D4Nz3hxSG9PGnsnGRBGYjgWx5Q7UUDENlHVcHxiiyhC8o-DA9xAJ7dTopPHT5cBX2uxzGJNw84VDzVUMj5hHzrCVOQQfJvzeCgQAPd86G-rRF0UYnfmy-_gC6B87oJTHvVtOXcJlidHrzLQ33EY7ywG5WUNiBdb"/>
+</div>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-center mb-1">
+<h3 class="font-tajawal font-medium text-on-surface truncate">الدعم الفني - سرمد</h3>
+<span class="text-[10px] font-medium text-outline font-headline uppercase tracking-tighter">أمس</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-sm font-tajawal text-outline truncate pr-2">شكراً لتواصلك معنا، تم حل المشكلة.</p>
+<span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings: 'FILL' 1;">done_all</span>
+</div>
+</div>
+</div>
+<!-- Conversation Item 3 -->
+<div class="group flex items-center gap-4 p-4 rounded-[24px] bg-surface-container-low/40 hover:bg-surface-container-low transition-all duration-300 cursor-pointer">
+<div class="relative flex-shrink-0">
+<div class="w-14 h-14 rounded-xl overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="cheerful customer portrait with bright daylight background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCR-5vfqLJS8rDjeeKFzSQaME9-jVROh_xUxIsq-bwhA_zKHLwfUjah8HlM7CtHrM8JVuCJj0rNrzv2stTNnQ3uDFQJEzftlcAqwtUPZDBXDHFM1D4Fed5kSx91Xy8P81wdZVnSx-O0-6tKazfGd8CENCKSCj-hOo6SfuD5g70dchoVUc08VbZderFZz8ycUnUSrKV0S9pF9Aql6NYCeMugr77POT-FmTaPJM45U6yYxTp2fshS5hr4MA_guBE9-6UNTOExxRfDaGmt"/>
+</div>
+<span class="absolute bottom-0 left-0 w-3 h-3 bg-teal-500 border-2 border-white rounded-full"></span>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-center mb-1">
+<h3 class="font-tajawal font-medium text-on-surface truncate">زينب الموسوي</h3>
+<span class="text-[10px] font-medium text-outline font-headline uppercase tracking-tighter">24 Oct</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-sm font-tajawal text-outline truncate pr-2">هل يمكن تأجيل الطلب لمدة ساعة؟</p>
+</div>
+</div>
+</div>
+<!-- Conversation Item 4 -->
+<div class="group flex items-center gap-4 p-4 rounded-[24px] bg-surface-container-low/40 hover:bg-surface-container-low transition-all duration-300 cursor-pointer">
+<div class="relative flex-shrink-0">
+<div class="w-14 h-14 rounded-xl overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="portrait of man in casual attire with modern architecture background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2pFt22U-wNYPTk7mFNreamjM6SPpERYLcwAh8hza7tIY9B8ZgMCfmomtKGAW3oDNB-I7CtwqhHkve9bmcFg3wBDSEmNTo3Jv_9HJcLjF-R4clfqEDjR8GvLaepeLRQLz_PmeGfSQdt8MjFRfW-oBLC2PYrEzByWDk9jFCdGkA_aBgRF2PL6XjaOfQHSw95UQDemTpZDjiao7ZE_nw7ukIvkVosa81NQPxMn2-dIIaa93RNbsGHlBTwK28nmW0S0uhnkqDPd2eB8h6"/>
+</div>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-center mb-1">
+<h3 class="font-tajawal font-medium text-on-surface truncate">ياسر علي</h3>
+<span class="text-[10px] font-medium text-outline font-headline uppercase tracking-tighter">20 Oct</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-sm font-tajawal text-outline truncate pr-2">تم استلام المبلغ، شكراً جزيلاً.</p>
+<span class="material-symbols-outlined text-[18px] text-outline">done</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB for New Message -->
+<button class="fixed bottom-32 left-8 w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-container text-white shadow-xl shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform z-40">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">add_comment</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full rounded-t-[32px] z-50 bg-white/70 dark:bg-stone-900/70 backdrop-blur-2xl shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+<div class="flex justify-around items-center px-4 pb-6 pt-3 w-full max-w-lg mx-auto">
+<!-- Orders -->
+<button class="flex flex-col items-center justify-center text-stone-400 dark:text-stone-500 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined mb-1">list_alt</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest">Orders</span>
+</button>
+<!-- Menu -->
+<button class="flex flex-col items-center justify-center text-stone-400 dark:text-stone-500 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined mb-1">restaurant_menu</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest">Menu</span>
+</button>
+<!-- Analytics (Active Context as Messaging sits near here or fits primary flow) -->
+<button class="flex flex-col items-center justify-center bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-2xl px-5 py-2 active:scale-90 duration-200">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest">Messages</span>
+</button>
+<!-- Settings -->
+<button class="flex flex-col items-center justify-center text-stone-400 dark:text-stone-500 px-5 py-2 hover:text-teal-500 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest">Settings</span>
+</button>
+</div>
+</nav>
+</body></html>

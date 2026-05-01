@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:postgrest/postgrest.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/messaging_service.dart';
+import '../../../core/providers/order_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'messaging_thread_screen.dart';
 
@@ -30,9 +31,9 @@ class _MessagingListScreenState extends State<MessagingListScreen> {
     super.initState();
     final currentUser = Supabase.instance.client.auth.currentUser;
     _role = currentUser?.userMetadata?['role'] as String? ??
-        currentUser?.appMetadata?['role'] as String? ??
+        currentUser?.appMetadata['role'] as String? ??
         currentUser?.userMetadata?['app_role'] as String? ??
-        currentUser?.appMetadata?['app_role'] as String?;
+        currentUser?.appMetadata['app_role'] as String?;
     _load();
     if (widget.startSupportOnLoad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -90,7 +91,18 @@ class _MessagingListScreenState extends State<MessagingListScreen> {
       }
       // Fallback to explicitly including conversation id if no participant
       if (orderId != null && orderId.isNotEmpty) {
-        return loc.supportOrder(orderId.substring(0, 6));
+        // Try to get order from provider to use userFriendlyCode
+        try {
+          final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+          final order = orderProvider.orders.firstWhere(
+            (o) => o.id == orderId,
+            orElse: () => throw Exception('Order not found'),
+          );
+          return loc.supportOrder(order.userFriendlyCode ?? orderId.substring(0, 6));
+        } catch (e) {
+          // Fallback to order ID if order not found
+          return loc.supportOrder(orderId.substring(0, 6));
+        }
       }
       return defaultTitle;
     }
@@ -124,8 +136,8 @@ class _MessagingListScreenState extends State<MessagingListScreen> {
     } on PostgrestException catch (error) {
       if (!mounted) return;
       final loc = AppLocalizations.of(context);
-      final message = error.message?.isNotEmpty == true
-          ? error.message!
+      final message = error.message.isNotEmpty == true
+          ? error.message
           : loc.failedOpenSupport;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),

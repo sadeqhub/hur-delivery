@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&amp;family=Manrope:wght@300;400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#00666d",
+                    "on-secondary-fixed": "#001453",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#002022",
+                    "outline": "#6d797a",
+                    "on-tertiary-container": "#fffbff",
+                    "on-primary-fixed-variant": "#004f54",
+                    "inverse-on-surface": "#f0f1f2",
+                    "primary-fixed": "#8cf2fc",
+                    "on-surface": "#191c1d",
+                    "secondary-container": "#708cfd",
+                    "surface-variant": "#e1e3e4",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed-variant": "#733604",
+                    "tertiary-container": "#ab6230",
+                    "on-primary": "#ffffff",
+                    "primary-container": "#00818a",
+                    "error-container": "#ffdad6",
+                    "surface-container": "#edeeef",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "primary-fixed-dim": "#6ed6df",
+                    "on-secondary": "#ffffff",
+                    "outline-variant": "#bdc9ca",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-container-high": "#e7e8e9",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#2e3132",
+                    "on-primary-container": "#f5feff",
+                    "tertiary": "#8d4a19",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-tertiary-fixed": "#321300",
+                    "on-surface-variant": "#3d494a",
+                    "on-secondary-container": "#00217a",
+                    "on-secondary-fixed-variant": "#173bab",
+                    "secondary": "#3755c3",
+                    "on-background": "#191c1d",
+                    "surface-container-lowest": "#ffffff",
+                    "inverse-primary": "#6ed6df",
+                    "surface-tint": "#006970",
+                    "secondary-fixed": "#dde1ff",
+                    "tertiary-fixed-dim": "#ffb68a",
+                    "surface-dim": "#d9dadb",
+                    "tertiary-fixed": "#ffdbc8",
+                    "surface": "#f8f9fa",
+                    "error": "#ba1a1a",
+                    "surface-bright": "#f8f9fa",
+                    "background": "#f8f9fa"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "tajawal": ["Tajawal", "sans-serif"],
+                    "headline": ["Manrope", "sans-serif"],
+                    "body": ["Manrope", "sans-serif"],
+                    "label": ["Manrope", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Tajawal', 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-stone-950 text-stone-100 min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-stone-950/80 backdrop-blur-xl fixed top-0 w-full z-50 shadow-sm dark:shadow-teal-900/10 flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<button class="text-teal-400 hover:bg-stone-800/50 transition-colors rounded-full p-2 active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-tajawal font-bold text-2xl tracking-tight text-teal-400">Wallet</h1>
+</div>
+<div class="w-10 h-10 rounded-full bg-teal-900/30 border border-teal-500/20 overflow-hidden">
+<img alt="Merchant Profile" class="w-full h-full object-cover" data-alt="professional portrait of a middle eastern business man in a sharp suit with a confident expression in a high-end office" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJendgUfUGD8zJ92YpwpOupFi7_VbA4VzY4wOzHEVNenHCWCurPdjBbA6Bkj72dM6TsuS2B440-y_vCUM_Kv2G4pausUWKMHnFg1UInOzPKKGfte7JkTF4SnUMVnUeMxqw0Yr7sCsTUhe1pHRmaIodsDgSJ2dN8P7zyK8G66byYp6uJeVJfDA-QQI9MmT2dv-M3WE049NJ8YwOJCFceuGxIBypdVjTAogIHBmxK_aRmdjOcMWJJM0-4AP0m6EuJoCSWLiWjmFct4k8"/>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto">
+<!-- Balance Card -->
+<section class="relative overflow-hidden rounded-[2rem] p-8 mb-8 bg-gradient-to-br from-primary to-primary-container text-on-primary-container shadow-2xl shadow-teal-950/40">
+<div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-6">
+<div>
+<p class="text-teal-100/80 text-sm font-medium mb-1">الرصيد الحالي</p>
+<h2 class="text-4xl font-black tracking-tight">250,000 <span class="text-xl font-normal opacity-80">IQD</span></h2>
+</div>
+<div class="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
+<span class="text-xs font-bold tracking-widest uppercase text-teal-50">Active Account</span>
+</div>
+</div>
+<!-- Credit Limit Indicator -->
+<div class="mb-8">
+<div class="flex justify-between text-xs text-teal-100/70 mb-2 font-medium">
+<span>الحد الائتماني المستخدم</span>
+<span>75%</span>
+</div>
+<div class="h-2 w-full bg-black/20 rounded-full overflow-hidden">
+<div class="h-full bg-teal-300 w-3/4 rounded-full"></div>
+</div>
+<div class="flex justify-between mt-2">
+<span class="text-[10px] text-teal-100/50">0 IQD</span>
+<span class="text-[10px] text-teal-100/50">350,000 IQD</span>
+</div>
+</div>
+<button class="w-full py-4 bg-teal-50 text-primary font-bold rounded-2xl hover:bg-white transition-all active:scale-[0.98] shadow-lg shadow-black/10">
+                    تعبئة الرصيد
+                </button>
+</div>
+</section>
+<!-- Stats Bento Grid -->
+<div class="grid grid-cols-2 gap-4 mb-8">
+<div class="bg-stone-900/50 p-4 rounded-3xl border border-stone-800/50">
+<p class="text-stone-500 text-xs font-bold mb-1">مبيعات اليوم</p>
+<p class="text-teal-400 font-bold text-lg">+45,000 IQD</p>
+</div>
+<div class="bg-stone-900/50 p-4 rounded-3xl border border-stone-800/50">
+<p class="text-stone-500 text-xs font-bold mb-1">رسوم التوصيل</p>
+<p class="text-stone-300 font-bold text-lg">-12,500 IQD</p>
+</div>
+</div>
+<!-- Transactions Section -->
+<section>
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-xl font-bold text-stone-200">العمليات الأخيرة</h3>
+<button class="text-teal-500 text-sm font-bold">عرض الكل</button>
+</div>
+<!-- Filters -->
+<div class="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
+<button class="px-6 py-2.5 bg-teal-500 text-white rounded-full text-sm font-bold whitespace-nowrap">الكل</button>
+<button class="px-6 py-2.5 bg-stone-900 text-stone-400 rounded-full text-sm font-bold whitespace-nowrap hover:bg-stone-800">المدفوعات</button>
+<button class="px-6 py-2.5 bg-stone-900 text-stone-400 rounded-full text-sm font-bold whitespace-nowrap hover:bg-stone-800">المستلمات</button>
+</div>
+<!-- Transaction List -->
+<div class="space-y-3">
+<!-- Transaction Item 1 -->
+<div class="flex items-center p-4 bg-stone-900/40 rounded-3xl border border-stone-800/30 hover:bg-stone-800/50 transition-colors">
+<div class="w-12 h-12 rounded-2xl bg-teal-900/20 flex items-center justify-center text-teal-400 ml-4">
+<span class="material-symbols-outlined" data-icon="package_2">package_2</span>
+</div>
+<div class="flex-1">
+<p class="text-stone-200 font-bold text-sm">طلب #HD-9921</p>
+<p class="text-stone-500 text-[11px] font-medium">اليوم • 12:45 م</p>
+</div>
+<div class="text-left">
+<p class="text-teal-400 font-black text-sm tracking-tight">+12,000</p>
+<p class="text-stone-600 text-[10px] font-bold">مكتمل</p>
+</div>
+</div>
+<!-- Transaction Item 2 -->
+<div class="flex items-center p-4 bg-stone-900/40 rounded-3xl border border-stone-800/30 hover:bg-stone-800/50 transition-colors">
+<div class="w-12 h-12 rounded-2xl bg-stone-800 flex items-center justify-center text-stone-400 ml-4">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<div class="flex-1">
+<p class="text-stone-200 font-bold text-sm">رسوم المنصة الأسبوعية</p>
+<p class="text-stone-500 text-[11px] font-medium">أمس • 09:00 ص</p>
+</div>
+<div class="text-left">
+<p class="text-error font-black text-sm tracking-tight">-25,000</p>
+<p class="text-stone-600 text-[10px] font-bold">خصم</p>
+</div>
+</div>
+<!-- Transaction Item 3 -->
+<div class="flex items-center p-4 bg-stone-900/40 rounded-3xl border border-stone-800/30 hover:bg-stone-800/50 transition-colors">
+<div class="w-12 h-12 rounded-2xl bg-teal-900/20 flex items-center justify-center text-teal-400 ml-4">
+<span class="material-symbols-outlined" data-icon="package_2">package_2</span>
+</div>
+<div class="flex-1">
+<p class="text-stone-200 font-bold text-sm">طلب #HD-9844</p>
+<p class="text-stone-500 text-[11px] font-medium">أمس • 11:20 م</p>
+</div>
+<div class="text-left">
+<p class="text-teal-400 font-black text-sm tracking-tight">+34,500</p>
+<p class="text-stone-600 text-[10px] font-bold">مكتمل</p>
+</div>
+</div>
+<!-- Transaction Item 4 -->
+<div class="flex items-center p-4 bg-stone-900/40 rounded-3xl border border-stone-800/30 hover:bg-stone-800/50 transition-colors">
+<div class="w-12 h-12 rounded-2xl bg-stone-800 flex items-center justify-center text-stone-400 ml-4">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+</div>
+<div class="flex-1">
+<p class="text-stone-200 font-bold text-sm">تسوية رصيد المندوب</p>
+<p class="text-stone-500 text-[11px] font-medium">12 أكتوبر • 04:15 م</p>
+</div>
+<div class="text-left">
+<p class="text-error font-black text-sm tracking-tight">-5,000</p>
+<p class="text-stone-600 text-[10px] font-bold">خصم</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-stone-950/70 backdrop-blur-2xl fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 z-50 rounded-t-3xl shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+<a class="flex flex-col items-center justify-center text-stone-500 px-5 py-2 hover:text-teal-300 transition-transform active:scale-90 tap-highlight-none" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="analytics">analytics</span>
+<span class="font-tajawal text-[10px] font-bold uppercase tracking-widest">Analytics</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-teal-900/30 text-teal-200 rounded-2xl px-5 py-2 transition-transform active:scale-90 tap-highlight-none" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span class="font-tajawal text-[10px] font-bold uppercase tracking-widest">Wallet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-stone-500 px-5 py-2 hover:text-teal-300 transition-transform active:scale-90 tap-highlight-none" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="package_2">package_2</span>
+<span class="font-tajawal text-[10px] font-bold uppercase tracking-widest">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center text-stone-500 px-5 py-2 hover:text-teal-300 transition-transform active:scale-90 tap-highlight-none" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-tajawal text-[10px] font-bold uppercase tracking-widest">Profile</span>
+</a>
+</nav>
+</body></html>

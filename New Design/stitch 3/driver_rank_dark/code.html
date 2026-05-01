@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;family=Manrope:wght@400;500;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary": "#8d4a19",
+                        "tertiary-fixed": "#ffdbc8",
+                        "inverse-primary": "#6ed6df",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#321300",
+                        "secondary": "#3755c3",
+                        "outline": "#6d797a",
+                        "surface-dim": "#d9dadb",
+                        "surface-container-highest": "#e1e3e4",
+                        "primary-fixed": "#8cf2fc",
+                        "on-secondary-fixed": "#001453",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-primary-container": "#f5feff",
+                        "on-primary-fixed": "#002022",
+                        "on-tertiary-container": "#fffbff",
+                        "outline-variant": "#bdc9ca",
+                        "tertiary-fixed-dim": "#ffb68a",
+                        "tertiary-container": "#ab6230",
+                        "surface-container-low": "#1f2937",
+                        "background": "#111827",
+                        "surface-container-high": "#374151",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#6ed6df",
+                        "surface-bright": "#1f2937",
+                        "primary-container": "#00818a",
+                        "on-tertiary-fixed-variant": "#733604",
+                        "secondary-container": "#708cfd",
+                        "surface": "#111827",
+                        "on-surface": "#f8f9fa",
+                        "surface-variant": "#3d494a",
+                        "on-primary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#1f2937",
+                        "primary": "#008C95",
+                        "inverse-surface": "#f0f1f2",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "error-container": "#ffdad6",
+                        "on-surface-variant": "#bdc9ca",
+                        "surface-tint": "#006970",
+                        "on-background": "#f8f9fa",
+                        "error": "#ba1a1a"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "16px",
+                        "xl": "24px",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["Tajawal", "Manrope"],
+                        "body": ["Tajawal", "Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .silver-gradient {
+            background: linear-gradient(135deg, #94a3b8 0%, #e2e8f0 50%, #94a3b8 100%);
+        }
+        .text-silver {
+            background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        body { font-family: 'Tajawal', 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-xl flex items-center px-6 h-16 w-full">
+<div class="flex items-center justify-between w-full">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform text-teal-400">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-['Tajawal'] font-bold text-lg tracking-tight">My Rank</h1>
+</div>
+<div class="text-teal-500 font-bold">
+<span class="material-symbols-outlined">workspace_premium</span>
+</div>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-2xl mx-auto space-y-8">
+<!-- Hero Rank Card -->
+<section class="relative overflow-hidden silver-gradient rounded-xl p-8 shadow-2xl flex flex-col items-center justify-center text-slate-900">
+<div class="absolute -right-12 -top-12 opacity-10">
+<span class="material-symbols-outlined text-[12rem]" style="font-variation-settings: 'FILL' 1;">stars</span>
+</div>
+<div class="bg-slate-900/10 backdrop-blur-sm rounded-full p-4 mb-4">
+<span class="material-symbols-outlined text-5xl" style="font-variation-settings: 'FILL' 1;">stars</span>
+</div>
+<h2 class="text-3xl font-extrabold tracking-tight mb-2">Silver Rank</h2>
+<div class="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                15% COMMISSION RATE
+            </div>
+</section>
+<!-- Progress to Gold -->
+<section class="bg-surface-container-low rounded-xl p-6 space-y-4">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-on-surface-variant text-sm">Road to Gold Rank</p>
+<h3 class="text-2xl font-bold text-primary">IQD 55,000 more</h3>
+</div>
+<div class="text-right">
+<p class="text-xs text-on-surface-variant font-bold">Next Milestone</p>
+<p class="text-sm font-bold">Gold Tier</p>
+</div>
+</div>
+<div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full w-[72%]" style="box-shadow: 0 0 12px rgba(0, 140, 149, 0.4);"></div>
+</div>
+</section>
+<!-- Stats Grid (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Monthly Hours Gauge -->
+<div class="bg-surface-container-low rounded-xl p-6 flex flex-col items-center justify-center space-y-4">
+<p class="text-on-surface-variant text-sm font-bold uppercase tracking-widest">Monthly Hours</p>
+<div class="relative flex items-center justify-center">
+<svg class="w-32 h-32 transform -rotate-90">
+<circle class="text-surface-container-high" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" stroke-dasharray="351.85" stroke-dashoffset="123.15" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-2xl font-bold">65%</span>
+<span class="text-[10px] text-on-surface-variant font-medium">65 / 100 HRS</span>
+</div>
+</div>
+</div>
+<!-- Rank Requirements List -->
+<div class="bg-surface-container-low rounded-xl p-6 space-y-6">
+<p class="text-on-surface-variant text-sm font-bold uppercase tracking-widest">Next Rank Requirements</p>
+<div class="space-y-2">
+<div class="flex justify-between text-sm">
+<span>Orders Completed</span>
+<span class="font-bold">42/50</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full">
+<div class="h-full bg-secondary rounded-full w-[84%]"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-sm">
+<span>Customer Rating</span>
+<span class="font-bold">4.8/5.0</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full">
+<div class="h-full bg-tertiary-container rounded-full w-[96%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Rank Tiers Table -->
+<section class="bg-surface-container-low rounded-xl overflow-hidden">
+<div class="px-6 py-4 border-b border-outline-variant/10">
+<h3 class="font-bold text-lg">Rank Tiers &amp; Commissions</h3>
+</div>
+<div class="divide-y divide-outline-variant/5">
+<div class="px-6 py-4 flex justify-between items-center bg-transparent">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-amber-700">workspace_premium</span>
+<span class="font-medium text-on-surface-variant">Bronze</span>
+</div>
+<span class="font-bold text-on-surface-variant">10%</span>
+</div>
+<div class="px-6 py-4 flex justify-between items-center bg-primary/5 border-l-4 border-primary">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400">workspace_premium</span>
+<span class="font-bold text-primary">Silver Rank</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded font-bold uppercase">Active</span>
+<span class="font-bold">15%</span>
+</div>
+</div>
+<div class="px-6 py-4 flex justify-between items-center bg-transparent">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-yellow-500">workspace_premium</span>
+<span class="font-medium text-on-surface-variant">Gold</span>
+</div>
+<span class="font-bold text-on-surface-variant">20%</span>
+</div>
+</div>
+</section>
+<!-- Benefits Grid -->
+<section class="space-y-4">
+<h3 class="font-bold text-lg px-2">Silver Rank Benefits</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-surface-container-high/50 p-4 rounded-xl border border-outline-variant/10 flex items-start gap-4">
+<div class="bg-primary/20 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">support_agent</span>
+</div>
+<div>
+<p class="font-bold text-sm">Priority Support</p>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">Dedicated lane for faster ticket resolution.</p>
+</div>
+</div>
+<div class="bg-surface-container-high/50 p-4 rounded-xl border border-outline-variant/10 flex items-start gap-4">
+<div class="bg-primary/20 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+<div>
+<p class="font-bold text-sm">Higher Earning Cap</p>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">Unlocks up to IQD 1.2M daily withdrawal limit.</p>
+</div>
+</div>
+<div class="bg-surface-container-high/50 p-4 rounded-xl border border-outline-variant/10 flex items-start gap-4">
+<div class="bg-primary/20 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">local_gas_station</span>
+</div>
+<div>
+<p class="font-bold text-sm">Fuel Discounts</p>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">7% off at partner stations in Najaf &amp; Mosul.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-6 pb-8 pt-4 bg-slate-900/70 backdrop-blur-2xl rounded-t-[32px] shadow-[0_-8px_24px_rgba(0,0,0,0.3)] z-50">
+<button class="flex flex-col items-center justify-center text-slate-500 p-3 hover:text-teal-300 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 p-3 hover:text-teal-300 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">list_alt</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 p-3 hover:text-teal-300 transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">payments</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-teal-500/10 text-teal-400 rounded-2xl p-3 shadow-[0_0_15px_rgba(20,184,166,0.2)] active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined">person</span>
+</button>
+</nav>
+</body></html>

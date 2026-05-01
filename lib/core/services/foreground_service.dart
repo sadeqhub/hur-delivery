@@ -1,8 +1,6 @@
 import 'dart:isolate';
-import 'dart:ui';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'notification_manager.dart';
 
 /// Foreground service callback - runs in isolate
 @pragma('vm:entry-point')

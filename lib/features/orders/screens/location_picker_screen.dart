@@ -3,13 +3,12 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
+import '../../../core/theme/theme_extensions.dart';
+import '../../../core/utils/map_style_helper.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/geocoding_service.dart';
-import '../../../core/services/neighborhood_labels_service.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../shared/widgets/navigation_overlay_system.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   final double? initialLatitude;
@@ -30,10 +29,11 @@ class LocationPickerScreen extends StatefulWidget {
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
   MapboxMap? _mapboxMap;
   PointAnnotationManager? _pointAnnotationManager;
-  List<PointAnnotation> _neighborhoodLabels = [];
   double _currentLatitude = AppConstants.defaultLatitude;
   double _currentLongitude = AppConstants.defaultLongitude;
   String _selectedAddress = '';
+  bool _isLocationLoaded = false;
+  bool _isMapReady = false;
 
   @override
   void initState() {
@@ -53,11 +53,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         setState(() {
           _currentLatitude = position.latitude;
           _currentLongitude = position.longitude;
+          _isLocationLoaded = true;
         });
         
         // Update map camera to user location if map is ready
-        if (_mapboxMap != null) {
-          _mapboxMap?.flyTo(
+        if (_mapboxMap != null && _isMapReady) {
+          await _mapboxMap!.flyTo(
             CameraOptions(
               center: Point(
                 coordinates: Position(position.longitude, position.latitude),
@@ -79,6 +80,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         setState(() {
           _currentLatitude = AppConstants.defaultLatitude;
           _currentLongitude = AppConstants.defaultLongitude;
+          _isLocationLoaded = true; // Still mark as loaded even with fallback
         });
       }
     }
@@ -152,7 +154,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(widget.title),
         centerTitle: true,
@@ -163,42 +165,69 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Stack(
-        children: [
-          // Map
-          MapWidget(
-            cameraOptions: CameraOptions(
-              center: Point(
-                coordinates: Position(
-                  _currentLongitude,
-                  _currentLatitude,
+      body: NavigationOverlayScope(
+        child: Stack(
+          children: [
+            // Map - only show when location is loaded
+            if (_isLocationLoaded)
+              MapWidget(
+                cameraOptions: CameraOptions(
+                  center: Point(
+                    coordinates: Position(
+                      _currentLongitude,
+                      _currentLatitude,
+                    ),
+                  ),
+                  zoom: 15.0,
+                ),
+                styleUri: MapStyleHelper.getMapStyle(context),
+                onMapCreated: (MapboxMap mapboxMap) async {
+                  _mapboxMap = mapboxMap;
+                  _isMapReady = true;
+                  
+                  // Create annotation manager
+                  _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+                  
+                  // If location is already loaded, center the map on it
+                  if (_isLocationLoaded) {
+                    await mapboxMap.flyTo(
+                      CameraOptions(
+                        center: Point(
+                          coordinates: Position(_currentLongitude, _currentLatitude),
+                        ),
+                        zoom: 15.0,
+                      ),
+                      MapAnimationOptions(duration: 500),
+                    );
+                    Future.delayed(const Duration(milliseconds: 600), () {
+                      _updateLocationFromCamera();
+                    });
+                  } else {
+                    _updateLocationFromCamera();
+                  }
+                },
+                onCameraChangeListener: (cameraChangedEventData) {
+                  // Update location when camera movement ends
+                  _updateLocationFromCamera();
+                },
+              )
+            else
+              // Show loading indicator while getting location
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      AppLocalizations.of(context).determiningLocation,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: context.themeTextSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              zoom: 13.0,
-            ),
-            styleUri: MapboxStyles.MAPBOX_STREETS,
-            onMapCreated: (MapboxMap mapboxMap) async {
-              _mapboxMap = mapboxMap;
-              
-              // CRITICAL: Hide labels FIRST before anything else to prevent race condition
-              await NeighborhoodLabelsService.simplifyMapStyle(mapboxMap);
-              
-              // Start aggressive label hiding timer to continuously hide labels
-              NeighborhoodLabelsService.startLabelHidingTimer(mapboxMap);
-              
-              // Set up listener to continuously hide labels when style loads
-              NeighborhoodLabelsService.setupLabelHidingListener(mapboxMap);
-              
-          // Create annotation manager (neighborhood labels removed)
-          _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
-              
-              _updateLocationFromCamera();
-            },
-            onCameraChangeListener: (cameraChangedEventData) {
-              // Update location when camera movement ends
-              _updateLocationFromCamera();
-            },
-          ),
 
           // Center Pin (Fixed at screen center)
           Center(
@@ -219,7 +248,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       ),
                     ],
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.location_on,
                     color: AppColors.error,
                     size: 40,
@@ -262,7 +291,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.info_outline,
                         color: AppColors.primary,
                         size: 20,
@@ -272,7 +301,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                         child: Text(
                           AppLocalizations.of(context).moveMapToSelect,
                           style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textPrimary,
+                            color: context.themeTextPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -283,7 +312,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   Text(
                     _selectedAddress,
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.themeTextSecondary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -319,7 +348,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.my_location,
                           color: AppColors.primary,
                           size: 28,
@@ -342,8 +371,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           ),
 
           // Confirm Button
-          Positioned(
-            bottom: 24,
+          AdaptivePositioned(
+            bottomOffset: 24,
             left: 16,
             right: 16,
             child: Container(
@@ -383,6 +412,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

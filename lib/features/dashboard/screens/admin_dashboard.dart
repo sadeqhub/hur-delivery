@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/providers/order_provider.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -83,30 +84,33 @@ class _AdminDashboardState extends State<AdminDashboard> {
           _AnalyticsTab(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textTertiary,
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.dashboard_outlined),
-            label: loc.overview,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.people_outline),
-            label: loc.users,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.list_alt),
-            label: loc.orders,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.analytics_outlined),
-            label: loc.analytics,
-          ),
-        ],
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) => setState(() => _selectedIndex = index),
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.textTertiary,
+          items: [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.dashboard_outlined),
+              label: loc.overview,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.people_outline),
+              label: loc.users,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.list_alt),
+              label: loc.orders,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.analytics_outlined),
+              label: loc.analytics,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -232,7 +236,7 @@ class _OverviewTab extends StatelessWidget {
                           ),
                         )
                       else
-                        ...orders.take(5).map((order) => _ActivityItem(order: order)).toList(),
+                        ...orders.take(5).map((order) => _ActivityItem(order: order)),
                     ],
                   );
                 },
@@ -323,7 +327,7 @@ class _UsersTab extends StatelessWidget {
           const SizedBox(height: 24),
           
           // User Actions
-          Text(
+          const Text(
                 'إدارة المستخدمين',
                 style: AppTextStyles.heading3,
               ),
@@ -411,14 +415,14 @@ class _AnalyticsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'تحليلات النظام',
             style: AppTextStyles.heading3,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           
           // Analytics Cards
           _AnalyticsCard(
@@ -429,7 +433,7 @@ class _AnalyticsTab extends StatelessWidget {
             color: AppColors.success,
           ),
           
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           
           _AnalyticsCard(
             title: 'معدل الإنجاز',
@@ -439,7 +443,7 @@ class _AnalyticsTab extends StatelessWidget {
             color: AppColors.primary,
           ),
           
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           
           _AnalyticsCard(
             title: 'رضا العملاء',
@@ -495,7 +499,7 @@ class _StatCard extends StatelessWidget {
             Text(
               title,
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+                color: context.themeTextSecondary,
               ),
             ),
           ],
@@ -541,7 +545,7 @@ class _UserCard extends StatelessWidget {
             Text(
               title,
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+                color: context.themeTextSecondary,
               ),
             ),
           ],
@@ -593,7 +597,7 @@ class _UserActionCard extends StatelessWidget {
         subtitle: Text(
           subtitle,
           style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
+            color: context.themeTextSecondary,
           ),
         ),
         trailing: const Icon(
@@ -624,7 +628,7 @@ class _ActivityItem extends StatelessWidget {
             color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
+          child: const Icon(
             Icons.shopping_cart,
             color: AppColors.primary,
             size: 20,
@@ -639,7 +643,7 @@ class _ActivityItem extends StatelessWidget {
         subtitle: Text(
           '${order.grandTotal.toStringAsFixed(0)} د.ع',
           style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
+            color: context.themeTextSecondary,
           ),
         ),
         trailing: Text(
@@ -685,7 +689,7 @@ class _AdminOrderCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'طلب #${order.id.substring(0, 8)}',
+                    'طلب #${order.userFriendlyCode ?? order.id.substring(0, 8)}',
                     style: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -715,7 +719,7 @@ class _AdminOrderCard extends StatelessWidget {
             Text(
               'العميل: ${order.customerName}',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: context.themeTextSecondary,
               ),
             ),
             
@@ -828,7 +832,7 @@ class _AnalyticsCard extends StatelessWidget {
                   Text(
                     subtitle,
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.themeTextSecondary,
                     ),
                   ),
                 ],

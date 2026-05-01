@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,7 +9,6 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:device_preview/device_preview.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'firebase_options.dart';
 
@@ -20,19 +20,26 @@ import 'core/providers/location_provider.dart';
 import 'core/providers/connectivity_provider.dart';
 import 'core/providers/notification_provider.dart';
 import 'core/providers/wallet_provider.dart';
+import 'core/providers/driver_wallet_provider.dart';
+import 'core/providers/city_settings_provider.dart';
 import 'core/providers/voice_recording_provider.dart';
 import 'core/providers/announcement_provider.dart';
 import 'core/providers/system_status_provider.dart';
 import 'core/providers/locale_provider.dart';
+import 'core/providers/theme_provider.dart';
+import 'core/providers/global_error_provider.dart';
+import 'shared/widgets/global_error_overlay.dart';
 import 'core/router/app_router.dart';
 import 'core/localization/app_localizations.dart';
 import 'core/services/flutterfire_notification_service.dart';
-import 'core/services/location_service.dart';
+// location_service import removed — permission requested lazily on first use
 import 'core/services/global_order_notification_service.dart';
 // NotificationWatcher removed - database trigger handles FCM notifications now
 // import 'core/services/notification_watcher.dart';
 import 'shared/widgets/no_internet_screen.dart';
 import 'core/services/precache_service.dart';
+import 'core/services/performance_optimizer.dart';
+import 'core/utils/system_ui.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -102,26 +109,32 @@ void main() async {
     }
   }
 
-  // Initialize FlutterFire notification service
-  try {
-    await FlutterFireNotificationService.initialize();
-    if (!kReleaseMode) debugPrint('✅ FlutterFire notification service initialized');
-  } catch (e) {
+  // Initialize notification service without blocking startup on permission dialogs.
+  // Permissions are requested inside but we don't await — dialogs show after first frame.
+  FlutterFireNotificationService.initialize().catchError((e) {
     if (!kReleaseMode) debugPrint('❌ FlutterFire notification service error: $e');
-  }
+    return null;
+  });
 
-  // NotificationWatcher removed - database trigger now handles FCM notifications
-  // Database trigger (trigger_fcm_push) automatically calls Edge Function
-  // when notifications are inserted, so no need for app-side watcher
   if (!kReleaseMode) debugPrint('ℹ️  Using database trigger for FCM notifications (NotificationWatcher disabled)');
+
+  // Location permission is requested lazily when the feature is first used.
+  // Awaiting it here blocks main() on the iOS permission dialog.
+
+  // Performance optimizer runs after first frame — avoids blocking startup
+  // with a live Supabase latency probe.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    PerformanceOptimizer().initialize().catchError((e) {
+      if (!kReleaseMode) debugPrint('⚠️ Performance optimizer error: $e');
+      return null;
+    });
+  });
   
-  // Initialize location service
-  try {
-    await LocationService.initialize();
-    if (!kReleaseMode) debugPrint('✅ Location service initialized\n');
-  } catch (e) {
-    if (!kReleaseMode) debugPrint('❌ Location service error: $e');
-  }
+  // Enable Edge-to-Edge mode for modern Android navigation
+  SystemUiUtils.enableEdgeToEdge(
+    statusBarColor: Colors.transparent,
+    navBarColor: Colors.transparent,
+  );
   
   if (!kReleaseMode) {
     debugPrint('═══════════════════════════════════════');
@@ -129,12 +142,7 @@ void main() async {
     debugPrint('═══════════════════════════════════════\n');
   }
   
-  runApp(
-    DevicePreview(
-      enabled: !kReleaseMode, // Only enable in debug/profile mode
-      builder: (context) => const HurDeliveryApp(),
-    ),
-  );
+  runApp(const HurDeliveryApp());
 }
 
 class HurDeliveryApp extends StatefulWidget {
@@ -152,7 +160,16 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
     _setupGlobalNotificationListener();
     // Precache core assets after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       PrecacheService.preloadCoreAssets(context);
+      
+      // Pre-warm the keyboard engine safely.
+      // This eliminates the ~200ms lag on the first tap of any input field.
+      try {
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      } catch (e) {
+        debugPrint('ℹ️ Keyboard engine pre-warm skipped: $e');
+      }
     });
   }
 
@@ -164,7 +181,7 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
         final userId = session.user.id;
         final userRole = session.user.userMetadata?['role'] as String?;
         
-        if (userId != null && userRole != null && (userRole == 'driver' || userRole == 'merchant')) {
+        if (userRole != null && (userRole == 'driver' || userRole == 'merchant')) {
           print('🔔 Starting global notifications for $userRole: $userId');
           GlobalOrderNotificationService.initialize(
             userId: userId,
@@ -184,6 +201,8 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
     return WithForegroundTask(
       child: MultiProvider(
         providers: [
+          ChangeNotifierProvider(create: (_) => GlobalErrorProvider()),
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
           ChangeNotifierProvider(create: (_) => LocaleProvider()),
           ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
           ChangeNotifierProvider(create: (_) => AuthProvider()),
@@ -191,17 +210,16 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
           ChangeNotifierProvider(create: (_) => LocationProvider()),
           ChangeNotifierProvider(create: (_) => NotificationProvider()),
           ChangeNotifierProvider(create: (_) => WalletProvider()),
+          ChangeNotifierProvider(create: (_) => DriverWalletProvider()),
+          ChangeNotifierProvider(create: (_) => CitySettingsProvider()),
           ChangeNotifierProvider(create: (_) => VoiceRecordingProvider()),
           ChangeNotifierProvider(create: (_) => AnnouncementProvider()),
           ChangeNotifierProvider(create: (_) => SystemStatusProvider()),
         ],
-        child: Consumer3<LocaleProvider, ConnectivityProvider, AuthProvider>(
-          builder: (context, localeProvider, connectivityProvider, authProvider, _) {
-            // Use locale from provider, fallback to DevicePreview or default
-            final deviceLocale = DevicePreview.locale(context);
-            // Use saved locale from provider, or DevicePreview, or default to Arabic
-            final appLocale = localeProvider.isLoading 
-                ? (deviceLocale ?? const Locale('ar', 'IQ'))
+        child: Consumer4<ThemeProvider, LocaleProvider, ConnectivityProvider, AuthProvider>(
+          builder: (context, themeProvider, localeProvider, connectivityProvider, authProvider, _) {
+            final appLocale = localeProvider.isLoading
+                ? const Locale('ar', 'IQ')
                 : localeProvider.locale;
             final isArabic = appLocale.languageCode == 'ar';
 
@@ -210,7 +228,7 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
               debugShowCheckedModeBanner: false,
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
-              themeMode: ThemeMode.light,
+              themeMode: themeProvider.themeMode,
 
               // Arabic + English localization
               localizationsDelegates: const [
@@ -222,32 +240,40 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
               supportedLocales: AppLocalizations.supportedLocales,
               locale: appLocale,
 
-              // Direction + responsive text scaling + DevicePreview
               builder: (context, child) {
-                child = DevicePreview.appBuilder(context, child);
+                if (child == null) return const SizedBox.shrink();
+
+                final mq = MediaQuery.of(context);
+                final textDirection =
+                    isArabic ? TextDirection.rtl : TextDirection.ltr;
 
                 // Show no internet screen if offline
                 if (!connectivityProvider.isOnline) {
-                  final textDirection =
-                      isArabic ? TextDirection.rtl : TextDirection.ltr;
                   return Directionality(
                     textDirection: textDirection,
                     child: const NoInternetScreen(),
                   );
                 }
 
-                final textDirection =
-                    isArabic ? TextDirection.rtl : TextDirection.ltr;
-
-                // Apply responsive text scaling globally
+                // Read screen width only — never viewInsets — so keyboard
+                // animation frames don't trigger a full tree rebuild.
+                final scale = _getTextScaleFactor(mq.size.width);
                 return MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    textScaleFactor:
-                        _getTextScaleFactor(MediaQuery.of(context).size.width),
+                  data: mq.copyWith(
+                    textScaler: TextScaler.linear(scale),
                   ),
                   child: Directionality(
                     textDirection: textDirection,
-                    child: child!,
+                    child: GlobalErrorOverlay(
+                      child: GestureDetector(
+                        // Dismiss the keyboard when the user taps anywhere
+                        // outside a focused input field.
+                        behavior: HitTestBehavior.translucent,
+                        onTap: () =>
+                            FocusManager.instance.primaryFocus?.unfocus(),
+                        child: child,
+                      ),
+                    ),
                   ),
                 );
               },

@@ -4,9 +4,6 @@ import 'package:provider/provider.dart';
 import '../../../shared/models/voice_recording_model.dart';
 import '../../../core/providers/voice_recording_provider.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'dart:io';
 

@@ -192,16 +192,16 @@ class FlutterFireNotificationService {
     );
 
     // Custom sound channel for driver assignment tone
-    final assignmentSoundChannel = AndroidNotificationChannel(
+    const assignmentSoundChannel = AndroidNotificationChannel(
       'assignment_sound',
       'نغمة تعيين الطلب',
       description: 'قناة بصوت مخصص لتعيين الطلب للسائق',
       importance: Importance.max,
       playSound: true,
-      sound: const RawResourceAndroidNotificationSound('notification_sound'),
+      sound: RawResourceAndroidNotificationSound('notification_sound'),
       enableVibration: true,
       enableLights: true,
-      ledColor: const Color(0xFF0000FF),
+      ledColor: Color(0xFF0000FF),
       showBadge: false,
     );
 
@@ -245,14 +245,14 @@ class FlutterFireNotificationService {
   static Future<void> playAssignmentSound() async {
     if (_localNotifications == null) return;
     try {
-      final androidDetails = AndroidNotificationDetails(
+      const androidDetails = AndroidNotificationDetails(
         'assignment_sound',
         'نغمة تعيين الطلب',
         channelDescription: 'تشغيل صوت مخصص عند تعيين الطلب للسائق',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
-        sound: const RawResourceAndroidNotificationSound('notification_sound'),
+        sound: RawResourceAndroidNotificationSound('notification_sound'),
         enableVibration: true,
         icon: '@mipmap/ic_launcher',
         onlyAlertOnce: true,
@@ -263,7 +263,7 @@ class FlutterFireNotificationService {
         presentBadge: false,
         presentSound: true,
       );
-      final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+      const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
       // Minimal, transient notification to trigger sound
       await _localNotifications!.show(
         DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -371,42 +371,24 @@ class FlutterFireNotificationService {
       print('   FCM Token: ${_fcmToken!.substring(0, 20)}...');
       print('   Platform: ${Platform.isAndroid ? 'android' : 'ios'}');
       
-      // ALWAYS delete old tokens for this user first (to prevent duplicates)
-      try {
-        await Supabase.instance.client
-            .from('user_fcm_tokens')
-            .delete()
-            .eq('user_id', user.id);
-        
-        print('✅ Deleted old FCM tokens for user');
-      } catch (e) {
-        print('⚠️  Failed to delete old tokens (may not exist): $e');
-      }
-      
-      // Insert new token (with ON CONFLICT handling at database level via unique constraint)
+      // Use upsert to handle conflicts gracefully (same as fcm_service.dart)
       final now = DateTime.now().toIso8601String();
       try {
         await Supabase.instance.client
             .from('user_fcm_tokens')
-            .insert({
+            .upsert({
               'user_id': user.id,
               'fcm_token': _fcmToken,
               'platform': Platform.isAndroid ? 'android' : 'ios',
-              'created_at': now,
               'updated_at': now,
-            });
+            }, onConflict: 'user_id,fcm_token');
         
-        print('✅ FCM token inserted to database successfully');
-        print('   Insert timestamp: $now');
+        print('✅ FCM token saved to database successfully (upsert)');
+        print('   Timestamp: $now');
       } catch (e) {
-        // If insert fails due to race condition (another instance deleted and inserted),
-        // it's okay to ignore - the token is in the database
-        if (e.toString().contains('duplicate') || e.toString().contains('409')) {
-          print('ℹ️  FCM token already exists (race condition), skipping');
-        } else {
-          // Re-throw other errors
-          throw e;
-        }
+        print('❌ Failed to save FCM token: $e');
+        // Re-throw to be caught by outer catch block
+        rethrow;
       }
       
       // Verify the token was saved
@@ -745,7 +727,7 @@ class FlutterFireNotificationService {
     try {
       await _showLocalNotification(
         RemoteMessage(
-          notification: RemoteNotification(
+          notification: const RemoteNotification(
             title: '🧪 Local Test',
             body: 'This is a local notification test',
           ),

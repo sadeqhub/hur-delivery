@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:postgrest/postgrest.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Domain exception for all messaging operations.
@@ -271,25 +270,68 @@ class MessagingService {
     return rows.map(Conversation.fromMap).toList();
   }
 
+  // Tracks whether the user is actively viewing a support conversation thread.
+  // Used to suppress in-app overlay notifications while the chat is open.
+  bool _isViewingSupport = false;
+  bool get isViewingSupport => _isViewingSupport;
+  void setViewingSupport(bool viewing) => _isViewingSupport = viewing;
+
   Stream<List<Message>> watchMessages(
     String conversationId, {
     Duration lookback = const Duration(hours: 24),
   }) {
     final since = DateTime.now().toUtc().subtract(lookback);
+    RealtimeChannel? channel;
+    late StreamController<List<Message>> controller;
 
-    return _client
-        .from('messages')
-        .stream(primaryKey: ['id'])
-        .eq('conversation_id', conversationId)
-        .order('created_at')
-        .map((rows) {
-      final list = rows.cast<Map<String, dynamic>>();
-          return list.map(Message.fromMap).where((message) {
-            final createdAt = message.createdAt;
-            if (createdAt == null) return true;
-            return !createdAt.isBefore(since);
-      }).toList();
-    });
+    Future<void> emit() async {
+      if (controller.isClosed) return;
+      try {
+        final rows = await _client
+            .from('messages')
+            .select()
+            .eq('conversation_id', conversationId)
+            .gte('created_at', since.toIso8601String())
+            .order('created_at');
+        if (!controller.isClosed) {
+          controller.add(
+            (rows as List)
+                .cast<Map<String, dynamic>>()
+                .map(Message.fromMap)
+                .toList(),
+          );
+        }
+      } catch (e) {
+        if (!controller.isClosed) controller.addError(e);
+      }
+    }
+
+    controller = StreamController<List<Message>>(
+      onListen: () {
+        emit();
+        channel = _client
+            .channel('messages_${conversationId.replaceAll('-', '')}')
+            .onPostgresChanges(
+              event: PostgresChangeEvent.insert,
+              schema: 'public',
+              table: 'messages',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'conversation_id',
+                value: conversationId,
+              ),
+              callback: (_) => emit(),
+            )
+            .subscribe();
+      },
+      onCancel: () {
+        channel?.unsubscribe();
+        channel = null;
+        controller.close();
+      },
+    );
+
+    return controller.stream;
   }
 
   Future<Message> sendMessage({
@@ -438,6 +480,7 @@ class MessagingService {
 
       existingId = existing != null ? existing['id'] as String? : null;
       if (existingId != null && existingId.isNotEmpty) {
+        // Don't send auto message for existing conversations
         return existingId;
       }
     } catch (e) {
@@ -503,6 +546,8 @@ class MessagingService {
           .maybeSingle();
       final fallbackId = fallback != null ? fallback['id'] as String? : null;
       if (fallbackId != null && fallbackId.isNotEmpty) {
+        // Check if this is a new conversation and send auto message if needed
+        await _sendAutoSupportMessageIfNew(fallbackId, orderId);
         return fallbackId;
       }
       throw const MessagingException(
@@ -511,7 +556,76 @@ class MessagingService {
       );
     }
 
+    // Check if this is a new conversation and send auto message if needed
+    await _sendAutoSupportMessageIfNew(convId, orderId);
+
     return convId;
+  }
+
+  /// Send automatic first message if conversation is new and has an order
+  Future<void> _sendAutoSupportMessageIfNew(String conversationId, String? orderId) async {
+    if (orderId == null || orderId.isEmpty) {
+      return;
+    }
+
+    final currentUser = _client.auth.currentUser;
+    if (currentUser == null) {
+      return;
+    }
+
+    try {
+      // Check if current user is a driver
+      final userData = await _client
+          .from('users')
+          .select('role')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+      if (userData == null || userData['role'] != 'driver') {
+        return; // Only send auto message for drivers
+      }
+
+      // Small delay to ensure conversation is fully created
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Check if conversation has any messages
+      final messagesCheck = await _client
+          .from('messages')
+          .select('id')
+          .eq('conversation_id', conversationId)
+          .limit(1)
+          .maybeSingle();
+
+      // If conversation already has messages, don't send auto message
+      if (messagesCheck != null) {
+        return;
+      }
+
+      // Get order details to retrieve user_friendly_code
+      final orderData = await _client
+          .from('orders')
+          .select('user_friendly_code')
+          .eq('id', orderId)
+          .maybeSingle();
+
+      if (orderData == null) {
+        return;
+      }
+
+      final orderCode = orderData['user_friendly_code'] as String? ?? orderId.substring(0, 8);
+      
+      // Send automatic first message
+      await sendMessage(
+        conversationId: conversationId,
+        body: 'hello I have an issue with "$orderCode"',
+        orderId: orderId,
+      );
+      
+      print('✅ Auto support message sent for order $orderCode');
+    } catch (e) {
+      // Don't fail the conversation creation if auto message fails
+      print('⚠️ Failed to send auto support message: $e');
+    }
   }
 
   static String? _extractIdentifier(dynamic value) {

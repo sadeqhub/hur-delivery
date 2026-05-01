@@ -3,9 +3,6 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/providers/location_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 
@@ -179,7 +176,7 @@ class _MapScreenState extends State<MapScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.location_on,
                       color: AppColors.primary,
                       size: 20,

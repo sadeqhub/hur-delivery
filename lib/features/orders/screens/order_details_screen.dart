@@ -1,10 +1,13 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/utils/responsive_extensions.dart';
 import '../../../shared/widgets/responsive_container.dart';
@@ -14,9 +17,12 @@ import '../../../core/providers/order_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/wallet_provider.dart';
 import '../../../core/services/driver_availability_service.dart';
+import '../../../core/services/screen_visibility_tracker.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/secondary_button.dart';
+import '../../../shared/widgets/delivery_timer_widget.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../shared/models/order_model.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
   final String orderId;
@@ -30,7 +36,9 @@ class OrderDetailsScreen extends StatefulWidget {
   State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
 }
 
-class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
+class _OrderDetailsScreenState extends State<OrderDetailsScreen> with ScreenVisibilityMixin {
+  @override
+  String get screenName => 'order_details';
   @override
   void initState() {
     super.initState();
@@ -43,7 +51,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.themeBackground,
       appBar: AppBar(
         title: Text(loc.orderDetails),
         centerTitle: true,
@@ -114,7 +122,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         ),
                         SizedBox(height: context.rs(8)),
                         ResponsiveText(
-                          '${loc.orderNumberPrefix}${order.id.substring(0, 8)}',
+                          '${loc.orderNumberPrefix}${order.userFriendlyCode ?? order.id.substring(0, 8)}',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: Colors.white.withOpacity(0.9),
                           ).responsive(context),
@@ -144,16 +152,17 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                             label: loc.customerLabel(order.customerName ?? ''),
                             value: order.customerName,
                           ),
+                          if (order.customerPhone != null && order.customerPhone!.isNotEmpty)
                           _ModernInfoRow(
                             icon: Icons.phone_outlined,
                             label: loc.customerPhone,
-                            value: order.customerPhone,
+                              value: order.customerPhone!,
                           ),
                           if (order.driverId != null) ...[
                             const Divider(height: 24),
                             _ModernInfoRow(
                               icon: Icons.delivery_dining,
-                              label: loc.merchantLabel,
+                              label: loc.driver,
                               value: order.driverName ?? loc.assignedStatus,
                               valueColor: AppColors.success,
                             ),
@@ -163,11 +172,19 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                 label: loc.driverPhone,
                                 value: order.driverPhone!,
                               ),
+                            // Delivery Timer (for on_the_way orders)
+                            if (order.isOnTheWay && order.deliveryTimerExpiresAt != null) ...[
+                              const Divider(height: 24),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: DeliveryTimerWidget(order: order),
+                              ),
+                            ],
                           ] else if (isMerchant && order.isPending) ...[
                             const Divider(height: 24),
                             _ModernInfoRow(
                               icon: Icons.pending_outlined,
-                              label: loc.merchantLabel,
+                              label: loc.driver,
                               value: loc.searchingDriver,
                               valueColor: AppColors.warning,
                             ),
@@ -179,6 +196,49 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                               icon: Icons.access_time_outlined,
                               label: loc.createdAt,
                               value: _formatDateTime(order.createdAt),
+                            ),
+                            // Delivery duration (kept visible after delivery)
+                            // Uses delivery timer which starts at pickup confirmation and stops when driver reaches dropoff
+                            Builder(
+                              builder: (context) {
+                                if (order.deliveryTimerStartedAt == null) {
+                                  return _ModernInfoRow(
+                                    icon: Icons.timer_outlined,
+                                    label: loc.deliveryDurationTitle,
+                                    value: loc.deliveryDurationNotAvailable,
+                                  );
+                                }
+
+                                // Only use delivery_timer_stopped_at - this is when driver reaches dropoff location
+                                // Do NOT fall back to updatedAt or deliveredAt as those represent different events
+                                final end = order.deliveryTimerStoppedAt;
+                                if (end == null) {
+                                  return _ModernInfoRow(
+                                    icon: Icons.timer_outlined,
+                                    label: loc.deliveryDurationTitle,
+                                    value: loc.deliveryDurationNotAvailable,
+                                  );
+                                }
+
+                                final seconds =
+                                    end.difference(order.deliveryTimerStartedAt!).inSeconds;
+                                final mins = seconds ~/ 60;
+                                final secs = seconds % 60;
+                                final durationText =
+                                    '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+
+                                final expiresAt = order.deliveryTimerExpiresAt;
+                                final isLate = expiresAt != null && end.isAfter(expiresAt);
+                                final statusText =
+                                    isLate ? loc.deliveryDurationLate : loc.deliveryDurationOnTime;
+
+                                return _ModernInfoRow(
+                                  icon: Icons.timer_outlined,
+                                  label: loc.deliveryDurationTitle,
+                                  value: '$durationText • $statusText',
+                                  valueColor: isLate ? AppColors.error : AppColors.success,
+                                );
+                              },
                             ),
                             if (order.driverAssignedAt != null)
                               _ModernInfoRow(
@@ -327,10 +387,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                           width: double.infinity,
                           padding: context.rp(horizontal: 16, vertical: 16),
                           decoration: BoxDecoration(
-                            color: Colors.amber.shade50,
+                            color: context.themeColor(
+                              light: Colors.amber.shade50,
+                              dark: context.themeSurfaceVariant,
+                            ),
                             borderRadius: BorderRadius.circular(context.rs(16)),
                             border: Border.all(
-                              color: Colors.amber.shade200,
+                              color: context.themeColor(
+                                light: Colors.amber.shade200,
+                                dark: context.themeBorder,
+                              ),
                               width: 1,
                             ),
                           ),
@@ -341,7 +407,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                 children: [
                                   Icon(
                                     Icons.note_outlined,
-                                    color: Colors.amber.shade700,
+                                    color: context.themeColor(
+                                      light: Colors.amber.shade700,
+                                      dark: context.themeTextSecondary,
+                                    ),
                                     size: context.ri(20),
                                   ),
                                   SizedBox(width: context.rs(8)),
@@ -349,7 +418,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                     loc.notes,
                                     style: AppTextStyles.bodyLarge.copyWith(
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.amber.shade900,
+                                      color: context.themeTextPrimary,
                                     ).responsive(context),
                                   ),
                                 ],
@@ -358,7 +427,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                               ResponsiveText(
                                 order.notes!,
                                 style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.textPrimary,
+                                  color: context.themeTextPrimary,
                                   height: 1.5,
                                 ).responsive(context),
                               ),
@@ -392,7 +461,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.info_outline,
                           color: AppColors.warning,
                           size: 24,
@@ -402,7 +471,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                           child: Text(
                             loc.allDriversRejected,
                             style: TextStyle(
-                              color: AppColors.textPrimary,
+                              color: context.themeTextPrimary,
                               fontSize: 13,
                             ),
                           ),
@@ -487,20 +556,42 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 
                       const SizedBox(height: 16),
                       
-                      // Track Order Button - Only show map for accepted/on_the_way orders
-                      if (order.isAccepted || order.isOnTheWay) ...[
+                      // Track Driver Button - Show for merchants when driver is assigned
+                      if (isMerchant && order.driverId != null && 
+                          (order.isAssigned || order.isAccepted || order.isOnTheWay)) ...[
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              // Show map with driver location
-                              _showDriverLocationMap(order);
+                              // Navigate to tracking screen
+                              context.push('/merchant-dashboard/order-tracking/${order.id}');
                             },
                             icon: const Icon(Icons.map_outlined),
                             label: Text(loc.trackDriver),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.success,
                               foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      
+                      // Contact Driver Button - Show for merchants when driver is assigned
+                      if (isMerchant && order.driverId != null && order.driverName != null) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _showContactDriverDialog(order),
+                            icon: const Icon(Icons.phone_outlined),
+                            label: Text(loc.contactDriver),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              side: const BorderSide(color: AppColors.primary),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
@@ -517,7 +608,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             onPressed: () => _contactSupport(order.id),
-                            icon: Icon(Icons.support_agent, color: const Color(0xFF25D366)),
+                            icon: const Icon(Icons.support_agent, color: Color(0xFF25D366)),
                             label: Text(loc.contactSupport),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF25D366),
@@ -591,27 +682,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
     
     final merchantId = order.merchantId;
-    if (merchantId == null) {
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(loc.error),
-            content: Text(loc.merchantDataError),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(loc.ok),
-              ),
-            ],
-          ),
-        );
-      }
-      return;
-    }
 
     // Check for online drivers WITHOUT active orders (repost requirement)
     final availabilityResult = await DriverAvailabilityService.checkFreeDriversOnly(
+      merchantId: merchantId,
       vehicleType: order.vehicleType ?? 'motorbike',
     );
 
@@ -641,61 +715,76 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.replay, color: AppColors.success),
-            const SizedBox(width: 8),
-            Text(loc.repostOrderTitle),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              loc.repostOrderMessage,
-              style: const TextStyle(fontSize: 15),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(loc.currentDeliveryFee),
-                      Text(
-                        '${currentDeliveryFee.toStringAsFixed(0)} ${loc.currencySymbol}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(loc.newDeliveryFee),
-                      Text(
-                        '${newDeliveryFee.toStringAsFixed(0)} ${loc.currencySymbol}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.success,
-                          fontSize: 16,
+                            const Icon(Icons.replay, color: AppColors.success),
+                            const SizedBox(width: 8),
+                            Text(loc.repostOrderTitle),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              loc.repostOrderHint,
-              style: const TextStyle(fontSize: 13, color: Colors.grey),
-            ),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              loc.repostOrderMessage,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: context.themeTextPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        loc.currentDeliveryFee,
+                                        style: TextStyle(color: context.themeTextPrimary),
+                                      ),
+                                      Text(
+                                        '${currentDeliveryFee.toStringAsFixed(0)} ${loc.currencySymbol}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: context.themeTextPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        loc.newDeliveryFee,
+                                        style: TextStyle(color: context.themeTextPrimary),
+                                      ),
+                                      Text(
+                                        '${newDeliveryFee.toStringAsFixed(0)} ${loc.currencySymbol}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.success,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              loc.repostOrderHint,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: context.themeTextSecondary,
+                              ),
+                            ),
           ],
         ),
         actions: [
@@ -790,15 +879,25 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Future<void> _markPickedUp(String orderId) async {
     final loc = AppLocalizations.of(context);
     final orderProvider = context.read<OrderProvider>();
-    final success = await orderProvider.markOrderOnTheWay(orderId);
+    final success = await orderProvider.markOrderOnTheWay(orderId, context: context);
     
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(loc.pickupConfirmed),
-          backgroundColor: AppColors.success,
-        ),
-      );
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(loc.pickupConfirmed),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(orderProvider.error ?? loc.error),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
@@ -854,16 +953,277 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     return result ?? false;
   }
 
+  Future<void> _showContactDriverDialog(OrderModel order) async {
+    final loc = AppLocalizations.of(context);
+    
+    if (order.driverName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.driverInfoNotAvailable),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.delivery_dining,
+                color: AppColors.primary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                loc.contactDriver,
+                style: AppTextStyles.heading3.copyWith(
+                  color: context.themeTextPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Driver Name
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.themeSurfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.person_outline,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          loc.driver ?? 'السائق',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: context.themeTextSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          order.driverName!,
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: context.themeTextPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Driver Phone
+            if (order.driverPhone != null && order.driverPhone!.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.themeSurfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.phone_outlined,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            loc.driverPhone ?? 'رقم الهاتف',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: context.themeTextSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Directionality(
+                            textDirection: ui.TextDirection.ltr,
+                            child: Text(
+                              order.driverPhone!,
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: context.themeTextPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      color: AppColors.warning,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        loc.driverPhoneNotAvailable,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.warning,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(loc.close),
+          ),
+          if (order.driverPhone != null && order.driverPhone!.isNotEmpty)
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _callDriverViaWhatsApp(order.driverPhone!, order.driverName!);
+              },
+              icon: const Icon(Icons.chat, color: Colors.white),
+              label: Text(loc.callViaWhatsApp),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF25D366), // WhatsApp green
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _callDriverViaWhatsApp(String phoneNumber, String driverName) async {
+    final loc = AppLocalizations.of(context);
+    try {
+      // Clean phone number: remove spaces and non-digit characters except +
+      String cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+      
+      // Ensure it starts with country code
+      if (!cleanPhone.startsWith('+')) {
+        // If it starts with 0, remove it and add country code
+        if (cleanPhone.startsWith('0')) {
+          cleanPhone = cleanPhone.substring(1);
+        }
+        cleanPhone = '+964$cleanPhone';
+      }
+      
+      // Create a friendly message
+      final message = '${loc.helloDriver} $driverName';
+      
+      // WhatsApp URL format: wa.me/<phone>?text=<message>
+      // Note: wa.me requires phone number WITHOUT the + sign
+      final phoneForUrl = cleanPhone.replaceFirst('+', '');
+      final url = 'https://wa.me/$phoneForUrl?text=${Uri.encodeComponent(message)}';
+      
+      final uri = Uri.parse(url);
+      
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(loc.whatsappOpenFailed),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(loc.whatsappError),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _contactSupport(String orderId) async {
     final loc = AppLocalizations.of(context);
     try {
-      const phoneNumber = '+964771234567'; // Replace with actual support number
-      final message = '${loc.supportMessageTemplate}${orderId.substring(0, 8)}';
-      final url = 'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}';
+      // Support phone number - clean format (remove spaces, ensure E.164 format)
+      String phoneNumber = '+9647890003093'; // Support WhatsApp number
       
-      if (await canLaunchUrl(Uri.parse(url))) {
+      // Clean phone number: remove spaces and non-digit characters except +
+      phoneNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+      
+      // Ensure it starts with country code
+      if (!phoneNumber.startsWith('+')) {
+        phoneNumber = '+964$phoneNumber';
+      }
+      
+      // Create message with order code (get from order if available)
+      final order = context.read<OrderProvider>().orders.firstWhere(
+        (o) => o.id == orderId,
+        orElse: () => throw Exception('Order not found'),
+      );
+      final orderCode = order.userFriendlyCode ?? orderId.substring(0, 8);
+      final message = '${loc.supportMessageTemplate}$orderCode';
+      
+      // WhatsApp URL format: wa.me/<phone>?text=<message>
+      // Note: wa.me requires phone number WITHOUT the + sign
+      // This opens a conversation (chat) with the pre-filled message
+      final phoneForUrl = phoneNumber.replaceFirst('+', '');
+      final url = 'https://wa.me/$phoneForUrl?text=${Uri.encodeComponent(message)}';
+      
+      final uri = Uri.parse(url);
+      
+      if (await canLaunchUrl(uri)) {
         await launchUrl(
-          Uri.parse(url),
+          uri,
           mode: LaunchMode.externalApplication,
         );
       } else {
@@ -888,10 +1248,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
-  void _showDriverLocationMap(dynamic order) {
-    // Navigate to the order tracking screen which shows driver location on map
-    context.go('/merchant-dashboard/order-tracking/${order.id}');
-  }
 
   String _formatDateTime(DateTime dateTime) {
     // Convert from UTC to Baghdad time (GMT+3)
@@ -916,7 +1272,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       hour = 12;
     }
     
-    return '$dateStr ${hour}:$minute $period';
+    return '$dateStr $hour:$minute $period';
   }
 
   IconData _getStatusIcon(String status) {
@@ -1028,10 +1384,16 @@ class _OrderProgressIndicator extends StatelessWidget {
                     width: isCurrent ? 36 : 28,
                     height: isCurrent ? 36 : 28,
                     decoration: BoxDecoration(
-                      color: isActive ? AppColors.primary : Colors.grey.shade300,
+                      color: isActive ? AppColors.primary : context.themeColor(
+                        light: Colors.grey.shade300,
+                        dark: Colors.grey.shade700,
+                      ),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isActive ? AppColors.primary : Colors.grey.shade400,
+                        color: isActive ? AppColors.primary : context.themeColor(
+                          light: Colors.grey.shade400,
+                          dark: Colors.grey.shade600,
+                        ),
                         width: isCurrent ? 3 : 2,
                       ),
                       boxShadow: isCurrent ? [
@@ -1044,7 +1406,10 @@ class _OrderProgressIndicator extends StatelessWidget {
                     ),
                     child: Icon(
                       step['icon'] as IconData,
-                      color: isActive ? Colors.white : Colors.grey.shade600,
+                      color: isActive ? Colors.white : context.themeColor(
+                        light: Colors.grey.shade600,
+                        dark: Colors.grey.shade400,
+                      ),
                       size: isCurrent ? 20 : 16,
                     ),
                   ),
@@ -1057,7 +1422,10 @@ class _OrderProgressIndicator extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isActive && index < activeIndex 
                               ? AppColors.primary 
-                              : Colors.grey.shade300,
+                              : context.themeColor(
+                                light: Colors.grey.shade300,
+                                dark: Colors.grey.shade700,
+                              ),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -1136,6 +1504,7 @@ class _InfoRow extends StatelessWidget {
   final bool isTotal;
 
   const _InfoRow({
+    super.key,
     required this.label,
     required this.value,
     this.isTotal = false,
@@ -1151,7 +1520,7 @@ class _InfoRow extends StatelessWidget {
           Text(
             label,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: context.themeTextSecondary,
             ),
           ),
           Text(
@@ -1187,7 +1556,7 @@ class _OrderItemRow extends StatelessWidget {
           Text(
             '${item.quantity} × ${item.price.toStringAsFixed(0)} د.ع',
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+              color: context.themeTextSecondary,
             ),
           ),
           const SizedBox(width: 16),
@@ -1223,11 +1592,11 @@ class _ModernInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.themeSurface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(context.isDarkMode ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1252,7 +1621,7 @@ class _ModernInfoCard extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyles.heading3.copyWith(
-                    color: AppColors.textPrimary,
+                    color: context.themeTextPrimary,
                   ),
                 ),
               ],
@@ -1288,7 +1657,7 @@ class _ModernInfoRow extends StatelessWidget {
           Icon(
             icon,
             size: 20,
-            color: AppColors.textSecondary,
+            color: context.themeTextSecondary,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1298,7 +1667,7 @@ class _ModernInfoRow extends StatelessWidget {
                 Text(
                   label,
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.themeTextSecondary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1306,7 +1675,7 @@ class _ModernInfoRow extends StatelessWidget {
                   value,
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: valueColor ?? AppColors.textPrimary,
+                    color: valueColor ?? context.themeTextPrimary,
                   ),
                 ),
               ],
@@ -1387,14 +1756,47 @@ class _OrderProofGalleryState extends State<_OrderProofGallery> {
               context: context,
               builder: (_) => Dialog(
                 child: InteractiveViewer(
-                  child: Image.network(it.url, fit: BoxFit.contain),
+                  child: CachedNetworkImage(
+                    imageUrl: it.url,
+                    fit: BoxFit.contain,
+                    // 4G OPTIMIZATION: Cache full-size image with higher resolution
+                    memCacheWidth: 1200, // Higher resolution for full view
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    errorWidget: (context, url, error) => Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.broken_image, size: 48, color: Colors.grey[400]),
+                          const SizedBox(height: 8),
+                          Text('Failed to load image', style: TextStyle(color: Colors.grey[600])),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             );
           },
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network(it.url, fit: BoxFit.cover),
+            child: CachedNetworkImage(
+              imageUrl: it.url,
+              fit: BoxFit.cover,
+              // 4G OPTIMIZATION: Cache images with size constraints
+              memCacheWidth: 300, // Reduce memory usage and download size
+              placeholder: (context, url) => Container(
+                color: Colors.grey[200],
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              errorWidget: (context, url, error) => Container(
+                color: Colors.grey[200],
+                child: Icon(Icons.broken_image, color: Colors.grey[400]),
+              ),
+            ),
           ),
         );
       },
@@ -1441,7 +1843,7 @@ class _LocationRow extends StatelessWidget {
               Text(
                 label,
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.themeTextSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1449,7 +1851,7 @@ class _LocationRow extends StatelessWidget {
               Text(
                 address,
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
+                  color: context.themeTextPrimary,
                   height: 1.4,
                 ),
               ),
@@ -1472,7 +1874,7 @@ class _ModernOrderItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+        color: context.themeSurfaceVariant,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1483,7 +1885,7 @@ class _ModernOrderItem extends StatelessWidget {
               color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.shopping_bag_outlined,
               color: AppColors.primary,
               size: 20,
@@ -1504,7 +1906,7 @@ class _ModernOrderItem extends StatelessWidget {
                 Text(
                   '${item.quantity} × ${item.price.toStringAsFixed(0)} د.ع',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.themeTextSecondary,
                   ),
                 ),
               ],
@@ -1542,7 +1944,7 @@ class _PriceRow extends StatelessWidget {
         Text(
           label,
           style: AppTextStyles.bodyMedium.copyWith(
-            color: isTotal ? AppColors.textPrimary : AppColors.textSecondary,
+            color: isTotal ? context.themeTextPrimary : context.themeTextSecondary,
             fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
@@ -1550,7 +1952,7 @@ class _PriceRow extends StatelessWidget {
           '${amount.toStringAsFixed(0)} د.ع',
           style: AppTextStyles.bodyLarge.copyWith(
             fontWeight: FontWeight.w700,
-            color: isTotal ? AppColors.primary : AppColors.textPrimary,
+            color: isTotal ? AppColors.primary : context.themeTextPrimary,
             fontSize: isTotal ? 18 : 16,
           ),
         ),

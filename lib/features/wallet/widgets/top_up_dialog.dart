@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
-import '../../../core/utils/responsive_extensions.dart';
-import '../../../shared/widgets/responsive_container.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/wallet_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -19,12 +17,11 @@ class TopUpDialog extends StatefulWidget {
 }
 
 class _TopUpDialogState extends State<TopUpDialog> {
-  String? _selectedMethod;
+  String? _selectedMethod = 'wayl'; // Default to Wayl (only option for merchants)
   final _amountController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  static const double hurRepFee = 1000.0;
-  static const double minAmount = 1000.0;
+  static const double minAmount = 10000.0;
 
   @override
   void dispose() {
@@ -35,13 +32,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
 
   Future<void> _submitTopUp() async {
     final loc = AppLocalizations.of(context);
-    if (_selectedMethod == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.pleaseSelectPaymentMethod)),
-      );
-      return;
-    }
-
+    
     // Validate form
     if (!_formKey.currentState!.validate()) {
       return;
@@ -65,21 +56,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
       return;
     }
 
-    // Adjust amount for Hur Representative (add fee)
-    final actualAmount = _selectedMethod == 'hur_representative' 
-        ? amount - hurRepFee 
-        : amount;
-
-    if (_selectedMethod == 'hur_representative' && actualAmount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(loc.amountMustBeGreater(minAmount, hurRepFee)),
-        ),
-      );
-      return;
-    }
-
-    // For Wayl online checkout (includes Zain Cash, Qi Card, Visa, Mastercard, etc.)
+    // Only Wayl online checkout is available for merchants
     if (_selectedMethod == 'wayl') {
       final authProvider = context.read<AuthProvider>();
       final walletProvider = context.read<WalletProvider>();
@@ -194,69 +171,13 @@ class _TopUpDialogState extends State<TopUpDialog> {
           ),
         );
       }
-    } 
-    // For Hur Representative
-    else if (_selectedMethod == 'hur_representative') {
-      // For Hur Representative, submit request immediately
-      final authProvider = context.read<AuthProvider>();
-      final walletProvider = context.read<WalletProvider>();
-
-      if (authProvider.user != null) {
-        Navigator.pop(context);
-        
-        // Show confirmation dialog
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Text(loc.topUpViaRep),
-            content: Builder(
-              builder: (context) {
-                final loc = AppLocalizations.of(context);
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      loc.topUpRequestSent(amount),
-                      style: AppTextStyles.bodyMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      loc.noteFeeDeducted(hurRepFee),
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      loc.repWillContactSoon,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(loc.ok),
-              ),
-            ],
-          ),
-        );
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: context.themeSurface, // Dark mode responsive
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -276,7 +197,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                       color: AppColors.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.account_balance_wallet,
                       color: AppColors.primary,
                       size: 28,
@@ -286,12 +207,17 @@ class _TopUpDialogState extends State<TopUpDialog> {
                   Expanded(
                     child: Text(
                       AppLocalizations.of(context).topUpWallet,
-                      style: AppTextStyles.heading2,
+                      style: AppTextStyles.heading2.copyWith(
+                        color: context.themeTextPrimary,
+                      ),
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
+                    icon: Icon(
+                      Icons.close,
+                      color: context.themeTextPrimary,
+                    ),
                   ),
                 ],
               ),
@@ -314,6 +240,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                         loc.amountIqd,
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: context.themeTextPrimary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -321,6 +248,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                         controller: _amountController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: false),
                         textInputAction: TextInputAction.done,
+                        style: TextStyle(color: context.themeTextPrimary),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return loc.pleaseEnterAmount;
@@ -336,14 +264,27 @@ class _TopUpDialogState extends State<TopUpDialog> {
                         },
                         decoration: InputDecoration(
                           hintText: loc.minimumAmount(minAmount),
-                          prefixIcon: const Icon(Icons.money),
+                          hintStyle: TextStyle(color: context.themeTextSecondary),
+                          prefixIcon: Icon(Icons.money, color: context.themeTextSecondary),
                           suffixText: 'IQD',
+                          suffixStyle: TextStyle(color: context.themeTextSecondary),
+                          filled: true,
+                          fillColor: context.themeSurface,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: context.themeBorder),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: context.themeBorder),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.primary, width: 2),
                           ),
                           errorBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.red),
+                            borderSide: const BorderSide(color: AppColors.error),
                           ),
                         ),
                       ),
@@ -368,25 +309,17 @@ class _TopUpDialogState extends State<TopUpDialog> {
                         loc.selectPaymentMethod,
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: context.themeTextPrimary,
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Wayl Online Checkout (includes Zain Cash, Qi Card, Visa, Mastercard, etc.)
+                      // Wayl Online Checkout (only option for merchants)
                       _buildPaymentMethodOption(
                         method: 'wayl',
                         title: loc.onlineCheckout,
                         subtitle: loc.zainCashQiVisaMastercard,
                         icon: Icons.payment,
                         color: Colors.green,
-                      ),
-                      const SizedBox(height: 12),
-                      // Hur Representative
-                      _buildPaymentMethodOption(
-                        method: 'hur_representative',
-                        title: loc.hurRep(hurRepFee),
-                        subtitle: loc.feeLabel(hurRepFee),
-                        icon: Icons.person,
-                        color: Colors.orange,
                       ),
                       const SizedBox(height: 24),
                       // Submit Button
@@ -424,10 +357,14 @@ class _TopUpDialogState extends State<TopUpDialog> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : AppColors.surface,
+          color: isSelected 
+              ? color.withOpacity(0.1) 
+              : context.themeSurface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color : Colors.grey.withOpacity(0.3),
+            color: isSelected 
+                ? color 
+                : context.themeBorder,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -450,14 +387,14 @@ class _TopUpDialogState extends State<TopUpDialog> {
                     title,
                     style: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? color : AppColors.textPrimary,
+                      color: isSelected ? color : context.themeTextPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.themeTextSecondary,
                     ),
                   ),
                 ],

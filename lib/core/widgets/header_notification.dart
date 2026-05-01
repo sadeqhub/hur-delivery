@@ -189,7 +189,7 @@ class _HeaderNotificationWidgetState extends State<_HeaderNotificationWidget>
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 8,
+      top: MediaQuery.paddingOf(context).top + 8,
       left: 16,
       right: 16,
       child: SlideTransition(

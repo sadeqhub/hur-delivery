@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../shared/widgets/responsive_screen_wrapper.dart';
 import '../../../shared/widgets/responsive_container.dart';
@@ -75,7 +76,7 @@ class ResponsiveExampleScreen extends StatelessWidget {
                     ResponsiveText(
                       'منصة التوصيل للسائقين والتجار',
                       style: AppTextStyles.responsiveBodyMedium(context).copyWith(
-                        color: AppColors.textSecondary,
+                        color: context.themeTextSecondary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -201,7 +202,7 @@ class ResponsiveExampleScreen extends StatelessWidget {
             ResponsiveText(
               feature['desc'] as String,
               style: AppTextStyles.responsiveBodySmall(context).copyWith(
-                color: AppColors.textSecondary,
+                color: context.themeTextSecondary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -250,7 +251,7 @@ class ResponsiveExampleScreen extends StatelessWidget {
               ResponsiveText(
                 stat['label'] as String,
                 style: AppTextStyles.responsiveBodySmall(context).copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.themeTextSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),

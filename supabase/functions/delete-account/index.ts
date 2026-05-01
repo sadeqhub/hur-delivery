@@ -1,5 +1,15 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import {
+  applySecurityMiddleware,
+  RateLimitPresets,
+  createErrorResponse,
+  createSuccessResponse,
+  parseJsonSafely,
+  validateAndNormalizePhone,
+  ValidationError,
+  logSecurityEvent,
+} from "../_shared/security.ts"
 
 console.log('[delete-account] Module loaded at:', new Date().toISOString());
 
@@ -16,52 +26,56 @@ function normalizePhone(input: string): string {
 }
 
 serve(async (req) => {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  };
-
   console.log('[delete-account] ==== HANDLER CALLED ====');
   console.log('[delete-account] Method:', req.method);
   console.log('[delete-account] URL:', req.url);
 
+  // Apply STRICT rate limiting for account deletion (sensitive operation)
+  const securityCheck = await applySecurityMiddleware(req, {
+    rateLimit: RateLimitPresets.STRICT, // 5 requests per minute
+    maxBodySize: 10 * 1024, // 10KB max
+  });
+
+  if (!securityCheck.allowed) {
+    logSecurityEvent('delete_account_rate_limit', {}, 'medium');
+    return securityCheck.response!;
+  }
+
   try {
-    // Handle OPTIONS request for CORS
-    if (req.method === 'OPTIONS') {
-      return new Response('ok', { status: 200, headers: corsHeaders });
-    }
-
     if (req.method !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405, headers: corsHeaders });
+      return createErrorResponse('Method Not Allowed', 405);
     }
 
-    const bodyText = await req.text();
-    console.log('[delete-account] Body text received, length:', bodyText.length);
-    
-    let raw: any;
+    // Parse and validate request
+    let body: DeleteAccountRequest;
     try {
-      raw = JSON.parse(bodyText);
-      console.log('[delete-account] JSON parsed successfully');
-    } catch (jsonErr) {
-      console.error('[delete-account] JSON parse error:', jsonErr);
-      return Response.json(
-        { error: 'Invalid JSON in request body', details: String(jsonErr) },
-        { status: 400, headers: corsHeaders }
-      );
+      body = await parseJsonSafely<DeleteAccountRequest>(req, 10 * 1024);
+    } catch (error) {
+      return createErrorResponse(error as ValidationError, 400);
     }
     
-    const body = raw as DeleteAccountRequest;
     const { phoneNumber, code } = body;
 
+    // Validate required fields
     if (!phoneNumber || !code) {
-      return Response.json(
-        { error: 'phoneNumber and code are required' },
-        { status: 400, headers: corsHeaders }
-      );
+      return createErrorResponse('phoneNumber and code are required', 400);
     }
-
-    const phone = normalizePhone(phoneNumber);
-    console.log('[delete-account] Normalized phone:', phone);
+    
+    // Validate and normalize phone number
+    let phone: string;
+    try {
+      phone = validateAndNormalizePhone(phoneNumber);
+      console.log('[delete-account] Validated phone:', phone);
+    } catch (error) {
+      logSecurityEvent('delete_account_invalid_phone', { phoneNumber }, 'low');
+      return createErrorResponse(error as ValidationError, 400);
+    }
+    
+    // Validate OTP code format (should be 6 digits)
+    if (!/^\d{6}$/.test(code)) {
+      logSecurityEvent('delete_account_invalid_code_format', {}, 'medium');
+      return createErrorResponse('Invalid OTP code format', 400);
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -253,21 +267,25 @@ serve(async (req) => {
     }
 
     console.log('[delete-account] ✅ Account deleted successfully');
+    
+    // Log account deletion for audit trail
+    logSecurityEvent('account_deleted', { 
+      userId,
+      phone: phone.substring(0, 6) + '****' // Partial phone for privacy
+    }, 'medium');
 
-    return Response.json(
-      { success: true, message: 'Account deleted successfully' },
-      { status: 200, headers: corsHeaders }
-    );
+    return createSuccessResponse({ message: 'Account deleted successfully' });
   } catch (e: any) {
     console.error('[delete-account] ==== UNCAUGHT ERROR ====');
     console.error('[delete-account] Error type:', e?.constructor?.name ?? typeof e);
     console.error('[delete-account] Error message:', e?.message ?? String(e));
     console.error('[delete-account] Error stack:', e?.stack);
     
-    return Response.json(
-      { error: e?.message ?? 'Unknown error', details: String(e) },
-      { status: 500, headers: corsHeaders }
-    );
+    logSecurityEvent('delete_account_error', { 
+      error: e?.message ?? 'Unknown error'
+    }, 'high');
+    
+    return createErrorResponse(e?.message ?? 'Internal server error', 500);
   }
 });
 

@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../config/env.dart';
 
 class WhatsAppLocationService {
   static final SupabaseClient _supabase = Supabase.instance.client;

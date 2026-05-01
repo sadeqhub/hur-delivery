@@ -36,6 +36,6 @@ export const getSystemSetting = async (key, defaultValue = null) => {
 
 // Helper function to fetch support phone
 export const getSupportPhone = async () => {
-  return await getSystemSetting('support_phone', '+964 770 123 4567');
+  return await getSystemSetting('support_phone', '+964 789 000 3093');
 };
 

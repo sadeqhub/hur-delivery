@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f8f9fa",
+                    "tertiary-fixed": "#ffdbc8",
+                    "surface-dim": "#d9dadb",
+                    "tertiary-fixed-dim": "#ffb68a",
+                    "surface-bright": "#f8f9fa",
+                    "background": "#f8f9fa",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#6ed6df",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#3755c3",
+                    "on-background": "#191c1d",
+                    "surface-tint": "#006970",
+                    "secondary-fixed": "#dde1ff",
+                    "on-tertiary-fixed": "#321300",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-secondary-fixed-variant": "#173bab",
+                    "on-secondary-container": "#00217a",
+                    "on-surface-variant": "#3d494a",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#2e3132",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-container-high": "#e7e8e9",
+                    "tertiary": "#8d4a19",
+                    "on-primary-container": "#f5feff",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed-dim": "#6ed6df",
+                    "outline-variant": "#bdc9ca",
+                    "primary-container": "#00818a",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#ab6230",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "surface-container": "#edeeef",
+                    "secondary-container": "#708cfd",
+                    "on-surface": "#191c1d",
+                    "primary-fixed": "#8cf2fc",
+                    "on-tertiary-fixed-variant": "#733604",
+                    "surface-variant": "#e1e3e4",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#001453",
+                    "primary": "#00666d",
+                    "inverse-on-surface": "#f0f1f2",
+                    "outline": "#6d797a",
+                    "on-tertiary-container": "#fffbff",
+                    "on-primary-fixed-variant": "#004f54",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#002022"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Tajawal", "sans-serif"],
+                    "body": ["Manrope", "sans-serif"],
+                    "label": ["Manrope", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-ring {
+            box-shadow: 0 0 0 4px #00666d;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased overflow-x-hidden">
+<!-- Top AppBar - Following JSON structure but keeping minimal for flow -->
+<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-lg flex justify-between items-center px-6 py-4 shadow-sm shadow-teal-900/5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-teal-700">arrow_forward_ios</span>
+</div>
+<h1 class="text-2xl font-black text-teal-800 tracking-tighter font-headline">Hur Delivery</h1>
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">help_outline</span>
+</div>
+</header>
+<main class="min-h-screen pt-24 pb-32 px-6 max-w-2xl mx-auto flex flex-col">
+<!-- Welcome Section -->
+<section class="mb-12">
+<h2 class="text-4xl font-black text-on-surface tracking-tight font-headline mb-4">
+                اختر نوع الحساب
+            </h2>
+<p class="text-on-surface-variant text-lg leading-relaxed max-w-md">
+                انضم إلى منصة Hur Delivery وابدأ رحلتك معنا في النجف والموصل.
+            </p>
+</section>
+<!-- Role Selection Cards -->
+<div class="space-y-6 flex-grow">
+<!-- Driver Selection -->
+<label class="relative block group cursor-pointer active:scale-95 transition-transform duration-200">
+<input checked="" class="peer hidden" name="role" type="radio"/>
+<div class="relative overflow-hidden rounded-3xl bg-surface-container-low p-1 transition-all duration-300 peer-checked:bg-primary">
+<div class="bg-white rounded-[22px] p-6 flex flex-col md:flex-row items-center gap-6">
+<div class="w-full md:w-40 h-32 md:h-40 rounded-2xl overflow-hidden bg-teal-50">
+<img alt="Delivery Driver Illustration" class="w-full h-full object-cover" data-alt="Modern high-quality illustration of a delivery driver on a stylish motorcycle with a thermal bag in a sunny Iraqi urban street" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvQWdFAd_6TXKv55_dUYRMPCqLuYVuybOs6xquFp3G2bzdtmY3EOco3UwifmJ_kLRJlbwyg8-h9t9XrcXCj3wpr0hnxVZnPjz3lLXwXG-tcGmiYNRG2_ftk_a_CxkSxQnn7FFllzP0qSkWZhz0R6aQhEMH8O2I5C7XPEWP9JSzqMQxkzwEXQ6XyrL9_wcNhQyTDj0TEBAxDDXkRgzx8TP4xPDIg9YOcejkKTX_PJLHm7WjptMxXE0AHzaMY-oCrtuM0NzSvOUW-I4q"/>
+</div>
+<div class="flex-grow text-right md:text-right">
+<div class="flex items-center justify-between mb-1">
+<span class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest font-label">
+                                    متاح الآن
+                                </span>
+<div class="w-6 h-6 rounded-full border-2 border-primary-container flex items-center justify-center peer-checked:bg-primary">
+<div class="w-3 h-3 bg-primary rounded-full scale-0 peer-checked:scale-100 transition-transform"></div>
+</div>
+</div>
+<h3 class="text-2xl font-bold font-headline text-on-surface mb-2">كابتن توصيل</h3>
+<p class="text-on-surface-variant text-sm">كن سيد عملك، اختر أوقاتك وحقق أرباحاً إضافية في مدينتك.</p>
+</div>
+</div>
+</div>
+</label>
+<!-- Merchant Selection -->
+<label class="relative block group cursor-pointer active:scale-95 transition-transform duration-200">
+<input class="peer hidden" name="role" type="radio"/>
+<div class="relative overflow-hidden rounded-3xl bg-surface-container-low p-1 transition-all duration-300 peer-checked:bg-primary">
+<div class="bg-white rounded-[22px] p-6 flex flex-col md:flex-row items-center gap-6">
+<div class="w-full md:w-40 h-32 md:h-40 rounded-2xl overflow-hidden bg-secondary-fixed/30">
+<img alt="Store Owner Illustration" class="w-full h-full object-cover" data-alt="Vibrant editorial style illustration of a modern local boutique storefront with Iraqi architectural elements and digital delivery integration" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCveie4ak1_u7rc32oMtpmq1zdSkBu2QmkfJahTq2U31vz166LYGHJP3t3-Zq8QzkY5l-0szQo6Q92NB28FSUnEBjSnzDGG4u4mYdB2WTOx5vpNOfE_hMR9pfK9Zc_HwzAFqt-G6MKQs-1j4UjLpRv7ndAyPKxFJBONGb5XcP8Pv1j7POBPrj3aRpBC2tDHtk3aCRe3vXbr5RactJQTTVGybj0SkNuwKxN5T-FVFo58LBc4BNxJ3-6Aax2gRqtr4-oPiMGpKsqz-dOu"/>
+</div>
+<div class="flex-grow text-right md:text-right">
+<div class="flex items-center justify-end mb-1">
+<div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center">
+<!-- Radio State Managed via Peer Classes Above -->
+</div>
+</div>
+<h3 class="text-2xl font-bold font-headline text-on-surface mb-2">صاحب متجر</h3>
+<p class="text-on-surface-variant text-sm">وسّع نطاق عملك، استلم الطلبات إلكترونياً وضاعف مبيعاتك.</p>
+</div>
+</div>
+</div>
+</label>
+</div>
+<!-- Sticky Footer CTA -->
+<div class="fixed bottom-0 left-0 w-full p-6 md:pb-12 bg-gradient-to-t from-surface via-surface to-transparent z-40">
+<div class="max-w-2xl mx-auto">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary py-5 rounded-2xl text-xl font-bold font-headline shadow-lg shadow-primary/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3">
+                    متابعة
+                    <span class="material-symbols-outlined">arrow_back</span>
+</button>
+<p class="text-center mt-4 text-on-surface-variant text-xs">
+                    بالاستمرار، أنت توافق على <span class="text-primary font-bold">شروط الخدمة</span> و <span class="text-primary font-bold">سياسة الخصوصية</span>
+</p>
+</div>
+</div>
+</main>
+<!-- Navigation Drawer Semantic Anchor (Hidden by default) -->
+<div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] pointer-events-none opacity-0 transition-opacity" id="drawer">
+<div class="h-full w-[280px] bg-white rounded-r-3xl flex flex-col py-8 px-6 gap-4 -translate-x-full transition-transform">
+<!-- Sidebar content would go here -->
+</div>
+</div>
+</body></html>

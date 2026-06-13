@@ -34,7 +34,6 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
   String? _currentOTP;
   String? _currentPhone;
   String? _verifiedPhone; // Store the verified phone number for registration
-  String? _lastVerifiedCode;
   int? _otpRetryAfterSeconds;
   String? _lastServerComputedPassword;
 
@@ -46,7 +45,6 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get isDemoMode => _isDemoMode;
   bool get isVerified => _user?.isVerified ?? false;
   String? get verifiedPhone => _verifiedPhone;
-  String? get lastVerifiedCode => _lastVerifiedCode;
   int? get otpRetryAfterSeconds => _otpRetryAfterSeconds;
 
   AuthProvider() {
@@ -791,8 +789,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
           print('✅ [DEBUG] Profile loading complete');
           
           _verifiedPhone = phone;
-          _lastVerifiedCode = code;
-          
+
           print('✅ [DEBUG] User profile loaded, authentication complete');
           return true;
         } catch (sessionError) {
@@ -804,72 +801,9 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         }
       }
       
-      // FALLBACK: Old handler format (email/password)
-      print('🔐 [DEBUG] Using email/password format (legacy otp-handler)');
-      final email = data?['email'] as String?;
-      final password = data?['password'] as String?;
-      
-      if (email == null || password == null) {
-        _error = 'تعذر الحصول على بيانات الحساب من الخادم';
-        return false;
-      }
-      
-      print('🔐 [DEBUG] Signing in with credentials from Edge Function');
-      
-      // Sign in with the credentials returned by Edge Function
-      try {
-        final signInRes =
-            await Supabase.instance.client.auth.signInWithPassword(
-          email: email,
-          password: password,
-        );
-        
-        if (signInRes.user == null) {
-          _error = 'فشل تسجيل الدخول';
-          return false;
-        }
-        
-        print('✅ [DEBUG] Auth sign-in successful for $email');
-        
-        // Load user profile
-        await _loadUserProfile();
-        
-        _verifiedPhone = phone;
-        _lastVerifiedCode = code;
-        
-        return true;
-      } catch (signInError) {
-        print('❌ [DEBUG] Sign-in failed: $signInError');
-
-        final legacyEmail = email.endsWith('@hur.delivery')
-            ? email.replaceFirst('@hur.delivery', '@hurdelivery.com')
-            : null;
-
-        if (legacyEmail != null) {
-          try {
-            print(
-                '🔐 [DEBUG] Retrying sign-in with legacy domain: $legacyEmail');
-            final legacyRes =
-                await Supabase.instance.client.auth.signInWithPassword(
-              email: legacyEmail,
-              password: password,
-            );
-
-            if (legacyRes.user != null) {
-              print('✅ [DEBUG] Auth sign-in successful for $legacyEmail');
-              await _loadUserProfile();
-              _verifiedPhone = phone;
-              _lastVerifiedCode = code;
-              return true;
-            }
-          } catch (legacyError) {
-            print('❌ [DEBUG] Legacy sign-in also failed: $legacyError');
-          }
-        }
-
-        _error = 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.';
-        return false;
-      }
+      // otp-handler-clean must always return session tokens.
+      _error = 'فشل التحقق: يرجى المحاولة مرة أخرى';
+      return false;
     } catch (e) {
       print('❌ authenticate error: $e');
       _error = _getErrorMessage(e);
@@ -878,11 +812,6 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  String _emailFromPhoneE164(String phoneE164) {
-    final noPlus = phoneE164.replaceAll('+', '');
-    return '$noPlus@hur.delivery';
   }
 
   bool isValidNewPassword(String password) {

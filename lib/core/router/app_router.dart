@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/auth_provider.dart';
 
 import '../services/global_order_notification_service.dart';
 import '../../features/auth/screens/splash_screen.dart';
@@ -41,9 +42,13 @@ import '../../features/legal/screens/terms_conditions_screen.dart';
 import '../../shared/widgets/verification_guard.dart';
 
 class AppRouter {
-  static final GoRouter router = GoRouter(
+  static GoRouter? _cachedRouter;
+
+  static GoRouter createRouter(AuthProvider authProvider) {
+    return _cachedRouter ??= GoRouter(
     navigatorKey: GlobalOrderNotificationService.navigatorKey,
     initialLocation: '/splash',
+    refreshListenable: authProvider,
     routes: [
       // Splash screen (initial route with session restoration)
       GoRoute(
@@ -402,5 +407,6 @@ class AppRouter {
         ),
       ),
     ),
-  );
+    );
+  }
 }

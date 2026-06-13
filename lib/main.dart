@@ -175,12 +175,18 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
 
   void _setupGlobalNotificationListener() {
     // Listen to auth state changes
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       final session = data.session;
       if (session != null) {
         final userId = session.user.id;
-        final userRole = session.user.userMetadata?['role'] as String?;
-        
+        var userRole = session.user.appMetadata['role'] as String?;
+        if (userRole == null) {
+          try {
+            final refreshed = await Supabase.instance.client.auth.refreshSession();
+            userRole = refreshed.session?.user.appMetadata['role'] as String?;
+          } catch (_) {}
+        }
+
         if (userRole != null && (userRole == 'driver' || userRole == 'merchant')) {
           print('🔔 Starting global notifications for $userRole: $userId');
           GlobalOrderNotificationService.initialize(
@@ -216,8 +222,9 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
           ChangeNotifierProvider(create: (_) => AnnouncementProvider()),
           ChangeNotifierProvider(create: (_) => SystemStatusProvider()),
         ],
-        child: Consumer4<ThemeProvider, LocaleProvider, ConnectivityProvider, AuthProvider>(
-          builder: (context, themeProvider, localeProvider, connectivityProvider, authProvider, _) {
+        child: Consumer3<ThemeProvider, LocaleProvider, ConnectivityProvider>(
+          builder: (context, themeProvider, localeProvider, connectivityProvider, _) {
+            final authProvider = context.read<AuthProvider>();
             final appLocale = localeProvider.isLoading
                 ? const Locale('ar', 'IQ')
                 : localeProvider.locale;
@@ -278,7 +285,7 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
                 );
               },
 
-              routerConfig: AppRouter.router,
+              routerConfig: AppRouter.createRouter(authProvider),
             );
           },
         ),

@@ -115,3 +115,4 @@ webhook*.html
 *.keystore
 key.properties
 local.properties
+.claude/

@@ -12,9 +12,10 @@ import 'dart:convert';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/config/app_config.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/env.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/providers/voice_recording_provider.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../core/services/delivery_fee_calculator.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -22,16 +23,16 @@ import '../screens/voice_library_screen.dart';
 import '../screens/create_order_screen.dart';
 import '../../../core/utils/logger.dart';
 
-class CreateVoiceOrderScreen extends StatefulWidget {
+class CreateVoiceOrderScreen extends ConsumerStatefulWidget {
   final bool embedded;
 
   const CreateVoiceOrderScreen({super.key, this.embedded = false});
 
   @override
-  State<CreateVoiceOrderScreen> createState() => _CreateVoiceOrderScreenState();
+  ConsumerState<CreateVoiceOrderScreen> createState() => _CreateVoiceOrderScreenState();
 }
 
-class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
+class _CreateVoiceOrderScreenState extends ConsumerState<CreateVoiceOrderScreen>
     with SingleTickerProviderStateMixin {
   bool _isRecording = false;
   bool _isProcessing = false;
@@ -718,9 +719,11 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
     setState(() => _isProcessing = true);
 
     try {
-      final provider = context.read<VoiceRecordingProvider>();
+      final notifier = ref.read(voiceRecordingProvider.notifier);
+      final recordings = ref.read(voiceRecordingProvider).valueOrNull?.recordings ?? [];
       final recording =
-          provider.recordings.firstWhere((r) => r.id == recordingId);
+          recordings.firstWhere((r) => r.id == recordingId);
+      final provider = notifier;
 
       // If cached data exists, use it
       if (recording.hasExtractedData && recording.hasTranscription) {
@@ -812,8 +815,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
       final filename = audioPath.split('/').last;
       final fileStats = await audioFile.stat();
 
-      final provider = context.read<VoiceRecordingProvider>();
-      final recording = await provider.uploadRecording(
+      final recording = await ref.read(voiceRecordingProvider.notifier).uploadRecording(
         audioFile: audioFile,
         filename: filename,
         durationSeconds: _duration?.inSeconds,

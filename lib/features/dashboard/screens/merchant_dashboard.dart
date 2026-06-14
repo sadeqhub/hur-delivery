@@ -1,5 +1,6 @@
 // TODO: extract Supabase.instance calls to a feature repository
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,8 +21,7 @@ import '../../wallet/widgets/credit_limit_guard.dart';
 import '../../wallet/screens/wallet_screen.dart';
 import 'merchant_analytics_screen.dart';
 import 'dart:async';
-import '../../../core/providers/announcement_provider.dart';
-import '../../../core/providers/system_status_provider.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../shared/widgets/maintenance_mode_dialog.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/screen_visibility_tracker.dart';
@@ -31,14 +31,14 @@ import '../../../core/utils/logger.dart';
 import '../data/dashboard_repository.dart';
 // Removed legacy stable_order_card_manager import
 
-class MerchantDashboard extends StatefulWidget {
+class MerchantDashboard extends ConsumerStatefulWidget {
   const MerchantDashboard({super.key});
 
   @override
-  State<MerchantDashboard> createState() => _MerchantDashboardState();
+  ConsumerState<MerchantDashboard> createState() => _MerchantDashboardState();
 }
 
-class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibilityMixin {
+class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with ScreenVisibilityMixin {
   @override
   String get screenName => 'merchant_dashboard';
   
@@ -60,7 +60,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibi
         await context.read<OrderProvider>().initialize();
         
         // Initialize system status checking
-        await context.read<SystemStatusProvider>().initialize();
+        await ref.read(systemStatusProvider.notifier).initialize();
         
         // Initialize wallet
         if (authProvider.user != null) {
@@ -68,7 +68,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibi
           
           // Initialize announcement checker (checks every 5 seconds)
           if (mounted) {
-            await context.read<AnnouncementProvider>().initialize(
+            await ref.read(announcementProvider.notifier).initialize(
               userRole: 'merchant',
               userId: authProvider.user!.id,
               context: context,
@@ -88,7 +88,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibi
 
           // Check system status and show dialog if disabled
           if (mounted) {
-            final systemStatus = context.read<SystemStatusProvider>();
+            final systemStatus = ref.read(systemStatusProvider);
             if (!systemStatus.isSystemEnabled) {
               MaintenanceModeDialog.show(context, 'merchant');
             }
@@ -104,7 +104,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibi
   @override
   void dispose() {
     // Stop announcement checking when leaving dashboard
-    context.read<AnnouncementProvider>().stopChecking();
+    ref.read(announcementProvider.notifier).stopChecking();
     super.dispose();
   }
 

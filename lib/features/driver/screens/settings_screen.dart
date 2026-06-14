@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/language_switcher.dart';
-import '../../../core/providers/theme_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
 
 class DriverSettingsScreen extends StatefulWidget {
@@ -232,26 +233,24 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
   }
 }
 
-class _ThemeToggleTile extends StatelessWidget {
+class _ThemeToggleTile extends ConsumerWidget {
   const _ThemeToggleTile();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context);
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return SwitchListTile(
-          secondary: Icon(
-            themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-            color: AppColors.primary,
-          ),
-          title: Text(loc.darkMode),
-          subtitle: Text(themeProvider.isDarkMode ? loc.darkModeEnabled : loc.lightModeEnabled),
-          value: themeProvider.isDarkMode,
-          onChanged: (value) => themeProvider.toggleTheme(),
-          activeColor: AppColors.primary,
-        );
-      },
+    final themeMode = ref.watch(themeProvider).valueOrNull ?? ThemeMode.light;
+    final isDarkMode = themeMode == ThemeMode.dark;
+    return SwitchListTile(
+      secondary: Icon(
+        isDarkMode ? Icons.dark_mode : Icons.light_mode,
+        color: AppColors.primary,
+      ),
+      title: Text(loc.darkMode),
+      subtitle: Text(isDarkMode ? loc.darkModeEnabled : loc.lightModeEnabled),
+      value: isDarkMode,
+      onChanged: (_) => ref.read(themeProvider.notifier).toggleTheme(),
+      activeColor: AppColors.primary,
     );
   }
 }

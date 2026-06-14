@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../core/providers/voice_recording_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../widgets/voice_recording_card.dart';
 
-class VoiceLibraryScreen extends StatefulWidget {
+class VoiceLibraryScreen extends ConsumerStatefulWidget {
   const VoiceLibraryScreen({super.key});
 
   @override
-  State<VoiceLibraryScreen> createState() => _VoiceLibraryScreenState();
+  ConsumerState<VoiceLibraryScreen> createState() => _VoiceLibraryScreenState();
 }
 
-class _VoiceLibraryScreenState extends State<VoiceLibraryScreen> {
+class _VoiceLibraryScreenState extends ConsumerState<VoiceLibraryScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<VoiceRecordingProvider>().loadRecordings();
+      ref.read(voiceRecordingProvider.notifier).loadRecordings();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final voiceState = ref.watch(voiceRecordingProvider);
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -45,14 +46,50 @@ class _VoiceLibraryScreenState extends State<VoiceLibraryScreen> {
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () {
-              context.read<VoiceRecordingProvider>().loadRecordings();
+              ref.read(voiceRecordingProvider.notifier).loadRecordings();
             },
           ),
         ],
       ),
-      body: Consumer<VoiceRecordingProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
+      body: voiceState.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
+        ),
+        error: (err, _) {
+          final loc = AppLocalizations.of(context);
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+                const SizedBox(height: 16),
+                Text(
+                  loc.errorLoadingRecordings,
+                  style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  err.toString(),
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => ref.read(voiceRecordingProvider.notifier).loadRecordings(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  ),
+                  child: Text(loc.retry),
+                ),
+              ],
+            ),
+          );
+        },
+        data: (state) {
+          if (state.isLoading) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -60,112 +97,73 @@ class _VoiceLibraryScreenState extends State<VoiceLibraryScreen> {
             );
           }
 
-          if (provider.error != null) {
+          if (state.error != null) {
+            final loc = AppLocalizations.of(context);
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red.shade300,
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
                   const SizedBox(height: 16),
-                  Builder(
-                    builder: (context) {
-                      final loc = AppLocalizations.of(context);
-                      return Column(
-                        children: [
-                          Text(
-                            loc.errorLoadingRecordings,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            provider.error!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade500,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton(
-                            onPressed: () {
-                              provider.clearError();
-                              provider.loadRecordings();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 32,
-                                vertical: 12,
-                              ),
-                            ),
-                            child: Text(loc.retry),
-                          ),
-                        ],
-                      );
+                  Text(
+                    loc.errorLoadingRecordings,
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    state.error!,
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      ref.read(voiceRecordingProvider.notifier).clearError();
+                      ref.read(voiceRecordingProvider.notifier).loadRecordings();
                     },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    ),
+                    child: Text(loc.retry),
                   ),
                 ],
               ),
             );
           }
 
-          final recordings = provider.activeRecordings;
+          final recordings = state.activeRecordings;
 
           if (recordings.isEmpty) {
+            final loc = AppLocalizations.of(context);
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.mic_none,
-                    size: 80,
-                    color: Colors.grey.shade300,
-                  ),
+                  Icon(Icons.mic_none, size: 80, color: Colors.grey.shade300),
                   const SizedBox(height: 24),
-                  Builder(
-                    builder: (context) {
-                      final loc = AppLocalizations.of(context);
-                      return Column(
-                        children: [
-                          Text(
-                            loc.noVoiceRecordings,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            loc.recordFirstOrder,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          ElevatedButton.icon(
-                            onPressed: () => Navigator.pop(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 32,
-                                vertical: 14,
-                              ),
-                            ),
-                            icon: const Icon(Icons.add),
-                            label: Text(loc.recordNewOrder),
-                          ),
-                        ],
-                      );
-                    },
+                  Text(
+                    loc.noVoiceRecordings,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    loc.recordFirstOrder,
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                    ),
+                    icon: const Icon(Icons.add),
+                    label: Text(loc.recordNewOrder),
                   ),
                 ],
               ),
@@ -173,7 +171,7 @@ class _VoiceLibraryScreenState extends State<VoiceLibraryScreen> {
           }
 
           return RefreshIndicator(
-            onRefresh: () => provider.loadRecordings(),
+            onRefresh: () => ref.read(voiceRecordingProvider.notifier).loadRecordings(),
             color: AppColors.primary,
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -193,7 +191,6 @@ class _VoiceLibraryScreenState extends State<VoiceLibraryScreen> {
   }
 
   void _handleReuse(String recordingId) {
-    // Navigate back and pass the recording ID
     Navigator.pop(context, recordingId);
   }
 
@@ -221,8 +218,8 @@ class _VoiceLibraryScreenState extends State<VoiceLibraryScreen> {
     );
 
     if (confirmed == true && mounted) {
-      final success = await context
-          .read<VoiceRecordingProvider>()
+      final success = await ref
+          .read(voiceRecordingProvider.notifier)
           .archiveRecording(recordingId);
 
       if (success && mounted) {
@@ -236,4 +233,3 @@ class _VoiceLibraryScreenState extends State<VoiceLibraryScreen> {
     }
   }
 }
-

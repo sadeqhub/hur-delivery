@@ -1,59 +1,74 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/system_status_service.dart';
 import '../utils/logger.dart';
 
-/// Provider to manage system-wide status (maintenance mode)
-class SystemStatusProvider extends ChangeNotifier {
-  final SystemStatusService _systemStatusService = SystemStatusService();
-  
-  bool _isSystemEnabled = true;
-  bool _isChecking = false;
-  
-  bool get isSystemEnabled => _isSystemEnabled;
-  bool get isChecking => _isChecking;
-  bool get isMaintenanceMode => !_isSystemEnabled;
+class SystemStatusState {
+  final bool isSystemEnabled;
+  final bool isChecking;
 
-  /// Initialize and start checking
-  Future<void> initialize() async {
-    Logger.d('🔧 Initializing SystemStatusProvider...');
-    
-    // Check immediately
-    await checkStatus();
-    
-    // Start periodic checking
-    _systemStatusService.startPeriodicChecking();
-    
-    // Listen for status changes
-    _systemStatusService.onStatusChange((isEnabled) {
-      _isSystemEnabled = isEnabled;
-      notifyListeners();
-    });
-    
-    Logger.d('✅ SystemStatusProvider initialized');
-  }
+  const SystemStatusState({
+    this.isSystemEnabled = true,
+    this.isChecking = false,
+  });
 
-  /// Manually check system status
-  Future<void> checkStatus() async {
-    _isChecking = true;
-    notifyListeners();
-    
-    try {
-      _isSystemEnabled = await _systemStatusService.checkSystemStatus();
-    } finally {
-      _isChecking = false;
-      notifyListeners();
-    }
-  }
+  bool get isMaintenanceMode => !isSystemEnabled;
 
-  /// Refresh status
-  Future<void> refresh() async {
-    await _systemStatusService.refresh();
-  }
-
-  @override
-  void dispose() {
-    _systemStatusService.dispose();
-    super.dispose();
+  SystemStatusState copyWith({
+    bool? isSystemEnabled,
+    bool? isChecking,
+  }) {
+    return SystemStatusState(
+      isSystemEnabled: isSystemEnabled ?? this.isSystemEnabled,
+      isChecking: isChecking ?? this.isChecking,
+    );
   }
 }
 
+class SystemStatusNotifier extends Notifier<SystemStatusState> {
+  final SystemStatusService _systemStatusService = SystemStatusService();
+
+  @override
+  SystemStatusState build() {
+    ref.onDispose(() {
+      _systemStatusService.dispose();
+    });
+    return const SystemStatusState();
+  }
+
+  /// Initialize and start periodic checking.
+  Future<void> initialize() async {
+    Logger.d('Initializing SystemStatusNotifier...');
+
+    await checkStatus();
+
+    _systemStatusService.startPeriodicChecking();
+
+    _systemStatusService.onStatusChange((isEnabled) {
+      state = state.copyWith(isSystemEnabled: isEnabled);
+    });
+
+    Logger.d('SystemStatusNotifier initialized');
+  }
+
+  /// Manually check system status.
+  Future<void> checkStatus() async {
+    state = state.copyWith(isChecking: true);
+
+    try {
+      final isEnabled = await _systemStatusService.checkSystemStatus();
+      state = state.copyWith(isSystemEnabled: isEnabled, isChecking: false);
+    } catch (_) {
+      state = state.copyWith(isChecking: false);
+    }
+  }
+
+  /// Refresh status via the service.
+  Future<void> refresh() async {
+    await _systemStatusService.refresh();
+  }
+}
+
+final systemStatusProvider =
+    NotifierProvider<SystemStatusNotifier, SystemStatusState>(
+  SystemStatusNotifier.new,
+);

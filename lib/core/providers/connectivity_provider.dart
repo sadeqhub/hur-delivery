@@ -1,41 +1,27 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import '../utils/logger.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ConnectivityProvider extends ChangeNotifier {
-  final Connectivity _connectivity = Connectivity();
-  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
-  
-  bool _isOnline = true;
-  bool get isOnline => _isOnline;
+final connectivityProvider = StreamProvider<bool>((ref) {
+  final connectivity = Connectivity();
+  final controller = StreamController<bool>.broadcast();
 
-  ConnectivityProvider() {
-    _initConnectivity();
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
-  }
-
-  Future<void> _initConnectivity() async {
-    try {
-      final result = await _connectivity.checkConnectivity();
-      _updateConnectionStatus(result);
-    } catch (e) {
-      Logger.d('Could not check connectivity status: $e');
+  connectivity.checkConnectivity().then((result) {
+    if (!controller.isClosed) {
+      controller.add(result != ConnectivityResult.none);
     }
-  }
+  });
 
-  void _updateConnectionStatus(ConnectivityResult result) {
-    final wasOnline = _isOnline;
-    _isOnline = result != ConnectivityResult.none;
-    
-    if (wasOnline != _isOnline) {
-      notifyListeners();
+  final sub = connectivity.onConnectivityChanged.listen((result) {
+    if (!controller.isClosed) {
+      controller.add(result != ConnectivityResult.none);
     }
-  }
+  });
 
-  @override
-  void dispose() {
-    _connectivitySubscription?.cancel();
-    super.dispose();
-  }
-}
+  ref.onDispose(() {
+    sub.cancel();
+    controller.close();
+  });
+
+  return controller.stream;
+});

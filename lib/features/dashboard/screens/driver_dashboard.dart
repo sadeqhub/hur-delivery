@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter/foundation.dart'
     show unawaited, kIsWeb, kReleaseMode, debugPrint;
@@ -26,9 +27,7 @@ import '../../../core/providers/location_provider.dart';
 import '../../../shared/models/order_model.dart';
 import '../../../core/widgets/header_notification.dart';
 import '../../../core/services/order_redirect_service.dart';
-import '../../../core/providers/announcement_provider.dart';
-import '../../../core/providers/system_status_provider.dart';
-import '../../../core/providers/notification_provider.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../shared/widgets/maintenance_mode_dialog.dart';
 import '../widgets/state_of_the_art_navigation.dart';
 // Removed legacy map/annotation systems
@@ -43,13 +42,14 @@ import '../../../shared/widgets/delivery_timer_widget.dart';
 import '../../../core/services/screen_visibility_tracker.dart';
 import '../providers/driver_status_provider.dart';
 import '../providers/active_order_provider.dart';
+import '../providers/driver_dashboard_controller.dart';
 import '../services/driver_location_manager.dart';
 import '../widgets/driver_map_section.dart';
 import '../widgets/driver_bottom_nav.dart';
 import '../widgets/driver_header_buttons.dart';
 import '../widgets/driver_sidebar.dart';
-import '../../../core/utils/logger.dart';
-import '../data/dashboard_repository.dart';
+import '../widgets/driver_timer_banner.dart';
+import '../widgets/driver_order_swipe_cards.dart';
 
 // ---------------------------------------------------------------------------
 // Public entry point — provides dashboard-scoped providers then renders the
@@ -77,6 +77,7 @@ class DriverDashboard extends StatelessWidget {
           ),
         ),
         Provider(create: (_) => DriverLocationManager()),
+        ChangeNotifierProvider(create: (_) => DriverDashboardController()),
       ],
       child: const _DriverDashboardCore(),
     );
@@ -100,14 +101,14 @@ class _RegularOrderItem extends _OrderItem {
   String get status => order.status;
 }
 
-class _DriverDashboardCore extends StatefulWidget {
+class _DriverDashboardCore extends ConsumerStatefulWidget {
   const _DriverDashboardCore();
 
   @override
-  State<_DriverDashboardCore> createState() => _DriverDashboardState();
+  ConsumerState<_DriverDashboardCore> createState() => _DriverDashboardState();
 }
 
-class _DriverDashboardState extends State<_DriverDashboardCore>
+class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
     with WidgetsBindingObserver, ScreenVisibilityMixin {
   @override
   String get screenName => 'driver_dashboard';
@@ -202,7 +203,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
     // Force refresh map route which will rebuild all annotations without destroying the geocoding cache
     _refreshMapRoute(order);
 
-    Logger.d('🔄 Rebuilding annotations for order ${order.id} after swipe');
+    print('🔄 Rebuilding annotations for order ${order.id} after swipe');
   }
 
   // Bulk order methods removed - bulk orders are no longer supported
@@ -355,7 +356,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       height: toggleHeight,
       child: GestureDetector(
         onTap: () async {
-          final systemStatus = context.read<SystemStatusProvider>();
+          final systemStatus = ref.read(systemStatusProvider);
           final authProvider = context.read<AuthProvider>();
 
           // Restrict going online in demo mode
@@ -413,7 +414,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
             await _statusProvider.setOnline(
               newStatus,
               authProvider: authProvider,
-              notificationProvider: context.read<NotificationProvider>(),
+              notificationProvider: ref.read(notificationProvider.notifier),
             );
             // _isOnline is synced by onWentOnline/onWentOffline callbacks.
           } catch (e) {
@@ -436,7 +437,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
                 message.contains(loc.maintenanceMode)) {
               if (mounted) MaintenanceModeDialog.show(context, 'driver');
             } else {
-              Logger.d('❌ Error toggling online status: $e');
+              print('❌ Error toggling online status: $e');
               // Show a generic error so the driver knows it failed.
               if (mounted) {
                 showHeaderNotification(
@@ -649,16 +650,16 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
 
       if (mounted) {
         setState(() {});
-        await context.read<SystemStatusProvider>().initialize();
+        await ref.read(systemStatusProvider.notifier).initialize();
 
         if (authProvider.user != null) {
-          await context.read<AnnouncementProvider>().initialize(
+          await ref.read(announcementProvider.notifier).initialize(
                 userRole: 'driver',
                 userId: authProvider.user!.id,
                 context: context,
               );
 
-          final systemStatus = context.read<SystemStatusProvider>();
+          final systemStatus = ref.read(systemStatusProvider);
           if (!systemStatus.isSystemEnabled) {
             if (_isOnline) {
               await _statusProvider.setOnline(false,
@@ -761,10 +762,10 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         return;
       }
 
-      Logger.d('🚫 Rejecting order $orderId');
+      print('🚫 Rejecting order $orderId');
 
       // STEP 1: Clear map annotations BEFORE rejecting
-      Logger.d('🧹 STEP 1: Clearing routes and markers for rejected order');
+      print('🧹 STEP 1: Clearing routes and markers for rejected order');
       try {
         await StateOfTheArtNavigation().clearAll();
       } catch (_) {}
@@ -785,13 +786,13 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       }
 
       // STEP 3: Clear annotations again after rejection
-      Logger.d('🧹 STEP 3: Post-rejection clearing');
+      print('🧹 STEP 3: Post-rejection clearing');
       try {
         await StateOfTheArtNavigation().clearAll();
       } catch (_) {}
 
       // STEP 4: Force immediate removal from local state
-      Logger.d('🧹 STEP 4: Removing order from local state');
+      print('🧹 STEP 4: Removing order from local state');
       if (mounted) {
         orderProvider.removeOrderFromLocalState(orderId);
       }
@@ -813,9 +814,9 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         );
       }
 
-      Logger.d('✅ Order $orderId rejected successfully and annotations cleared');
+      print('✅ Order $orderId rejected successfully and annotations cleared');
     } catch (e) {
-      Logger.d('❌ Error rejecting order: $e');
+      print('❌ Error rejecting order: $e');
       if (mounted) {
         final loc = AppLocalizations.of(context);
         showHeaderNotification(
@@ -836,15 +837,15 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
     // Initialize or reinitialize PageController when orders change
     if (_lastOrderListHash != currentHash ||
         _orderCardsPageController == null) {
-      Logger.d('🔄 Order list changed - reinitializing PageController');
-      Logger.d('   Old hash: $_lastOrderListHash');
-      Logger.d('   New hash: $currentHash');
+      print('🔄 Order list changed - reinitializing PageController');
+      print('   Old hash: $_lastOrderListHash');
+      print('   New hash: $currentHash');
 
       _lastOrderListHash = currentHash;
 
       // Clear geocoding cache when orders change to avoid stale addresses
       _geocodedAddresses.clear();
-      Logger.d(
+      print(
           '🗺️ Cleared geocoding cache (${_geocodedAddresses.length} entries)');
 
       // Find index of first pending order (if only one exists)
@@ -856,7 +857,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       if (pendingItems.length == 1) {
         // Auto-scroll to the single pending item
         initialPage = allItemsToShow.indexOf(pendingItems.first);
-        Logger.d('🎯 Auto-scrolling to pending item at index $initialPage');
+        print('🎯 Auto-scrolling to pending item at index $initialPage');
       }
 
       // Ensure index is within bounds
@@ -1006,7 +1007,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
                           .setCurrentIndex(index);
 
                       final item = allItemsToShow[index];
-                      Logger.d('📄 Switched to card $index: ${item.id}');
+                      print('📄 Switched to card $index: ${item.id}');
                     },
                     itemBuilder: (context, index) {
                       final item = allItemsToShow[index];
@@ -2287,20 +2288,20 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   Future<void> _ensureOrderProofThenDeliver(dynamic order) async {
     final orderProvider = context.read<OrderProvider>();
 
-    Logger.d('🔍 Checking if order ${order.id} has proof...');
+    print('🔍 Checking if order ${order.id} has proof...');
     final hasProof = await orderProvider.hasOrderProof(order.id);
-    Logger.d('📸 Order ${order.id} proof status: $hasProof');
+    print('📸 Order ${order.id} proof status: $hasProof');
 
     if (hasProof) {
-      Logger.d('✅ Proof exists, proceeding to mark as delivered...');
+      print('✅ Proof exists, proceeding to mark as delivered...');
       // INSTANT CLEAR: Clear annotations immediately before marking as delivered
-      Logger.d(
+      print(
           '🧹 INSTANT CLEAR: Clearing annotations before delivery (proof exists)');
       StateOfTheArtNavigation().clearAll().catchError((e) {
-        Logger.d('⚠️ Error in instant clear: $e');
+        print('⚠️ Error in instant clear: $e');
       });
       StateOfTheArtNavigation().clearOrder(order.id).catchError((e) {
-        Logger.d('⚠️ Error clearing specific order: $e');
+        print('⚠️ Error clearing specific order: $e');
       });
 
       // Proof exists, proceed with delivery confirmation
@@ -2308,7 +2309,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       return;
     }
 
-    Logger.d('⚠️ No proof found, showing upload dialog...');
+    print('⚠️ No proof found, showing upload dialog...');
     if (!mounted) return;
 
     // No proof exists, show upload dialog
@@ -2334,40 +2335,40 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
             child: _OrderProofUploader(
               orderId: order.id,
               onUploaded: () async {
-                Logger.d('📸 ========================================');
-                Logger.d('📸 ORDER PROOF UPLOADED CALLBACK TRIGGERED');
-                Logger.d('📸 Order ID: ${order.id}');
-                Logger.d('📸 Time: ${DateTime.now()}');
-                Logger.d('📸 ========================================');
+                print('📸 ========================================');
+                print('📸 ORDER PROOF UPLOADED CALLBACK TRIGGERED');
+                print('📸 Order ID: ${order.id}');
+                print('📸 Time: ${DateTime.now()}');
+                print('📸 ========================================');
 
                 try {
                   // INSTANT CLEAR: Clear annotations immediately when proof is uploaded
-                  Logger.d(
+                  print(
                       '🧹 INSTANT CLEAR: Clearing annotations (proof uploaded)');
                   StateOfTheArtNavigation().clearAll().catchError((e) {
-                    Logger.d('⚠️ Error in instant clear: $e');
+                    print('⚠️ Error in instant clear: $e');
                   });
                   StateOfTheArtNavigation()
                       .clearOrder(order.id)
                       .catchError((e) {
-                    Logger.d('⚠️ Error clearing specific order: $e');
+                    print('⚠️ Error clearing specific order: $e');
                   });
 
                   // CRITICAL: Mark as delivered FIRST, then close the bottom sheet
                   // Skip confirmation dialog since uploading proof is the confirmation
-                  Logger.d(
+                  print(
                       '🚚 Marking order as delivered with skip confirmation...');
                   await _markOrderDelivered(order.id, skipConfirmation: true);
-                  Logger.d('✅ Order marked as delivered successfully');
+                  print('✅ Order marked as delivered successfully');
 
                   // Close the bottom sheet
-                  Logger.d('🚪 Closing bottom sheet...');
+                  print('🚪 Closing bottom sheet...');
                   if (Navigator.canPop(ctx)) {
                     Navigator.pop(ctx);
                   }
-                  Logger.d('✅ Bottom sheet closed');
+                  print('✅ Bottom sheet closed');
                 } catch (e) {
-                  Logger.d('❌ Error in onUploaded callback: $e');
+                  print('❌ Error in onUploaded callback: $e');
                   // Still close the bottom sheet even if there's an error
                   if (Navigator.canPop(ctx)) {
                     Navigator.pop(ctx);
@@ -3319,18 +3320,18 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
 
     // Only proceed if confirmed
     if (!confirmed) {
-      Logger.d('❌ Delivery not confirmed by user');
+      print('❌ Delivery not confirmed by user');
       return;
     }
 
-    Logger.d('✅ Delivery confirmed (skipConfirmation: $skipConfirmation)');
+    print('✅ Delivery confirmed (skipConfirmation: $skipConfirmation)');
 
     // INSTANT CLEAR: Clear annotations IMMEDIATELY when user confirms
     // Fire-and-forget async clear - don't wait for it
-    Logger.d(
+    print(
         '🧹 INSTANT CLEAR: Clearing annotations immediately (fire-and-forget)');
     StateOfTheArtNavigation().clearAll().catchError((e) {
-      Logger.d('⚠️ Error in instant clear: $e');
+      print('⚠️ Error in instant clear: $e');
     });
     _mapWidgetKey?.currentState?.forceClearAnnotations();
 
@@ -3339,27 +3340,27 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       final nav = StateOfTheArtNavigation();
       // Clear this specific order's markers and route
       nav.clearOrder(orderId).catchError((e) {
-        Logger.d('⚠️ Error clearing specific order: $e');
+        print('⚠️ Error clearing specific order: $e');
       });
     } catch (e) {
-      Logger.d('⚠️ Error in order-specific clear: $e');
+      print('⚠️ Error in order-specific clear: $e');
     }
 
     try {
-      Logger.d('🚚 ===========================================');
-      Logger.d('🚚 MARKING ORDER AS DELIVERED');
-      Logger.d('🚚 Order ID: $orderId');
-      Logger.d('🚚 Time: ${DateTime.now()}');
-      Logger.d('🚚 ===========================================');
+      print('🚚 ===========================================');
+      print('🚚 MARKING ORDER AS DELIVERED');
+      print('🚚 Order ID: $orderId');
+      print('🚚 Time: ${DateTime.now()}');
+      print('🚚 ===========================================');
 
       // STEP 1: Clear ONLY this specific order's annotations (not all orders)
-      Logger.d('🧹 STEP 1: CLEARING ROUTES AND MARKERS FOR ORDER $orderId ONLY');
+      print('🧹 STEP 1: CLEARING ROUTES AND MARKERS FOR ORDER $orderId ONLY');
       try {
         // Only clear the delivered order, keep other orders' cached annotations
         await StateOfTheArtNavigation().clearOrder(orderId);
-        Logger.d('✅ Cleared annotations for delivered order $orderId only');
+        print('✅ Cleared annotations for delivered order $orderId only');
       } catch (e) {
-        Logger.d('⚠️ Error clearing order-specific annotations: $e');
+        print('⚠️ Error clearing order-specific annotations: $e');
       }
 
       // STEP 2: Mark order as delivered
@@ -3368,11 +3369,11 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
 
       if (!success) {
         // If delivery marking failed, show error and don't continue cleanup
-        Logger.d('❌ Failed to mark order as delivered');
+        print('❌ Failed to mark order as delivered');
 
         // Get the specific error message from OrderProvider
         final errorMessage = context.read<OrderProvider>().error;
-        Logger.d('🔍 Specific error from provider: $errorMessage');
+        print('🔍 Specific error from provider: $errorMessage');
 
         if (mounted) {
           // Show detailed error dialog for debugging
@@ -3449,18 +3450,18 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       }
 
       // STEP 3: Clear annotations again immediately after to catch any stragglers
-      Logger.d('🧹 STEP 3: POST-DELIVERY CLEARING');
+      print('🧹 STEP 3: POST-DELIVERY CLEARING');
       try {
         // Clear all annotations
         await StateOfTheArtNavigation().clearAll();
         // Also clear this specific order
         await StateOfTheArtNavigation().clearOrder(orderId);
       } catch (e) {
-        Logger.d('⚠️ Error in post-delivery clear: $e');
+        print('⚠️ Error in post-delivery clear: $e');
       }
 
       // STEP 4: Force immediate removal from local state
-      Logger.d('🧹 STEP 4: REMOVING ORDER FROM LOCAL STATE');
+      print('🧹 STEP 4: REMOVING ORDER FROM LOCAL STATE');
       if (mounted) {
         final orderProvider = context.read<OrderProvider>();
         // The subscription will handle the removal, but we force a manual removal for immediate effect
@@ -3469,7 +3470,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       }
 
       // STEP 5: Clear cached orders and force map refresh
-      Logger.d('🧹 STEP 5: CLEARING CACHED ORDERS AND REFRESHING MAP');
+      print('🧹 STEP 5: CLEARING CACHED ORDERS AND REFRESHING MAP');
       if (mounted) {
         setState(() {
           _cachedActiveOrders = null;
@@ -3483,7 +3484,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
               StateOfTheArtNavigation().clearAll();
               // Note: StateOfTheArtNavigation().clearAll() already handles all route/marker clearing
             } catch (e) {
-              Logger.d('⚠️ Error in post-frame clear: $e');
+              print('⚠️ Error in post-frame clear: $e');
             }
           }
         });
@@ -3496,9 +3497,9 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         type: NotificationType.success,
       );
 
-      Logger.d('✅ Order delivery process complete - route cleared');
+      print('✅ Order delivery process complete - route cleared');
     } catch (e) {
-      Logger.d('❌ Error marking order as delivered: $e');
+      print('❌ Error marking order as delivered: $e');
       if (mounted) {
         showHeaderNotification(
           context,
@@ -3513,13 +3514,16 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   void _callMerchant(String merchantId) async {
     // Fetch merchant details from users table
     try {
-      Logger.d('📞 Fetching merchant details for: $merchantId');
+      print('📞 Fetching merchant details for: $merchantId');
 
-      final merchantResponse =
-          await DashboardRepository.instance.getMerchantDetails(merchantId);
+      final merchantResponse = await Supabase.instance.client
+          .from('users')
+          .select('id, phone, name, store_name')
+          .eq('id', merchantId)
+          .maybeSingle();
 
       if (merchantResponse == null) {
-        Logger.d(
+        print(
             '⚠️ Merchant not found in database (merchant may have been deleted)');
         if (mounted) {
           showHeaderNotification(
@@ -3537,7 +3541,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
           'التاجر';
       final merchantPhone = merchantResponse['phone'] as String;
 
-      Logger.d('✅ Merchant found: $merchantName - $merchantPhone');
+      print('✅ Merchant found: $merchantName - $merchantPhone');
 
       if (mounted) {
         _showContactDialog(
@@ -3550,7 +3554,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         );
       }
     } catch (e) {
-      Logger.d('❌ Error fetching merchant: $e');
+      print('❌ Error fetching merchant: $e');
       if (mounted) {
         showHeaderNotification(
           context,
@@ -4033,7 +4037,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         throw Exception(AppLocalizations.of(context).invalidCoordinates);
       }
 
-      Logger.d('📍 Opening Google Maps with: $latitude, $longitude');
+      print('📍 Opening Google Maps with: $latitude, $longitude');
 
       // Try multiple Google Maps URLs in order of preference
       final urls = [
@@ -4049,7 +4053,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       for (final url in urls) {
         try {
           final uri = Uri.parse(url);
-          Logger.d('   Trying: $url');
+          print('   Trying: $url');
 
           // For custom schemes (google.navigation, comgooglemaps), try to launch directly
           if (url.startsWith('google.navigation:') ||
@@ -4058,25 +4062,25 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
               final launched =
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
               if (launched) {
-                Logger.d('   ✅ Opened successfully with: $url');
+                print('   ✅ Opened successfully with: $url');
                 opened = true;
                 break;
               }
             } catch (e) {
-              Logger.d('   ❌ Failed: $e');
+              print('   ❌ Failed: $e');
               continue; // Try next URL
             }
           } else {
             // For https URLs, check first then launch
             if (await canLaunchUrl(uri)) {
               await launchUrl(uri, mode: LaunchMode.externalApplication);
-              Logger.d('   ✅ Opened successfully with: $url');
+              print('   ✅ Opened successfully with: $url');
               opened = true;
               break;
             }
           }
         } catch (e) {
-          Logger.d('   ❌ Failed: $e');
+          print('   ❌ Failed: $e');
           continue; // Try next URL
         }
       }
@@ -4091,7 +4095,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         );
       }
     } catch (e) {
-      Logger.d('❌ Google Maps error: $e');
+      print('❌ Google Maps error: $e');
       if (mounted) {
         showHeaderNotification(
           context,
@@ -4113,7 +4117,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         throw Exception(AppLocalizations.of(context).invalidCoordinates);
       }
 
-      Logger.d('🗺️ Opening Waze with: $latitude, $longitude');
+      print('🗺️ Opening Waze with: $latitude, $longitude');
 
       // Try multiple Waze URLs in order of preference
       final urls = [
@@ -4129,7 +4133,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       for (final url in urls) {
         try {
           final uri = Uri.parse(url);
-          Logger.d('   Trying: $url');
+          print('   Trying: $url');
 
           // For waze:// scheme, try to launch directly
           if (url.startsWith('waze://')) {
@@ -4137,25 +4141,25 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
               final launched =
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
               if (launched) {
-                Logger.d('   ✅ Opened successfully with: $url');
+                print('   ✅ Opened successfully with: $url');
                 opened = true;
                 break;
               }
             } catch (e) {
-              Logger.d('   ❌ Failed: $e');
+              print('   ❌ Failed: $e');
               continue; // Try next URL
             }
           } else {
             // For https URLs, check first then launch
             if (await canLaunchUrl(uri)) {
               await launchUrl(uri, mode: LaunchMode.externalApplication);
-              Logger.d('   ✅ Opened successfully with: $url');
+              print('   ✅ Opened successfully with: $url');
               opened = true;
               break;
             }
           }
         } catch (e) {
-          Logger.d('   ❌ Failed: $e');
+          print('   ❌ Failed: $e');
           continue; // Try next URL
         }
       }
@@ -4170,7 +4174,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         );
       }
     } catch (e) {
-      Logger.d('❌ Waze error: $e');
+      print('❌ Waze error: $e');
       if (mounted) {
         showHeaderNotification(
           context,
@@ -4193,7 +4197,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
     }
     // DriverStatusProvider and DriverLocationManager dispose via their
     // ChangeNotifierProvider / Provider — no manual cleanup needed here.
-    context.read<AnnouncementProvider>().stopChecking();
+    ref.read(announcementProvider.notifier).stopChecking();
     _locationManager.dispose();
     _orderCardsPageController?.dispose();
     context.read<LocationProvider>().stopLocationTracking();
@@ -4213,17 +4217,17 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    Logger.d('🔄 App lifecycle changed to $state');
+    print('🔄 App lifecycle changed to $state');
 
     // When app is detached (swiped away from recent apps), set driver offline
     // Note: We don't trigger on 'paused' as that happens when switching apps temporarily
     if (state == AppLifecycleState.detached) {
-      Logger.d('   Setting driver offline');
+      print('   Setting driver offline');
       _setDriverOfflineOnAppClose();
     }
     // When app is resumed, ensure UI is stable - don't clear cache
     else if (state == AppLifecycleState.resumed) {
-      Logger.d('   App resumed - maintaining cached orders for stability');
+      print('   App resumed - maintaining cached orders for stability');
       // Don't clear _cachedActiveOrders - this prevents flickering
       // The Consumer will update with fresh data naturally
     }
@@ -4234,10 +4238,10 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       final authProvider = context.read<AuthProvider>();
       if (authProvider.user != null && _isOnline) {
         await authProvider.setOnlineStatus(false);
-        Logger.d('✅ Driver set to offline due to app close');
+        print('✅ Driver set to offline due to app close');
       }
     } catch (e) {
-      Logger.d('❌ Error setting driver offline: $e');
+      print('❌ Error setting driver offline: $e');
     }
   }
 
@@ -4250,7 +4254,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
     setState(() {
       _hasLocationAlwaysPermission = isAlways;
     });
-    Logger.d(
+    print(
         '📍 Location Always Permission (Geolocator): ${isAlways ? "✅ Always" : "❌ $geoPermission"}');
   }
 
@@ -4358,7 +4362,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
                   _showLocationPermissionDialog();
                 } else {
                   // Permission granted, initialize dashboard using shared method
-                  Logger.d(
+                  print(
                       '✅ Permission granted! Starting full initialization...');
                   await _initializeDashboardWithPermission();
 
@@ -4495,32 +4499,32 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   Future<void> _updateDriverLocation() async {
     // Only update if driver is online
     if (!_isOnline) {
-      Logger.d('ℹ️ Skipping location update - driver is offline');
+      print('ℹ️ Skipping location update - driver is offline');
       return;
     }
 
     try {
-      Logger.d('🔄 _updateDriverLocation called...');
+      print('🔄 _updateDriverLocation called...');
       final locationProvider = context.read<LocationProvider>();
       final authProvider = context.read<AuthProvider>();
 
       // ANR FIX: Add timeout to prevent blocking main thread
       // Get current location with timeout
-      Logger.d('   📍 Getting current location from GPS...');
+      print('   📍 Getting current location from GPS...');
       final position = await locationProvider
           .getCurrentLocation()
           .timeout(const Duration(seconds: 5), onTimeout: () {
-        Logger.d('   ⚠️ Location fetch timed out');
+        print('   ⚠️ Location fetch timed out');
         return null;
       });
 
       if (position != null && authProvider.user != null && _isOnline) {
-        Logger.d(
+        print(
             '   ✅ GPS position obtained: ${position.latitude}, ${position.longitude}');
 
         // ANR FIX: Add timeout to database update
         // Update location in database (with full GPS data)
-        Logger.d('   💾 Saving to database...');
+        print('   💾 Saving to database...');
         final updateResult = await authProvider
             .updateUserLocation(
           position.latitude,
@@ -4530,29 +4534,29 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
           speed: position.speed,
         )
             .timeout(const Duration(seconds: 5), onTimeout: () {
-          Logger.d('   ⚠️ Database update timed out');
+          print('   ⚠️ Database update timed out');
           return false;
         });
 
         if (updateResult) {
-          Logger.d(
+          print(
               '   ✅ Driver location updated in DB: ${position.latitude}, ${position.longitude}');
         } else {
-          Logger.d('   ❌ Failed to update driver location in DB');
-          Logger.d('   ❌ AuthProvider error: ${authProvider.error}');
+          print('   ❌ Failed to update driver location in DB');
+          print('   ❌ AuthProvider error: ${authProvider.error}');
         }
-        Logger.d(
+        print(
             '   📡 LocationProvider currentPosition: ${locationProvider.currentPosition}');
 
         // Check dropoff proximity for active orders (non-blocking)
         unawaited(_checkDropoffProximity(position));
       } else {
-        Logger.d(
+        print(
             '   ❌ Cannot update: position=$position, user=${authProvider.user != null}');
       }
     } catch (e) {
-      Logger.d('❌ Error updating driver location: $e');
-      Logger.d('   Stack: ${StackTrace.current}');
+      print('❌ Error updating driver location: $e');
+      print('   Stack: ${StackTrace.current}');
     }
   }
 
@@ -4578,49 +4582,51 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       // Check each order
       for (final order in activeOrders) {
         try {
-          final result =
-              await DashboardRepository.instance.checkDropoffProximity(
-            orderId: order.id,
-            driverId: authProvider.user!.id,
-            driverLatitude: driverPosition.latitude,
-            driverLongitude: driverPosition.longitude,
+          final result = await Supabase.instance.client.rpc(
+            'check_dropoff_proximity',
+            params: {
+              'p_order_id': order.id,
+              'p_driver_id': authProvider.user!.id,
+              'p_driver_latitude': driverPosition.latitude,
+              'p_driver_longitude': driverPosition.longitude,
+            },
           );
 
           if (result is Map && result['timer_stopped'] == true) {
-            Logger.d(
+            print(
                 '✅ Timer stopped for order ${order.id} - driver reached dropoff');
             // Reload orders to get updated timer status
             await orderProvider.initialize();
           }
         } catch (e) {
-          Logger.d(
+          print(
               '⚠️ Error checking dropoff proximity for order ${order.id}: $e');
         }
       }
     } catch (e) {
-      Logger.d('❌ Error in _checkDropoffProximity: $e');
+      print('❌ Error in _checkDropoffProximity: $e');
     }
   }
 
   Future<void> _updateDriverLocationFromDatabase() async {
     try {
-      Logger.d('🔄 _updateDriverLocationFromDatabase called...');
+      print('🔄 _updateDriverLocationFromDatabase called...');
       final authProvider = context.read<AuthProvider>();
       final locationProvider = context.read<LocationProvider>();
 
       if (authProvider.user != null) {
-        Logger.d('   📥 Fetching user data from database...');
+        print('   📥 Fetching user data from database...');
         // ANR FIX: Add timeout to prevent blocking main thread
         // Fetch latest user data from database with timeout
         await authProvider.refreshUser().timeout(const Duration(seconds: 5),
             onTimeout: () {
-          Logger.d('   ⚠️ User refresh timed out');
+          print('   ⚠️ User refresh timed out');
         });
 
         // Update location provider with database location
         if (authProvider.user?.latitude != null &&
             authProvider.user?.longitude != null) {
-          Logger.d(
+          print(
               '   ✅ Got DB location: ${authProvider.user!.latitude}, ${authProvider.user!.longitude}');
 
           // Create a mock Position object from database coordinates
@@ -4632,19 +4638,19 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
           // Update location provider's current position
           locationProvider.updateCurrentPosition(dbPosition);
 
-          Logger.d('   ✅ LocationProvider updated with DB location');
-          Logger.d(
+          print('   ✅ LocationProvider updated with DB location');
+          print(
               '   📡 LocationProvider currentPosition: ${locationProvider.currentPosition}');
         } else {
-          Logger.d(
+          print(
               '   ⚠️ No location in database: lat=${authProvider.user?.latitude}, lng=${authProvider.user?.longitude}');
         }
       } else {
-        Logger.d('   ❌ No user logged in');
+        print('   ❌ No user logged in');
       }
     } catch (e) {
-      Logger.d('❌ Error updating driver location from database: $e');
-      Logger.d('   Stack: ${StackTrace.current}');
+      print('❌ Error updating driver location from database: $e');
+      print('   Stack: ${StackTrace.current}');
     }
   }
 
@@ -4700,12 +4706,12 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
                 SimpleLocationUpdateWidget(
                   driverId: authProvider.user!.id,
                   onLocationUpdate: (orderId, lat, lng) {
-                    Logger.d(
+                    print(
                         '📍 Driver received location update for order $orderId: $lat, $lng');
                     _handleLocationUpdate();
                   },
                   onRouteRebuildNeeded: () {
-                    Logger.d(
+                    print(
                         '🔄 Route rebuild requested from location update popup');
                     _forceMapRouteRebuild();
                   },
@@ -4815,7 +4821,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
                             ),
                           if (hasRank && hasActiveTimer)
                             const SizedBox(height: 8),
-                          if (hasActiveTimer) _buildProminentTimer(timerOrder),
+                          if (hasActiveTimer) DriverTimerBanner(order: timerOrder),
                         ],
                       ),
                     ),
@@ -5145,7 +5151,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
 
   /// Aggressive route clearing for completed orders
   void _aggressiveRouteClear() {
-    Logger.d('🚨 AGGRESSIVE ROUTE CLEAR - Multiple attempts');
+    print('🚨 AGGRESSIVE ROUTE CLEAR - Multiple attempts');
 
     // Clear through route manager
     // legacy route manager removed
@@ -5156,7 +5162,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   /// Show location update popup to driver when coordinates change
   void _showLocationUpdatePopupToDriver(dynamic order) {
     if (order == null) return;
-    Logger.d('📍 Showing location update popup for order: ${order.id}');
+    print('📍 Showing location update popup for order: ${order.id}');
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -5260,7 +5266,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
 
   /// Handle location update - simplified
   Future<void> _handleLocationUpdate() async {
-    Logger.d('🔄 Handling location update - refreshing order data...');
+    print('🔄 Handling location update - refreshing order data...');
 
     try {
       // Refresh order provider to get updated coordinates
@@ -5275,19 +5281,19 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
           // to detect coordinate changes in didUpdateWidget
         });
 
-        Logger.d(
+        print(
             '✅ Location update handled - map will detect coordinate changes and update');
-        Logger.d(
+        print(
             '   Map widget will clear old annotations and create new ones automatically');
       }
     } catch (e) {
-      Logger.d('❌ Error handling location update: $e');
+      print('❌ Error handling location update: $e');
     }
   }
 
   /// Force map route rebuild - called from location update popup
   Future<void> _forceMapRouteRebuild() async {
-    Logger.d(
+    print(
         '🔄 Forcing map route rebuild after location update acknowledgment...');
 
     try {
@@ -5304,18 +5310,18 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
             orderProvider.getAllActiveOrdersForDriver(driverId);
         if (activeOrders.isNotEmpty) {
           final currentOrder = activeOrders.first;
-          Logger.d('📍 Active order found: ${currentOrder.id}');
-          Logger.d(
+          print('📍 Active order found: ${currentOrder.id}');
+          print(
               '📍 Delivery coordinates: (${currentOrder.deliveryLatitude}, ${currentOrder.deliveryLongitude})');
 
           // CRITICAL: Clear the coordinate cache to force recalculation
           // Access the map widget state and clear its cache
           if (_mapWidgetKey?.currentState != null) {
-            Logger.d('🧹 Clearing coordinate cache in map widget...');
+            print('🧹 Clearing coordinate cache in map widget...');
             _mapWidgetKey!.currentState!.clearCoordinateCache();
 
             // Directly trigger route recalculation on the map widget
-            Logger.d('🔄 Directly triggering route recalculation...');
+            print('🔄 Directly triggering route recalculation...');
             await _mapWidgetKey!.currentState!
                 .forceRouteRecalculation(currentOrder);
           }
@@ -5326,16 +5332,16 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
               // Force rebuild to ensure all UI elements reflect the changes
             });
 
-            Logger.d('✅ Route recalculation completed and UI updated');
+            print('✅ Route recalculation completed and UI updated');
           }
         } else {
-          Logger.d('⚠️  No active orders found for route rebuild');
+          print('⚠️  No active orders found for route rebuild');
         }
       } else {
-        Logger.d('⚠️  No driver ID found for route rebuild');
+        print('⚠️  No driver ID found for route rebuild');
       }
     } catch (e) {
-      Logger.d('❌ Error forcing map route rebuild: $e');
+      print('❌ Error forcing map route rebuild: $e');
     }
   }
 
@@ -5347,20 +5353,20 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       final driverId = authProvider.user?.id;
 
       if (driverId == null) {
-        Logger.d('🧹 No driver ID - clearing all routes');
+        print('🧹 No driver ID - clearing all routes');
         // legacy route manager removed
         return;
       }
 
       final activeOrders = orderProvider.getAllActiveOrdersForDriver(driverId);
       if (activeOrders.isEmpty) {
-        Logger.d('🧹 No active orders - clearing all routes');
+        print('🧹 No active orders - clearing all routes');
         // legacy route manager removed
         return;
       }
 
       final currentOrder = activeOrders.first;
-      Logger.d(
+      print(
           '🔍 Recalculating route after customer location update for order ${currentOrder.id}');
 
       // Trigger state-of-the-art navigation to rebuild route using updated delivery coords
@@ -5369,20 +5375,20 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         // noop: forces rebuild so StateOfTheArtMapWidget re-reads activeOrder from provider
       });
     } catch (e) {
-      Logger.d('❌ Error applying strict route clearing: $e');
+      print('❌ Error applying strict route clearing: $e');
     }
   }
 
   /// Recreate pins and routes after location update (legacy method)
   Future<void> _recreatePinsAndRoutesAfterLocationUpdate() async {
-    Logger.d('🔄 Recreating pins and routes after location update');
+    print('🔄 Recreating pins and routes after location update');
 
     try {
       // Force refresh of the order provider to get updated locations
       final orderProvider = context.read<OrderProvider>();
       await orderProvider.initialize();
 
-      Logger.d('📍 Order provider refreshed after location update');
+      print('📍 Order provider refreshed after location update');
 
       // Get current active order with updated location
       final authProvider = context.read<AuthProvider>();
@@ -5393,29 +5399,29 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
             orderProvider.getAllActiveOrdersForDriver(driverId);
         if (activeOrders.isNotEmpty) {
           final currentOrder = activeOrders.first;
-          Logger.d('📍 Found active order: ${currentOrder.id}');
-          Logger.d(
+          print('📍 Found active order: ${currentOrder.id}');
+          print(
               '📍 Updated delivery location: ${currentOrder.deliveryLatitude}, ${currentOrder.deliveryLongitude}');
 
           // Clear existing route and markers first
-          Logger.d('🧹 Clearing existing route and markers...');
+          print('🧹 Clearing existing route and markers...');
           // legacy route manager removed
 
           // Clearing is immediate - no delay needed
 
           // Map will update automatically through coordinate change detection
-          Logger.d(
+          print(
               '🔄 Map will update automatically through coordinate change detection');
 
-          Logger.d('✅ Route recreation triggered for updated location');
+          print('✅ Route recreation triggered for updated location');
         } else {
-          Logger.d('📍 No active orders found after location update');
+          print('📍 No active orders found after location update');
         }
       } else {
-        Logger.d('📍 No driver ID found');
+        print('📍 No driver ID found');
       }
     } catch (e) {
-      Logger.d('❌ Error recreating pins and routes: $e');
+      print('❌ Error recreating pins and routes: $e');
     }
   }
 
@@ -5594,495 +5600,6 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
     );
   }
 
-  Widget _buildProminentTimer(OrderModel order) {
-    return _ProminentTimerWidget(order: order);
-  }
-}
-
-/// Prominent timer widget matching rank badge style
-class _ProminentTimerWidget extends StatefulWidget {
-  final OrderModel order;
-
-  const _ProminentTimerWidget({required this.order});
-
-  @override
-  State<_ProminentTimerWidget> createState() => _ProminentTimerWidgetState();
-}
-
-class _ProminentTimerWidgetState extends State<_ProminentTimerWidget> {
-  Timer? _timer;
-  int? _remainingSeconds;
-  bool _lateDialogShown = false;
-  String? _lateDialogOrderId;
-
-  @override
-  void initState() {
-    super.initState();
-    _calculateRemainingTime();
-    _startTimer();
-  }
-
-  @override
-  void didUpdateWidget(_ProminentTimerWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.order.deliveryTimerExpiresAt !=
-            widget.order.deliveryTimerExpiresAt ||
-        oldWidget.order.deliveryTimerStoppedAt !=
-            widget.order.deliveryTimerStoppedAt) {
-      _calculateRemainingTime();
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _calculateRemainingTime() {
-    final order = widget.order;
-
-    // Timer is stopped if driver reached dropoff
-    if (order.deliveryTimerStoppedAt != null) {
-      _remainingSeconds = 0;
-      return;
-    }
-
-    // Timer hasn't started yet
-    if (order.deliveryTimerExpiresAt == null) {
-      _remainingSeconds = null;
-      return;
-    }
-
-    // Calculate remaining / late time (allow negative to count how late)
-    final now = DateTime.now();
-    final expiresAt = order.deliveryTimerExpiresAt!;
-    final difference = expiresAt.difference(now);
-
-    _remainingSeconds = difference.inSeconds;
-
-    // Fire late popup exactly once per order, when timer hits zero (and not stopped)
-    final remaining = _remainingSeconds ?? 0;
-    if (order.deliveryTimerStoppedAt == null &&
-        remaining <= 0 &&
-        (!_lateDialogShown || _lateDialogOrderId != order.id)) {
-      _lateDialogShown = true;
-      _lateDialogOrderId = order.id;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _showLateOrderDialog();
-      });
-    }
-  }
-
-  Future<void> _showLateOrderDialog() async {
-    // Avoid stacking dialogs
-    if (!mounted) return;
-    final loc = AppLocalizations.of(context);
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              const Icon(
-                Icons.error_outline,
-                color: AppColors.error,
-                size: 26,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  loc.deliveryLateTitle,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                loc.deliveryLateMessage,
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.6)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      color: AppColors.warning,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        loc.deliveryTimerInfoMessage,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(loc.deliveryLateAck),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _calculateRemainingTime();
-        });
-      }
-    });
-  }
-
-  String _formatTime(int seconds) {
-    if (seconds < 0) return '00:00';
-
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final order = widget.order;
-
-    // Timer stopped (driver reached dropoff)
-    if (order.deliveryTimerStoppedAt != null) {
-      return Container(
-        height: 64, // Same height as rank badge
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          gradient: LinearGradient(
-            colors: [
-              AppColors.success,
-              AppColors.success.withValues(alpha: 0.8),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.success.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-              spreadRadius: -2,
-            ),
-          ],
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-            gradient: LinearGradient(
-              colors: [
-                Colors.white.withValues(alpha: 0.1),
-                Colors.transparent,
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.black.withValues(alpha: 0.2),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'وصلت إلى موقع التسليم',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.95),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      height: 2,
-                      width: 20,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Calculate remaining / late time
-    final diffSeconds = _remainingSeconds ?? 0;
-    final isLate = diffSeconds <= 0;
-    final lateSeconds = diffSeconds < 0 ? -diffSeconds : 0;
-    final remainingSeconds = diffSeconds > 0 ? diffSeconds : 0;
-    final isWarning = !isLate && remainingSeconds <= 300; // 5 minutes warning
-
-    // Choose colors based on status
-    List<Color> gradientColors;
-    Color iconColor;
-    Color shadowColor;
-    IconData timerIcon;
-
-    if (isLate && lateSeconds > 0) {
-      gradientColors = [
-        AppColors.error,
-        AppColors.error.withValues(alpha: 0.8),
-      ];
-      iconColor = Colors.white;
-      shadowColor = AppColors.error.withValues(alpha: 0.4);
-      timerIcon = Icons.error_outline;
-    } else if (isWarning) {
-      gradientColors = [
-        AppColors.warning,
-        AppColors.warning.withValues(alpha: 0.8),
-      ];
-      iconColor = Colors.white;
-      shadowColor = AppColors.warning.withValues(alpha: 0.4);
-      timerIcon = Icons.timer_outlined;
-    } else {
-      gradientColors = [
-        AppColors.primary,
-        AppColors.primary.withValues(alpha: 0.8),
-      ];
-      iconColor = Colors.white;
-      shadowColor = AppColors.primary.withValues(alpha: 0.4);
-      timerIcon = Icons.timer_outlined;
-    }
-
-    return GestureDetector(
-      onTap: _showTimerInfoDialog,
-      child: Container(
-        height: 64, // Same height as rank badge
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          gradient: LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor,
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-              spreadRadius: -2,
-            ),
-          ],
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-            gradient: LinearGradient(
-              colors: [
-                Colors.white.withValues(alpha: 0.1),
-                Colors.transparent,
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Icon Circle
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.black.withValues(alpha: 0.2),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
-                ),
-                child: Icon(
-                  timerIcon,
-                  color: iconColor,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Text
-              Flexible(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      (isLate && lateSeconds > 0
-                              ? _formatTime(lateSeconds)
-                              : _formatTime(remainingSeconds))
-                          .toUpperCase(),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.95),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      height: 2,
-                      width: 20,
-                      decoration: BoxDecoration(
-                        color: iconColor.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 4),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showTimerInfoDialog() async {
-    if (!mounted) return;
-    final loc = AppLocalizations.of(context);
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              const Icon(
-                Icons.timer_outlined,
-                color: AppColors.primary,
-                size: 26,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  loc.deliveryTimerInfoTitle,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                loc.deliveryTimerInfoMessage,
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        loc.deliveryTimerInfoMessage,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.green.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(loc.ok),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
 
 // Top-level bottom sheet widget for uploading order proof
@@ -6137,7 +5654,7 @@ class _OrderProofUploaderState extends State<_OrderProofUploader> {
           );
       if (!mounted) return;
       if (ok) {
-        Logger.d(
+        print(
             '✅ Order proof uploaded successfully, calling onUploaded callback...');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -6145,15 +5662,15 @@ class _OrderProofUploaderState extends State<_OrderProofUploader> {
         );
         // CRITICAL: Await the callback to ensure delivery is marked before continuing
         await widget.onUploaded();
-        Logger.d('✅ onUploaded callback completed');
+        print('✅ onUploaded callback completed');
       } else {
-        Logger.d('❌ Order proof upload failed');
+        print('❌ Order proof upload failed');
         final err = context.read<OrderProvider>().error ?? 'فشل رفع الصورة';
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(err)));
       }
     } catch (e) {
-      Logger.d('❌ Error during order proof upload: $e');
+      print('❌ Error during order proof upload: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('${AppLocalizations.of(context).errorColon}$e')));
@@ -6473,16 +5990,16 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
 
   // Public method to clear coordinate cache
   void clearCoordinateCache() {
-    Logger.d('🧹 Clearing coordinate cache from external call...');
+    print('🧹 Clearing coordinate cache from external call...');
     _lastRecalculatedOrderCoords = null;
   }
 
   // Public method to force route recalculation
   Future<void> forceRouteRecalculation(OrderModel order) async {
-    Logger.d('🔄 Force route recalculation called from external...');
+    print('🔄 Force route recalculation called from external...');
 
     if (!_isInitialized) {
-      Logger.d('⚠️  Map not initialized, cannot recalculate route');
+      print('⚠️  Map not initialized, cannot recalculate route');
       return;
     }
 
@@ -6500,9 +6017,9 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
       // 4. Add new annotations
       await _handleDeliveryLocationUpdate();
 
-      Logger.d('✅ Force route recalculation completed');
+      print('✅ Force route recalculation completed');
     } catch (e) {
-      Logger.d('❌ Error in force route recalculation: $e');
+      print('❌ Error in force route recalculation: $e');
       // Reset flag on error
       _isRecalculatingRoute = false;
     }
@@ -6512,7 +6029,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
   void initState() {
     super.initState();
     _mapboxAccessToken = const String.fromEnvironment('MAPBOX_ACCESS_TOKEN');
-    Logger.d('🗺️ Legacy bulletproof map widget removed');
+    print('🗺️ Legacy bulletproof map widget removed');
   }
 
   @override
@@ -6525,11 +6042,11 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
     if (_appliedStyleUri != null &&
         _appliedStyleUri != newStyle &&
         _mapboxMap != null) {
-      Logger.d('🎨 Theme changed — reloading map style: $newStyle');
+      print('🎨 Theme changed — reloading map style: $newStyle');
       _appliedStyleUri = newStyle;
       _customIconsLoaded = false; // Icons must be re-added after style reload
       _mapboxMap!.loadStyleURI(newStyle).catchError((e) {
-        Logger.d('❌ Error reloading map style: $e');
+        print('❌ Error reloading map style: $e');
       });
     } else {
       _appliedStyleUri = newStyle;
@@ -6540,15 +6057,15 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
     setState(() {
       _mapboxMap = mapboxMap;
     });
-    Logger.d('🗺️ Map created');
+    print('🗺️ Map created');
 
     // Create point annotation manager for driver marker
     try {
       _pointAnnotationManager =
           await mapboxMap.annotations.createPointAnnotationManager();
-      Logger.d('✅ Point annotation manager created');
+      print('✅ Point annotation manager created');
     } catch (e) {
-      Logger.d('⚠️ Error creating point annotation manager: $e');
+      print('⚠️ Error creating point annotation manager: $e');
     }
 
     // Load custom icons (driver marker)
@@ -6558,7 +6075,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
     try {
       final initialized = await _navigationSystem.initialize(mapboxMap);
       if (initialized) {
-        Logger.d('✅ Navigation system ready inside map widget');
+        print('✅ Navigation system ready inside map widget');
         if (widget.activeOrder != null) {
           await _navigationSystem
               .setActiveOrder(widget.activeOrder as OrderModel);
@@ -6566,10 +6083,10 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
           await _navigationSystem.clearAll();
         }
       } else {
-        Logger.d('⚠️ Navigation system failed to initialize');
+        print('⚠️ Navigation system failed to initialize');
       }
     } catch (e) {
-      Logger.d('❌ Error initializing navigation system: $e');
+      print('❌ Error initializing navigation system: $e');
     }
 
     // Add neighborhood labels (use a separate manager or reuse the existing one)
@@ -6578,7 +6095,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         // Neighborhood labels removed
       }
     } catch (e) {
-      Logger.d('⚠️ Error adding neighborhood labels to driver map: $e');
+      print('⚠️ Error adding neighborhood labels to driver map: $e');
     }
 
     // Update driver marker if location is available
@@ -6614,9 +6131,9 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         // Check if coordinates changed (with tolerance for floating point precision)
         if ((newLat - oldLat).abs() > 0.0001 ||
             (newLng - oldLng).abs() > 0.0001) {
-          Logger.d('📍 DELIVERY COORDINATES CHANGED - Recalculating route');
-          Logger.d('   Old: ($oldLat, $oldLng)');
-          Logger.d('   New: ($newLat, $newLng)');
+          print('📍 DELIVERY COORDINATES CHANGED - Recalculating route');
+          print('   Old: ($oldLat, $oldLng)');
+          print('   New: ($newLat, $newLng)');
           // Recalculate route WITHOUT calling notifyListeners
           // (that would cause a loop since we're already in a rebuild)
           _handleDeliveryLocationUpdate();
@@ -6649,9 +6166,9 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         await _navigationSystem
             .setActiveOrder(widget.activeOrder as OrderModel);
       }
-      Logger.d('✅ Active order set - ${widget.activeOrder!.id}');
+      print('✅ Active order set - ${widget.activeOrder!.id}');
     } catch (e) {
-      Logger.d('❌ Bulletproof: Error setting active order: $e');
+      print('❌ Bulletproof: Error setting active order: $e');
     }
   }
 
@@ -6664,7 +6181,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
 
     // Prevent concurrent recalculations (avoid loop)
     if (_isRecalculatingRoute) {
-      Logger.d('⚠️  Route recalculation already in progress, skipping...');
+      print('⚠️  Route recalculation already in progress, skipping...');
       return;
     }
 
@@ -6674,21 +6191,21 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         '${order.id}_${order.deliveryLatitude}_${order.deliveryLongitude}';
 
     if (_lastRecalculatedOrderCoords == coordsKey) {
-      Logger.d(
+      print(
           '⚠️  Route already recalculated for these coordinates, skipping...');
       return;
     }
 
     try {
       _isRecalculatingRoute = true;
-      Logger.d('📍 ===========================================');
-      Logger.d('📍 RECALCULATING ROUTE FOR LOCATION UPDATE');
-      Logger.d('📍 ===========================================');
-      Logger.d('   Order: ${order.id}');
-      Logger.d('   Old coords: $_lastRecalculatedOrderCoords');
-      Logger.d(
+      print('📍 ===========================================');
+      print('📍 RECALCULATING ROUTE FOR LOCATION UPDATE');
+      print('📍 ===========================================');
+      print('   Order: ${order.id}');
+      print('   Old coords: $_lastRecalculatedOrderCoords');
+      print(
           '   New coords: (${order.deliveryLatitude}, ${order.deliveryLongitude})');
-      Logger.d('   Coords key: $coordsKey');
+      print('   Coords key: $coordsKey');
 
       // CRITICAL: Clear coordinate cache to force recalculation
       _lastRecalculatedOrderCoords = '';
@@ -6700,12 +6217,12 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
       // Remember these coordinates to prevent duplicate recalculations
       _lastRecalculatedOrderCoords = coordsKey;
 
-      Logger.d('✅ Route recalculated with new customer location');
-      Logger.d('   Old annotations cleared, new route created');
-      Logger.d('📍 ===========================================');
+      print('✅ Route recalculated with new customer location');
+      print('   Old annotations cleared, new route created');
+      print('📍 ===========================================');
     } catch (e) {
-      Logger.d('❌ Error recalculating route: $e');
-      Logger.d('   Stack trace: ${StackTrace.current}');
+      print('❌ Error recalculating route: $e');
+      print('   Stack trace: ${StackTrace.current}');
     } finally {
       _isRecalculatingRoute = false;
     }
@@ -6721,9 +6238,9 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         await _pointAnnotationManager!.delete(_driverMarker!);
         _driverMarker = null;
       }
-      Logger.d('🧹 All annotations cleared');
+      print('🧹 All annotations cleared');
     } catch (e) {
-      Logger.d('❌ Bulletproof: Error clearing annotations: $e');
+      print('❌ Bulletproof: Error clearing annotations: $e');
     }
   }
 
@@ -6744,9 +6261,9 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
       );
 
       _customIconsLoaded = true;
-      Logger.d('✅ Custom icons loaded (driver bike marker)');
+      print('✅ Custom icons loaded (driver bike marker)');
     } catch (e) {
-      Logger.d('❌ Error loading custom icons: $e');
+      print('❌ Error loading custom icons: $e');
     }
   }
 
@@ -6816,7 +6333,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
     final img = await picture.toImage(iconSize.toInt(), iconSize.toInt());
     final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
 
-    Logger.d(
+    print(
         '✅ Driver location marker created (blue circle with black arrowhead${heading != null ? ', heading: $heading°' : ''})');
     return byteData!.buffer.asUint8List();
   }
@@ -6849,13 +6366,13 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
           lng = widget.driverLocation.longitude;
           heading = widget.driverLocation.heading;
         } catch (e) {
-          Logger.d('❌ Cannot access coordinates from driverLocation: $e');
+          print('❌ Cannot access coordinates from driverLocation: $e');
           return;
         }
       }
 
       if (lat == null || lng == null) {
-        Logger.d('⚠️ Invalid driver location coordinates');
+        print('⚠️ Invalid driver location coordinates');
         return;
       }
 
@@ -6866,7 +6383,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         try {
           await _pointAnnotationManager!.delete(markerToDelete);
         } catch (e) {
-          Logger.d('⚠️ Error deleting old driver marker: $e');
+          print('⚠️ Error deleting old driver marker: $e');
         }
       }
 
@@ -6894,10 +6411,10 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
           iconSize: 0.2,
         ),
       );
-      Logger.d(
+      print(
           '✅ Driver location marker updated (blue circle with black arrowhead${heading != null ? ', heading: $heading°' : ''})');
     } catch (e) {
-      Logger.d('❌ Error updating driver marker: $e');
+      print('❌ Error updating driver marker: $e');
     } finally {
       _isUpdatingDriverMarker = false;
     }
@@ -6938,7 +6455,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
             onMapCreated: _onMapCreated,
             onStyleLoadedListener: (_) async {
               if (_mapboxMap == null) return;
-              Logger.d('🔄 Style loaded, restoring map state...');
+              print('🔄 Style loaded, restoring map state...');
               // Style reload wipes all custom images and annotations — restore them
               _customIconsLoaded = false;
               _driverMarker = null;
@@ -7189,7 +6706,7 @@ class _FloatingNavigationButtonState extends State<_FloatingNavigationButton>
   void _showFullRoute() {
     if (widget.mapboxMap == null || widget.activeOrder == null) return;
 
-    Logger.d('📹 Overview: Showing full route...');
+    print('📹 Overview: Showing full route...');
 
     // Get coordinates
     final pickupLat = widget.activeOrder.pickupLatitude;
@@ -7237,7 +6754,7 @@ class _FloatingNavigationButtonState extends State<_FloatingNavigationButton>
       MapAnimationOptions(duration: 1500),
     );
 
-    Logger.d('✅ Overview: Camera set to show full route at zoom $zoom');
+    print('✅ Overview: Camera set to show full route at zoom $zoom');
 
     // Close the expanded menu
     _toggleExpansion();

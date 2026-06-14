@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/error_manager.dart';
 import '../localization/app_localizations.dart';
 
@@ -24,16 +25,18 @@ class GlobalErrorEntry {
 
 /// Central error display bus. Call [showAppError] or [showMessage] from anywhere —
 /// the overlay in main.dart renders the toast in the current language automatically.
-class GlobalErrorProvider extends ChangeNotifier {
-  static final GlobalErrorProvider _instance = GlobalErrorProvider._internal();
-  factory GlobalErrorProvider() => _instance;
-  GlobalErrorProvider._internal();
-
-  GlobalErrorEntry? _current;
+class GlobalErrorNotifier extends Notifier<GlobalErrorEntry?> {
   Timer? _dismissTimer;
 
-  GlobalErrorEntry? get current => _current;
-  bool get hasError => _current != null;
+  @override
+  GlobalErrorEntry? build() {
+    ref.onDispose(() {
+      _dismissTimer?.cancel();
+    });
+    return null;
+  }
+
+  bool get hasError => state != null;
 
   /// Show a typed [AppError] from ErrorManager. Message resolved at render time
   /// using the current locale, so language switches are handled automatically.
@@ -64,17 +67,15 @@ class GlobalErrorProvider extends ChangeNotifier {
   void dismiss() {
     _dismissTimer?.cancel();
     _dismissTimer = null;
-    _current = null;
-    notifyListeners();
+    state = null;
   }
 
   void _show(GlobalErrorEntry entry) {
     _dismissTimer?.cancel();
-    _current = entry;
-    notifyListeners();
+    state = entry;
     final duration = entry.isRetryable ? 6000 : 4500;
     _dismissTimer = Timer(Duration(milliseconds: duration), () {
-      if (_current == entry) dismiss();
+      if (state == entry) dismiss();
     });
   }
 
@@ -204,10 +205,8 @@ class GlobalErrorProvider extends ChangeNotifier {
         return Icons.check_circle_outline_rounded;
     }
   }
-
-  @override
-  void dispose() {
-    _dismissTimer?.cancel();
-    super.dispose();
-  }
 }
+
+final globalErrorProvider =
+    NotifierProvider<GlobalErrorNotifier, GlobalErrorEntry?>(
+        GlobalErrorNotifier.new);

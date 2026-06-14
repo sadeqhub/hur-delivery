@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/services/messaging_service.dart';
-import '../../../core/providers/notification_provider.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'messaging_thread_screen.dart';
 import 'messaging_list_screen.dart';
@@ -12,17 +13,17 @@ import '../../../core/utils/logger.dart';
 /// showing the conversation list. It always resolves (or creates) the single
 /// support conversation for the current user and then delegates to
 /// [MessagingThreadScreen], which already limits history to the past 24 hours.
-class SupportConversationScreen extends StatefulWidget {
+class SupportConversationScreen extends ConsumerStatefulWidget {
   const SupportConversationScreen({super.key, this.initialOrderId});
 
   final String? initialOrderId;
 
   @override
-  State<SupportConversationScreen> createState() =>
+  ConsumerState<SupportConversationScreen> createState() =>
       _SupportConversationScreenState();
 }
 
-class _SupportConversationScreenState extends State<SupportConversationScreen> {
+class _SupportConversationScreenState extends ConsumerState<SupportConversationScreen> {
   String? _conversationId;
   bool _loading = true;
   String? _error;
@@ -77,7 +78,7 @@ class _SupportConversationScreenState extends State<SupportConversationScreen> {
         // Ensure the in-app notification listener is bound to this conversation,
         // in case it didn't exist when NotificationProvider initialized.
         try {
-          context.read<NotificationProvider>().startSupportMessageListener(convId);
+          ref.read(notificationProvider.notifier).startSupportMessageListener(convId);
         } catch (_) {}
         return; // Exit successfully
       } on MessagingException catch (e) {

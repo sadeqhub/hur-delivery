@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -7,17 +8,17 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/providers/order_provider.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/providers/announcement_provider.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
 
-class AdminDashboard extends StatefulWidget {
+class AdminDashboard extends ConsumerStatefulWidget {
   const AdminDashboard({super.key});
 
   @override
-  State<AdminDashboard> createState() => _AdminDashboardState();
+  ConsumerState<AdminDashboard> createState() => _AdminDashboardState();
 }
 
-class _AdminDashboardState extends State<AdminDashboard> {
+class _AdminDashboardState extends ConsumerState<AdminDashboard> {
   int _selectedIndex = 0;
 
   @override
@@ -25,11 +26,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await context.read<OrderProvider>().initialize();
-      
+
       // Initialize announcement checker (checks every 5 seconds)
       final authProvider = context.read<AuthProvider>();
       if (authProvider.user != null && mounted) {
-        await context.read<AnnouncementProvider>().initialize(
+        await ref.read(announcementProvider.notifier).initialize(
           userRole: 'admin',
           userId: authProvider.user!.id,
           context: context,
@@ -40,7 +41,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   void dispose() {
-    context.read<AnnouncementProvider>().stopChecking();
+    ref.read(announcementProvider.notifier).stopChecking();
     super.dispose();
   }
 

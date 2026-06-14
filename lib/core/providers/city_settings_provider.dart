@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/logger.dart';
 
@@ -50,31 +50,30 @@ class CitySettings {
   }
 }
 
-/// Provider for city-specific settings
-class CitySettingsProvider extends ChangeNotifier {
-  final Map<String, CitySettings> _settingsCache = {};
-  bool _isLoading = false;
-  String? _error;
+/// Riverpod notifier for city-specific settings
+class CitySettingsNotifier extends AsyncNotifier<Map<String, CitySettings>> {
+  @override
+  Future<Map<String, CitySettings>> build() async {
+    return {};
+  }
 
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-
-  /// Get city settings for a specific city
+  /// Get city settings for a specific city (from current cache)
   CitySettings? getSettingsForCity(String? city) {
     if (city == null) return null;
-    return _settingsCache[city.toLowerCase()];
+    final cache = state.valueOrNull ?? {};
+    return cache[city.toLowerCase()];
   }
 
   /// Check if merchant wallet is enabled for a city
   bool isMerchantWalletEnabled(String? city) {
     final settings = getSettingsForCity(city);
-    return settings?.merchantWalletEnabled ?? true; // Default to enabled
+    return settings?.merchantWalletEnabled ?? true;
   }
 
   /// Check if driver wallet is enabled for a city
   bool isDriverWalletEnabled(String? city) {
     final settings = getSettingsForCity(city);
-    return settings?.driverWalletEnabled ?? true; // Default to enabled
+    return settings?.driverWalletEnabled ?? true;
   }
 
   /// Get merchant commission type for a city
@@ -98,78 +97,53 @@ class CitySettingsProvider extends ChangeNotifier {
   /// Get driver commission percentage for a specific rank in a city
   double getDriverCommissionForRank(String? city, String rank) {
     if (city == null || city.isEmpty) {
-      // No city specified, use defaults
-      switch (rank.toLowerCase()) {
-        case 'trial':
-          return 0.0;
-        case 'bronze':
-          return 10.0;
-        case 'silver':
-          return 7.0;
-        case 'gold':
-          return 5.0;
-        default:
-          return 10.0;
-      }
+      return _defaultCommissionForRank(rank);
     }
-    
+
     final normalizedCity = city.toLowerCase().trim();
     final settings = getSettingsForCity(normalizedCity);
     if (settings == null) {
-      // City settings not loaded, use defaults
-      switch (rank.toLowerCase()) {
-        case 'trial':
-          return 0.0;
-        case 'bronze':
-          return 10.0;
-        case 'silver':
-          return 7.0;
-        case 'gold':
-          return 5.0;
-        default:
-          return 10.0;
-      }
+      return _defaultCommissionForRank(rank);
     }
     final commissionRate = settings.driverCommissionByRank[rank.toLowerCase()];
-    if (commissionRate == null) {
-      // Rank not found in settings, use default
-      return 10.0;
-    }
-    return commissionRate;
+    return commissionRate ?? 10.0;
   }
 
-  /// Load city settings from database
-  Future<void> loadCitySettings() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+  double _defaultCommissionForRank(String rank) {
+    switch (rank.toLowerCase()) {
+      case 'trial':
+        return 0.0;
+      case 'bronze':
+        return 10.0;
+      case 'silver':
+        return 7.0;
+      case 'gold':
+        return 5.0;
+      default:
+        return 10.0;
+    }
+  }
 
-    try {
+  /// Load all city settings from database
+  Future<void> loadCitySettings() async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
       final response = await Supabase.instance.client
           .from('city_settings')
           .select('*');
 
       if (response.isEmpty) {
-        _error = 'No city settings found';
-        _isLoading = false;
-        notifyListeners();
-        return;
+        throw Exception('No city settings found');
       }
 
-      _settingsCache.clear();
+      final cache = <String, CitySettings>{};
       for (final row in response) {
         final settings = CitySettings.fromJson(row);
-        _settingsCache[settings.city.toLowerCase()] = settings;
+        cache[settings.city.toLowerCase()] = settings;
       }
-
-      _error = null;
-    } catch (e) {
-      _error = 'Failed to load city settings: $e';
-      Logger.d('Error loading city settings: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+      return cache;
+    });
   }
 
   /// Load settings for a specific city using RPC function
@@ -182,33 +156,36 @@ class CitySettingsProvider extends ChangeNotifier {
       );
 
       if (response == null || response.isEmpty) {
-        Logger.d('⚠️ No city settings found for city: $normalizedCity');
+        Logger.d('No city settings found for city: $normalizedCity');
         return null;
       }
 
-      // RPC returns a list of rows, but doesn't include the city field
-      // So we need to add it manually
       final row = response is List ? response.first : response;
       final rowMap = row as Map<String, dynamic>;
-      
-      // Add city field to the response since RPC doesn't return it
       rowMap['city'] = normalizedCity;
-      
+
       final settings = CitySettings.fromJson(rowMap);
-      _settingsCache[normalizedCity] = settings;
-      notifyListeners();
-      Logger.d('✅ Successfully loaded city settings for $normalizedCity');
+
+      // Merge into existing cache
+      final current = Map<String, CitySettings>.from(state.valueOrNull ?? {});
+      current[normalizedCity] = settings;
+      state = AsyncData(current);
+
+      Logger.d('Successfully loaded city settings for $normalizedCity');
       return settings;
     } catch (e) {
-      Logger.d('❌ Error loading city settings for $city: $e');
+      Logger.d('Error loading city settings for $city: $e');
       return null;
     }
   }
 
   /// Clear cache
   void clearCache() {
-    _settingsCache.clear();
-    notifyListeners();
+    state = const AsyncData({});
   }
 }
 
+final citySettingsProvider =
+    AsyncNotifierProvider<CitySettingsNotifier, Map<String, CitySettings>>(
+  CitySettingsNotifier.new,
+);

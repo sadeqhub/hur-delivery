@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../core/providers/locale_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/riverpod/app_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Language switcher widget that can be used in app bars or anywhere
-class LanguageSwitcher extends StatelessWidget {
+class LanguageSwitcher extends ConsumerWidget {
   final bool showLabel;
   final Color? iconColor;
   final Color? textColor;
@@ -22,13 +22,13 @@ class LanguageSwitcher extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final localeProvider = Provider.of<LocaleProvider>(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider).valueOrNull ?? const Locale('ar', 'IQ');
     final loc = AppLocalizations.of(context);
-    final isArabic = localeProvider.isArabic;
+    final isArabic = locale.languageCode == 'ar';
 
     return TextButton.icon(
-      onPressed: () => localeProvider.toggleLocale(),
+      onPressed: () => ref.read(localeProvider.notifier).toggleLocale(),
       icon: Icon(
         Icons.language,
         color: iconColor ?? (textColor ?? Colors.white),
@@ -62,10 +62,6 @@ class LanguageSwitcherButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localeProvider = Provider.of<LocaleProvider>(context);
-    final loc = AppLocalizations.of(context);
-    final isArabic = localeProvider.isArabic;
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
@@ -81,14 +77,14 @@ class LanguageSwitcherButton extends StatelessWidget {
 }
 
 /// Language switcher as a list tile for settings screens
-class LanguageSwitcherTile extends StatelessWidget {
+class LanguageSwitcherTile extends ConsumerWidget {
   const LanguageSwitcherTile({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final localeProvider = Provider.of<LocaleProvider>(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider).valueOrNull ?? const Locale('ar', 'IQ');
     final loc = AppLocalizations.of(context);
-    final isArabic = localeProvider.isArabic;
+    final isArabic = locale.languageCode == 'ar';
 
     return ListTile(
       leading: const Icon(Icons.language, color: AppColors.primary),
@@ -119,8 +115,7 @@ class LanguageSwitcherTile extends StatelessWidget {
           ),
         ],
       ),
-      onTap: () => localeProvider.toggleLocale(),
+      onTap: () => ref.read(localeProvider.notifier).toggleLocale(),
     );
   }
 }
-

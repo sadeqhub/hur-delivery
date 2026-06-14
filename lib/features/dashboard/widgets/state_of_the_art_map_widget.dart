@@ -4,12 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'package:provider/provider.dart';
 import '../../../shared/models/order_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/map_style_helper.dart';
 import '../../../core/localization/app_localizations.dart';
-import '../../../core/providers/theme_provider.dart';
 import '../../../shared/widgets/navigation_overlay_system.dart';
 import 'state_of_the_art_navigation.dart';
 import '../../../core/utils/logger.dart';
@@ -454,8 +452,8 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
     return Stack(
       children: [
         // Main Mapbox Map with dynamic theme-based styling
-        Consumer<ThemeProvider>(
-          builder: (context, themeProvider, _) {
+        Builder(
+          builder: (context) {
             final mapStyle = MapStyleHelper.getMapStyle(context);
 
             // Lock the initial style once so MapWidget.styleUri never changes.

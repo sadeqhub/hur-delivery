@@ -1,49 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Provider to manage app theme (light/dark mode)
-class ThemeProvider extends ChangeNotifier {
+class ThemeNotifier extends AsyncNotifier<ThemeMode> {
   static const String _themeKey = 'theme_mode';
-  
-  ThemeMode _themeMode = ThemeMode.light;
-  bool _isLoading = true;
 
-  ThemeMode get themeMode => _themeMode;
-  bool get isLoading => _isLoading;
-  bool get isDarkMode => _themeMode == ThemeMode.dark;
-  bool get isLightMode => _themeMode == ThemeMode.light;
+  @override
+  Future<ThemeMode> build() => _loadThemeMode();
 
-  ThemeProvider() {
-    _loadThemeMode();
-  }
-
-  /// Load saved theme mode from shared preferences
-  Future<void> _loadThemeMode() async {
+  Future<ThemeMode> _loadThemeMode() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedTheme = prefs.getString(_themeKey);
-      
+
       if (savedTheme != null) {
-        _themeMode = ThemeMode.values.firstWhere(
+        return ThemeMode.values.firstWhere(
           (mode) => mode.toString() == savedTheme,
           orElse: () => ThemeMode.light,
         );
       }
     } catch (e) {
       debugPrint('Error loading theme mode: $e');
-      _themeMode = ThemeMode.light;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
+    return ThemeMode.light;
   }
 
   /// Set theme mode and save to preferences
   Future<void> setThemeMode(ThemeMode mode) async {
-    if (_themeMode == mode) return;
-    
-    _themeMode = mode;
-    notifyListeners();
+    // Optimistically update state before the save
+    state = AsyncData(mode);
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -55,9 +40,8 @@ class ThemeProvider extends ChangeNotifier {
 
   /// Toggle between light and dark mode
   Future<void> toggleTheme() async {
-    final newMode = _themeMode == ThemeMode.light 
-        ? ThemeMode.dark 
-        : ThemeMode.light;
+    final current = state.valueOrNull ?? ThemeMode.light;
+    final newMode = current == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     await setThemeMode(newMode);
   }
 
@@ -72,3 +56,5 @@ class ThemeProvider extends ChangeNotifier {
   }
 }
 
+final themeProvider =
+    AsyncNotifierProvider<ThemeNotifier, ThemeMode>(ThemeNotifier.new);

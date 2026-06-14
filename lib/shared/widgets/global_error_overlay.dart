@@ -1,56 +1,53 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/global_error_provider.dart';
+import '../../core/riverpod/app_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Wraps the app's root child in a [Stack] and renders an animated error toast
-/// at the bottom of the screen whenever [GlobalErrorProvider] has an active entry.
+/// at the bottom of the screen whenever [GlobalErrorNotifier] has an active entry.
 ///
 /// Usage: wrap [child] with this in main.dart's MaterialApp builder.
-class GlobalErrorOverlay extends StatelessWidget {
+class GlobalErrorOverlay extends ConsumerWidget {
   final Widget child;
 
   const GlobalErrorOverlay({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entry = ref.watch(globalErrorProvider);
     return Stack(
       children: [
         child,
-        Consumer<GlobalErrorProvider>(
-          builder: (context, errorProvider, _) {
-            final entry = errorProvider.current;
-            return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 280),
-              transitionBuilder: (child, animation) {
-                return SlideTransition(
-                  position: Tween(
-                    begin: const Offset(0, 1.2),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                    reverseCurve: Curves.easeInCubic,
-                  )),
-                  child: FadeTransition(opacity: animation, child: child),
-                );
-              },
-              child: entry == null
-                  ? const SizedBox.shrink()
-                  : _ErrorToast(
-                      key: ValueKey(entry.timestamp),
-                      entry: entry,
-                    ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          transitionBuilder: (child, animation) {
+            return SlideTransition(
+              position: Tween(
+                begin: const Offset(0, 1.2),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+                reverseCurve: Curves.easeInCubic,
+              )),
+              child: FadeTransition(opacity: animation, child: child),
             );
           },
+          child: entry == null
+              ? const SizedBox.shrink()
+              : _ErrorToast(
+                  key: ValueKey(entry.timestamp),
+                  entry: entry,
+                ),
         ),
       ],
     );
   }
 }
 
-class _ErrorToast extends StatelessWidget {
+class _ErrorToast extends ConsumerWidget {
   final GlobalErrorEntry entry;
 
   const _ErrorToast({super.key, required this.entry});
@@ -82,17 +79,17 @@ class _ErrorToast extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context);
-    final errorProvider = context.read<GlobalErrorProvider>();
+    final notifier = ref.read(globalErrorProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final accent = _accentColor();
     final bg = _bgColor(isDark);
 
-    final title = GlobalErrorProvider.titleForEntry(entry, loc);
-    final body = GlobalErrorProvider.bodyForEntry(entry, loc);
-    final icon = GlobalErrorProvider.iconForEntry(entry);
+    final title = GlobalErrorNotifier.titleForEntry(entry, loc);
+    final body = GlobalErrorNotifier.bodyForEntry(entry, loc);
+    final icon = GlobalErrorNotifier.iconForEntry(entry);
 
     return Positioned(
       bottom: MediaQuery.paddingOf(context).bottom + 12,
@@ -156,7 +153,7 @@ class _ErrorToast extends StatelessWidget {
                       const SizedBox(height: 8),
                       GestureDetector(
                         onTap: () {
-                          errorProvider.dismiss();
+                          notifier.dismiss();
                           entry.onRetry?.call();
                         },
                         child: Text(
@@ -175,7 +172,7 @@ class _ErrorToast extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               GestureDetector(
-                onTap: () => errorProvider.dismiss(),
+                onTap: () => notifier.dismiss(),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: const EdgeInsets.all(4),

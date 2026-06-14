@@ -1,3 +1,4 @@
+// TODO: extract Supabase.instance calls to a feature repository
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';

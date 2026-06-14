@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/driver_location_service.dart';
+import '../data/driver_repository.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
@@ -141,14 +141,7 @@ class _SimpleLocationUpdateWidgetState extends State<SimpleLocationUpdateWidget>
       // Query orders table directly for this driver's active orders
       // Only check orders where customer actually provided location (not auto-updated)
       // AND driver hasn't been notified yet
-      final response = await Supabase.instance.client
-          .from('orders')
-          .select('id, customer_location_provided, driver_notified_location, delivery_latitude, delivery_longitude, customer_name, delivery_address, coordinates_auto_updated')
-          .eq('driver_id', widget.driverId)
-          .inFilter('status', ['assigned', 'accepted', 'on_the_way', 'picked_up'])
-          .eq('customer_location_provided', true)
-          .eq('driver_notified_location', false) // CRITICAL: Only show if driver hasn't been notified
-          .eq('coordinates_auto_updated', false); // Only real customer locations
+      final response = await DriverRepository.instance.getActiveOrdersWithPendingLocation(widget.driverId);
 
       if (response.isNotEmpty) {
         Logger.d('📍 Found ${response.length} orders with customer location updates');

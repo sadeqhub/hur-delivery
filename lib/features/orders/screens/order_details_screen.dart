@@ -1,3 +1,4 @@
+// TODO: extract Supabase.instance calls to a feature repository
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';

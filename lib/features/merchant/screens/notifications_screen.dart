@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:go_router/go_router.dart';
 import 'dart:convert';
@@ -10,6 +9,7 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/logger.dart';
+import '../data/merchant_repository.dart';
 
 class MerchantNotificationsScreen extends StatefulWidget {
   const MerchantNotificationsScreen({super.key});
@@ -37,16 +37,11 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
       final userId = context.read<AuthProvider>().user?.id;
       if (userId == null) return;
 
-      final response = await Supabase.instance.client
-          .from('notifications')
-          .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false)
-          .limit(100);
+      final response = await MerchantRepository.instance.getNotifications(userId);
 
       if (mounted) {
         setState(() {
-          _notifications = List<Map<String, dynamic>>.from(response);
+          _notifications = response;
           _isLoading = false;
         });
       }
@@ -60,10 +55,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
 
   Future<void> _markAsRead(String notificationId) async {
     try {
-      await Supabase.instance.client
-          .from('notifications')
-          .update({'is_read': true})
-          .eq('id', notificationId);
+      await MerchantRepository.instance.markNotificationRead(notificationId);
 
       // Update locally
       setState(() {
@@ -79,10 +71,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
 
   Future<void> _deleteNotification(String notificationId) async {
     try {
-      await Supabase.instance.client
-          .from('notifications')
-          .delete()
-          .eq('id', notificationId);
+      await MerchantRepository.instance.deleteNotification(notificationId);
 
       // Update locally
       setState(() {
@@ -108,11 +97,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
       final userId = context.read<AuthProvider>().user?.id;
       if (userId == null) return;
 
-      await Supabase.instance.client
-          .from('notifications')
-          .update({'is_read': true})
-          .eq('user_id', userId)
-          .eq('is_read', false);
+      await MerchantRepository.instance.markAllNotificationsRead(userId);
 
       // Update locally
       setState(() {

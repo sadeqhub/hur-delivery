@@ -1,3 +1,4 @@
+// TODO: extract Supabase.instance calls to a feature repository
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

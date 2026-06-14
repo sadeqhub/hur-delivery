@@ -10,22 +10,27 @@ import 'dart:convert';
 import '../../shared/models/user_model.dart';
 import '../constants/app_constants.dart';
 import '../services/device_manager.dart';
+import '../services/device_session_service.dart';
 import '../services/flutterfire_notification_service.dart';
+import '../services/otp_service.dart';
+import '../services/session_service.dart';
 import '../services/whatsapp_service.dart';
 import '../services/response_cache_service.dart';
 import '../services/network_quality_service.dart';
 import '../utils/logger.dart';
 
 class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
+  // Core state
   UserModel? _user;
   bool _isLoading = false;
   String? _error;
   bool _isInitialized = false;
+  bool _isDemoMode = false;
+
+  // Device / session tracking
   String? _deviceId;
-  StreamSubscription? _sessionSubscription;
-  Timer? _sessionCheckTimer;
+  bool _isLoggingOut = false;
   StreamSubscription? _userRowSubscription;
-  bool _isDemoMode = false; // Demo mode flag
 
   // PERFORMANCE: Cache service for 4G optimization (selective caching for auth flows)
   final _responseCache = ResponseCacheService();
@@ -73,109 +78,55 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _sessionSubscription?.cancel();
-    _sessionCheckTimer?.cancel();
+    DeviceSessionService.instance.stopMonitoring();
     _userRowSubscription?.cancel();
     super.dispose();
   }
-  
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed && _user != null && _deviceId != null) {
       // App came to foreground - immediately check session
-      _checkSessionStatusDirectly();
+      SessionService.instance.checkStatusDirectly(
+        userId: _user!.id,
+        deviceId: _deviceId!,
+        onForceLogout: _handleForceLogout,
+      );
     }
   }
+
+  void _handleForceLogout(String reason) => _forceLogout(reason);
 
   // Initialize auth state
   Future<void> initialize() async {
     if (_isInitialized) return;
-    
+
     _isLoading = true;
     notifyListeners();
 
     try {
-      // Get device ID
       _deviceId = await DeviceManager.getDeviceId();
       Logger.d('Device ID: $_deviceId');
-      
-      // Get current session (Supabase auto-loads from secure storage)
-      var session = Supabase.instance.client.auth.currentSession;
-      
-      // If session exists but is expired, try to refresh it first
-      if (session != null && session.expiresAt != null) {
-        final now = DateTime.now().millisecondsSinceEpoch;
-        final expiresAt = session.expiresAt!;
-        
-        // If session is expired or will expire soon (within 1 minute), try to refresh
-        if (now >= expiresAt - 60000) {
-          // Refresh if expires in less than 1 minute
-          Logger.d('🔄 Session expired or expiring soon, attempting refresh...');
-          try {
-            // Try to refresh the session using the refresh token
-            final refreshedSession =
-                await Supabase.instance.client.auth.refreshSession();
-            if (refreshedSession.session != null) {
-              session = refreshedSession.session;
-              Logger.d('✅ Session refreshed successfully');
-            } else {
-              Logger.d('⚠️ Session refresh failed - no new session returned');
-              // Try to sign out and clear
-              try {
-                await Supabase.instance.client.auth.signOut();
-              } catch (e) {
-                Logger.d('⚠️ Error during signOut: $e');
-              }
-              _user = null;
-              _error = null;
-              _verifiedPhone = null;
-              _currentOTP = null;
-              _currentPhone = null;
-              await _clearUserFromPrefs();
-              return;
-            }
-          } catch (e) {
-            Logger.d('⚠️ Failed to refresh session: $e');
-            final errorString = e.toString().toLowerCase();
-            
-            // Check for specific refresh token errors that require immediate sign out
-            final isRefreshTokenError = errorString.contains('refresh_token_not_found') ||
-                errorString.contains('refresh token not found') ||
-                errorString.contains('invalid refresh token') ||
-                errorString.contains('session_expired') ||
-                errorString.contains('revoked by newer login');
-            
-            // If refresh token is invalid/missing, sign out immediately
-            if (isRefreshTokenError || now > expiresAt) {
-              Logger.d('⚠️ Refresh token invalid or session expired, signing out');
-              try {
-                await Supabase.instance.client.auth.signOut();
-              } catch (signOutError) {
-                Logger.d('⚠️ Error during signOut: $signOutError');
-              }
-              _user = null;
-              _error = null;
-              _verifiedPhone = null;
-              _currentOTP = null;
-              _currentPhone = null;
-              await _clearUserFromPrefs();
-              return;
-            }
-            // For other errors, try to continue with existing session (might still work)
-          }
-        }
-      }
-      
-      if (session != null) {
+
+      // Delegate session restoration (check + refresh) to SessionService
+      final session = await SessionService.instance.restoreSession();
+
+      if (session == null) {
+        // Restoration returned null — clear any stale local data
+        _user = null;
+        _error = null;
+        _verifiedPhone = null;
+        _currentOTP = null;
+        _currentPhone = null;
+        await _clearUserFromPrefs();
+      } else {
         Logger.d('✅ Valid session found, loading user profile...');
         await _loadUserProfile();
-        
-        // Register this device session
+
         if (_user != null) {
           await _registerDeviceSession();
           _monitorDeviceSessions();
-          
-          // Force refresh FCM token on app startup
+
           try {
             Logger.d('🔄 Refreshing FCM token on app startup...');
             await FlutterFireNotificationService.refreshFCMToken();
@@ -195,247 +146,54 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
   
-  // Register device session and logout other devices
+  // Thin delegate — actual RPC logic lives in DeviceSessionService
   Future<void> _registerDeviceSession() async {
     if (_user == null || _deviceId == null) return;
-    
-    try {
-      final deviceInfo = await DeviceManager.getDeviceInfo();
-      
-      await Supabase.instance.client.rpc(
-        'register_device_session',
-        params: {
-          'p_user_id': _user!.id,
-          'p_device_id': _deviceId,
-          'p_device_info': deviceInfo,
-        },
-      );
-    } catch (e) {
-      Logger.d('Error registering device session: $e');
-      
-      // Check for 401 errors (session expired)
-      if (e is PostgrestException && e.code == '401') {
-        Logger.d(
-            '🔐 Session expired during device registration - attempting refresh...');
-        final refreshed = await _attemptSessionRefresh();
-        if (refreshed) {
-          Logger.d('✅ Session refreshed, retrying device registration...');
-          // Retry registration after refresh
-          Future.delayed(const Duration(milliseconds: 300), () {
-            _registerDeviceSession();
-          });
-        } else {
-          Logger.d('🔐 Session refresh failed - forcing logout');
-          _forceLogout('انتهت صلاحية الجلسة');
-        }
-      } else if (e.toString().contains('401') ||
-          e.toString().contains('Unauthorized')) {
-        Logger.d(
-            '🔐 Unauthorized access during device registration - attempting refresh...');
-        final refreshed = await _attemptSessionRefresh();
-        if (!refreshed) {
-          Logger.d('🔐 Session refresh failed - forcing logout');
-          _forceLogout('انتهت صلاحية الجلسة');
-        }
-      }
-    }
+    await DeviceSessionService.instance.register(
+      userId: _user!.id,
+      deviceId: _deviceId!,
+      onForceLogout: _handleForceLogout,
+    );
   }
-  
-  // Monitor for other device logins (will force logout this device)
-  // PERFORMANCE FIX: Removed real-time subscription - using polling only
-  // This reduces ~30 subscriptions (one per user) and WAL polling overhead
-  // Polling every 2 seconds is sufficient for session monitoring
+
+  // Thin delegate — monitoring timer is owned by SessionService
   void _monitorDeviceSessions() {
     if (_user == null || _deviceId == null) return;
-    
-    // Cancel existing subscriptions
-    _sessionSubscription?.cancel();
-    _sessionCheckTimer?.cancel();
-    
-    // PERFORMANCE FIX: Removed real-time stream - using polling only
-    // Real-time subscription was redundant since we're already polling every 2 seconds
-    // This reduces subscription overhead by ~30 subscriptions
-    
-    // Polling (every 15 seconds) - sufficient for session monitoring
-    // 2s was 1,800 DB queries/hour per user; 15s reduces this to 240.
-    _sessionCheckTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      _checkSessionStatusDirectly();
-    });
-    
-    // Immediate check after registration
-    Future.delayed(const Duration(milliseconds: 500), () {
-      _checkSessionStatusDirectly();
-    });
-  }
-  
-  // Check session status from stream data
-  void _checkSessionStatus(List<Map<String, dynamic>> data) {
-    if (_user == null || _deviceId == null) return;
-    
-    final ourSession = data.firstWhere(
-      (session) => session['device_id'] == _deviceId,
-      orElse: () => {},
+    DeviceSessionService.instance.startMonitoring(
+      userId: _user!.id,
+      deviceId: _deviceId!,
+      onForceLogout: _handleForceLogout,
     );
-    
-    // Check if session is inactive - handle both boolean and null cases
-    if (ourSession.isNotEmpty) {
-      final isActive = ourSession['is_active'];
-      if (isActive == false || isActive == null) {
-        _forceLogout('تم تسجيل الدخول من جهاز آخر');
-      }
-    }
   }
-  
-  // Check session status directly from database (fallback)
-  Future<void> _checkSessionStatusDirectly() async {
-    if (_user == null || _deviceId == null) return;
-    
-    try {
-      final userId = _user!.id;
-      final deviceId = _deviceId!;
-      
-      final result = await Supabase.instance.client
-          .from('device_sessions')
-          .select('is_active')
-          .eq('user_id', userId)
-          .eq('device_id', deviceId)
-          .maybeSingle();
-      
-      // If session not found or is_active is false, force logout
-      if (result == null) {
-        // Session was deleted - logout
-        _forceLogout('تم تسجيل الدخول من جهاز آخر');
-      } else {
-        final isActive = result['is_active'];
-        if (isActive == false || isActive == null) {
-          _forceLogout('تم تسجيل الدخول من جهاز آخر');
-        }
-      }
-    } catch (e) {
-      // Check if this is a 401 error (session expired)
-      if (e is PostgrestException && e.code == '401') {
-        Logger.d('🔐 Session expired (401) - attempting refresh before logout...');
-        // Try to refresh session before logging out
-        final refreshed = await _attemptSessionRefresh();
-        if (!refreshed) {
-          Logger.d('🔐 Session refresh failed - forcing logout');
-          _forceLogout('انتهت صلاحية الجلسة');
-        } else {
-          Logger.d('✅ Session refreshed, retrying session check...');
-          // Retry the check after refresh
-          Future.delayed(const Duration(milliseconds: 500), () {
-            _checkSessionStatusDirectly();
-          });
-        }
-      } else if (e.toString().contains('401') ||
-          e.toString().contains('Unauthorized')) {
-        Logger.d(
-            '🔐 Unauthorized access (401) - attempting refresh before logout...');
-        final refreshed = await _attemptSessionRefresh();
-        if (!refreshed) {
-          Logger.d('🔐 Session refresh failed - forcing logout');
-          _forceLogout('انتهت صلاحية الجلسة');
-        }
-      }
-      // For other errors, silent fail to not disrupt user experience
-    }
-  }
-  
-  bool _isLoggingOut = false; // Prevent multiple simultaneous logout calls
-  
-  // Attempt to refresh the current session
-  Future<bool> _attemptSessionRefresh() async {
-    try {
-      final currentSession = Supabase.instance.client.auth.currentSession;
-      if (currentSession == null) {
-        Logger.d('⚠️ No current session to refresh');
-        return false;
-      }
-      
-      Logger.d('🔄 Attempting to refresh session...');
-      final refreshedSession =
-          await Supabase.instance.client.auth.refreshSession();
-      
-      if (refreshedSession.session != null) {
-        Logger.d('✅ Session refreshed successfully');
-        return true;
-      } else {
-        Logger.d('⚠️ Session refresh returned null');
-        return false;
-      }
-    } catch (e) {
-      Logger.d('❌ Failed to refresh session: $e');
-      final errorString = e.toString().toLowerCase();
-      
-      // Check for refresh token errors that indicate the token is invalid
-      final isRefreshTokenError = errorString.contains('refresh_token_not_found') ||
-          errorString.contains('refresh token not found') ||
-          errorString.contains('invalid refresh token') ||
-          errorString.contains('session_expired') ||
-          errorString.contains('revoked by newer login');
-      
-      if (isRefreshTokenError) {
-        Logger.d('⚠️ Refresh token is invalid, clearing session');
-        try {
-          await Supabase.instance.client.auth.signOut();
-        } catch (signOutError) {
-          Logger.d('⚠️ Error during signOut: $signOutError');
-        }
-      }
-      
-      return false;
-    }
-  }
-  
-  // Force logout (called when another device logs in)
+
+  // Force logout: clear local state then delegate Supabase I/O to SessionService
   Future<void> _forceLogout(String reason) async {
-    // Prevent multiple logout calls
     if (_user == null || _isLoggingOut) return;
-    
     _isLoggingOut = true;
     Logger.d('==================================================');
     Logger.d('🚪 FORCE LOGOUT TRIGGERED');
     Logger.d('   Reason: $reason');
     Logger.d('   Time: ${DateTime.now()}');
     Logger.d('==================================================');
-    
-    // Cancel monitoring
-    _sessionSubscription?.cancel();
-    _sessionCheckTimer?.cancel();
-    
-    // Clear local data
+
     final userId = _user!.id;
     _user = null;
     _error = reason;
     await _clearUserFromPrefs();
-    
-    // Mark device session as logged out in database
-    try {
-      if (_deviceId != null) {
-        await Supabase.instance.client.rpc(
-          'logout_device_session',
-          params: {
-            'p_user_id': userId,
-            'p_device_id': _deviceId,
-          },
-        );
-      }
-    } catch (e) {
-      // Silent fail
-    }
-    
-    // Sign out from Supabase
-    try {
-      await Supabase.instance.client.auth.signOut();
-    } catch (e) {
-      Logger.d('⚠️ Error during force logout signOut: $e');
-      // Silent fail - continue with local cleanup
-    }
-    
+
+    await SessionService.instance.performForceLogout(
+      userId: userId,
+      deviceId: _deviceId,
+    );
+
     _isDemoMode = false;
     _isLoggingOut = false;
     notifyListeners();
   }
+
+  // Kept for backward-compat call sites inside this file
+  Future<bool> _attemptSessionRefresh() =>
+      SessionService.instance.attemptRefresh();
 
   // Phone number login with WhatsApp
   Future<bool> loginWithPhone(String phone) async {
@@ -494,210 +252,90 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     _error = null;
     notifyListeners();
     try {
-      // Clean and normalize phone number (remove +, ensure 964 format)
       final cleaned = _cleanPhoneNumber(phone).replaceAll('+', '');
-      
+
       // CLIENT-SIDE VALIDATION: Check if user exists before sending OTP
-      // This provides immediate feedback without wasting an OTP
-      // NOTE: This is a best-effort check - if it fails, we continue with OTP flow
+      // NOTE: Best-effort; failures fall through to the OTP flow.
       try {
-        // Try multiple phone number formats to ensure we find the user
-        // Phone numbers might be stored with or without +, with or without leading zeros
         final phoneVariations = [
-          cleaned,                    // 9647812345678
-          '+$cleaned',               // +9647812345678
-          cleaned.replaceFirst('964', '0'), // 07812345678 (if applicable)
-        ];
-        
-        // Remove duplicates
-        final uniqueVariations = phoneVariations.toSet().toList();
-        
-        Logger.d('🔍 [VALIDATION] Checking user existence with phone variations: $uniqueVariations');
-        
-        // Try to find user with any of the phone variations
+          cleaned,
+          '+$cleaned',
+          cleaned.replaceFirst('964', '0'),
+        ].toSet().toList();
+
+        Logger.d('🔍 [VALIDATION] Checking user existence: $phoneVariations');
+
         Map<String, dynamic>? existingProfile;
-        for (final phoneVar in uniqueVariations) {
+        for (final phoneVar in phoneVariations) {
           try {
             final result = await Supabase.instance.client
                 .from('users')
                 .select('id, role, name')
                 .eq('phone', phoneVar)
                 .maybeSingle();
-            
             if (result != null) {
               existingProfile = result;
               Logger.d('✅ [VALIDATION] Found user with phone format: $phoneVar');
               break;
             }
           } catch (e) {
-            Logger.d('⚠️ [VALIDATION] Error checking phone format $phoneVar: $e');
-            continue; // Try next format
+            Logger.d('⚠️ [VALIDATION] Error checking $phoneVar: $e');
           }
         }
-        
-        // If still not found, try OR query as fallback
-        if (existingProfile == null && uniqueVariations.length > 1) {
+
+        if (existingProfile == null && phoneVariations.length > 1) {
           try {
-            final orQuery = uniqueVariations
-                .map((v) => 'phone.eq.$v')
-                .join(',');
+            final orQuery = phoneVariations.map((v) => 'phone.eq.$v').join(',');
             final result = await Supabase.instance.client
                 .from('users')
                 .select('id, role, name')
                 .or(orQuery)
                 .maybeSingle();
-            
             if (result != null) {
               existingProfile = result;
               Logger.d('✅ [VALIDATION] Found user with OR query');
             }
           } catch (e) {
-            Logger.d('⚠️ [VALIDATION] Error with OR query: $e');
+            Logger.d('⚠️ [VALIDATION] OR query error: $e');
           }
         }
-        
-        // Only show warning for signup if we're confident user exists
-        // For login, never block - let backend handle validation
+
         if (purpose == 'signup' && existingProfile != null) {
-          // Double-check: make sure we have valid user data
           final userId = existingProfile['id'] as String?;
           final userName = existingProfile['name'] as String?;
-          
-          // Only block if we have a valid user ID and name
-          if (userId != null && userId.isNotEmpty && userName != null && userName.isNotEmpty) {
+          if (userId != null && userId.isNotEmpty &&
+              userName != null && userName.isNotEmpty) {
             final userRole = existingProfile['role'] as String? ?? 'غير معروف';
-            String roleArabic = userRole == 'merchant' ? 'تاجر' : 
-                               userRole == 'driver' ? 'سائق' : 
-                               userRole == 'customer' ? 'عميل' : userRole;
-            
-            Logger.d('❌ [VALIDATION] User already exists for phone: $cleaned');
-            Logger.d('   User name: $userName, Role: $roleArabic');
-            
-            _error = 'يوجد حساب مسجل مسبقاً بهذا الرقم.\nاسم المستخدم: $userName\nنوع الحساب: $roleArabic\n\nيرجى تسجيل الدخول بدلاً من إنشاء حساب جديد.';
+            final roleArabic = userRole == 'merchant'
+                ? 'تاجر'
+                : userRole == 'driver'
+                    ? 'سائق'
+                    : userRole == 'customer'
+                        ? 'عميل'
+                        : userRole;
+            _error =
+                'يوجد حساب مسجل مسبقاً بهذا الرقم.\nاسم المستخدم: $userName\nنوع الحساب: $roleArabic\n\nيرجى تسجيل الدخول بدلاً من إنشاء حساب جديد.';
             return false;
-          } else {
-            // Invalid data - don't trust this result, continue with signup
-            Logger.d('⚠️ [VALIDATION] Found profile but data seems invalid - continuing with signup');
           }
-        }
-        
-        // For login (reset_password), never block based on client-side check
-        // Let the backend OTP handler determine if user exists
-        if (purpose == 'reset_password') {
-          if (existingProfile == null) {
-            Logger.d('ℹ️ [VALIDATION] No account found in client check for phone: $cleaned');
-            Logger.d('   Continuing with OTP - backend will validate');
-          } else {
-            Logger.d('✅ [VALIDATION] Account found - proceeding with login OTP');
-          }
-          // Always continue - don't block login attempts
-        }
-        
-        if (existingProfile != null) {
-          Logger.d('✅ [VALIDATION] User exists for login/password reset');
-        } else {
-          Logger.d('✅ [VALIDATION] No existing user - proceeding with signup');
         }
       } catch (validationError) {
-        Logger.d('⚠️ [VALIDATION] Error checking user existence: $validationError');
-        Logger.d('⚠️ [VALIDATION] Continuing with OTP flow despite validation error');
-        // Continue with OTP flow even if validation fails - don't block the user
-        // This ensures users aren't blocked by client-side validation errors
-      }
-      
-      // Call Supabase Edge Function
-      Logger.d('📤 [DEBUG] Sending OTP via Edge Function');
-      Logger.d('📤 [DEBUG] Phone: $cleaned, Purpose: $purpose');
-      
-      FunctionResponse? response;
-      try {
-        response = await Supabase.instance.client.functions.invoke(
-          'otp-handler-clean',  // ✅ Updated to use new optimized function
-          body: {
-            'action': 'send',
-            'phoneNumber': cleaned,
-            'purpose': purpose,
-          },
-        ).timeout(const Duration(seconds: 30));
-      } catch (invokeError) {
-        Logger.d('❌ [ERROR] Function invoke failed: $invokeError');
-        Logger.d('❌ [ERROR] Error type: ${invokeError.runtimeType}');
-        // Check if function doesn't exist or isn't deployed
-        if (invokeError.toString().contains('404') || 
-            invokeError.toString().contains('not found') ||
-            invokeError.toString().contains('Function not found')) {
-          _error =
-              'الدالة غير متاحة. الرجاء التأكد من نشر الدالة على Supabase.';
-          return false;
-        }
-        rethrow;
+        Logger.d('⚠️ [VALIDATION] Error: $validationError — continuing with OTP flow');
       }
 
-      Logger.d('✅ [DEBUG] OTP send response status: ${response.status}');
-      Logger.d('✅ [DEBUG] OTP send response data: ${response.data}');
-      
-      _otpRetryAfterSeconds = null;
-      
-      if (response.status != 200) {
-        try {
-          final data = response.data as Map<String, dynamic>?;
-          Logger.d('❌ [ERROR] Edge Function error response: $data');
-          
-          final errorMsg = data?['error'] as String?;
-          
-          // Handle rate limit (429) - prioritize error message from edge function
-          if (response.status == 429) {
-            final retry = (data?['retry_after'] is num)
-                ? (data!['retry_after'] as num).toInt()
-                : null;
-            
-            // If there's a retry_after, show countdown message
-            if (retry != null && retry > 0) {
-              _otpRetryAfterSeconds = retry;
-              _error = 'الرجاء الانتظار $retry ثانية قبل إعادة الإرسال';
-            } else if (errorMsg != null && errorMsg.isNotEmpty) {
-              // Use the Arabic error message from edge function (IP rate limit)
-              _error = errorMsg;
-            } else {
-              // Fallback message
-              _error = 'عذرًا لقد تجاوزت الحد المسموح من المحاولات. يرجى اعادة المحاولة لاحقًا.';
-            }
-          } else {
-            // For other errors, use the error message from response or fallback
-            _error = errorMsg?.isNotEmpty == true
-                ? errorMsg!
-                : 'فشل إرسال رمز التحقق، الرجاء المحاولة لاحقاً';
-          }
-        } catch (_) {
-          _error = 'فشل إرسال رمز التحقق، الرجاء المحاولة لاحقاً';
-        }
+      // Delegate to OtpService
+      final result = await OtpService.instance.sendOtp(cleaned, purpose: purpose);
+      _otpRetryAfterSeconds = result.retryAfterSeconds;
+      if (!result.success) {
+        _error = result.error;
         return false;
       }
-      
-      // Store current phone for verification step
+
       _currentPhone = phone;
-      Logger.d('✅ [SUCCESS] OTP sent successfully via Edge Function');
+      Logger.d('✅ OTP sent successfully');
       return true;
     } catch (e, stackTrace) {
-      Logger.d('❌ [ERROR] sendOtpViaOtpiq error: $e');
-      Logger.d('❌ [ERROR] Error type: ${e.runtimeType}');
-      Logger.d('❌ [ERROR] Stack trace: $stackTrace');
-      
-      // Check if it's a network error
-      if (e.toString().contains('timeout') ||
-          e.toString().contains('TimeoutException')) {
-        _error =
-            'انتهت مهلة الطلب. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى';
-      } else if (e.toString().contains('SocketException') ||
-          e.toString().contains('network')) {
-        _error =
-            'خطأ في الاتصال بالإنترنت. يرجى التحقق من الاتصال والمحاولة مرة أخرى';
-      } else if (e.toString().contains('404') ||
-          e.toString().contains('not found')) {
-        _error = 'الدالة غير متاحة. الرجاء التأكد من نشر الدالة على Supabase.';
-      } else {
-        _error = _getErrorMessage(e);
-      }
+      Logger.d('❌ sendOtpViaOtpiq error: $e\n$stackTrace');
+      _error = _getErrorMessage(e);
       return false;
     } finally {
       _isLoading = false;
@@ -712,99 +350,45 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
     try {
       final cleaned = _cleanPhoneNumber(phone).replaceAll('+', '');
-      
-      // Use unified authenticate action - verifies OTP and creates/updates auth account
-      Logger.d(
-          '📤 [DEBUG] Authenticating via Edge Function (unified login/signup)');
-      final response = await Supabase.instance.client.functions.invoke(
-        'otp-handler-clean',  // ✅ Updated to use new optimized function
-        body: {
-          'action': 'authenticate',
-          'phoneNumber': cleaned,
-          'code': code,
-        },
-      );
 
-      Logger.d('✅ [DEBUG] authenticate response status: ${response.status}');
-      Logger.d('✅ [DEBUG] authenticate response data: ${response.data}');
-      
-      if (response.status != 200) {
-        final data = response.data as Map<String, dynamic>?;
-        _error = (data?['error'] as String?) ?? 'فشل التحقق من رمز التحقق';
+      // Delegate Edge Function call to OtpService
+      final result = await OtpService.instance.verifyOtp(cleaned, code);
+      if (!result.success) {
+        _error = result.error;
         return false;
       }
-      
-      final data = response.data as Map<String, dynamic>?;
-      final success = data?['success'] as bool? ?? false;
-      
-      if (!success) {
-        _error = (data?['error'] as String?) ?? 'رمز التحقق غير صحيح';
-        return false;
-      }
-      
-      // NEW: Extract session tokens directly from response (otp-handler-clean returns session)
-      final sessionData = data?['session'] as Map<String, dynamic>?;
-      
-      if (sessionData != null && 
-          sessionData['access_token'] != null && 
-          sessionData['refresh_token'] != null) {
-        // Use the session tokens directly (new optimized handler)
-        Logger.d('🔐 [DEBUG] Using session tokens from Edge Function (otp-handler-clean)');
-        
-        try {
-          // CRITICAL: Use setSession to directly set the session from the Edge Function
-          // This avoids the need to sign in again
-          Logger.d('🔑 [DEBUG] Setting session from Edge Function tokens');
-          
-          final refreshToken = sessionData['refresh_token'] as String;
-          
-          // Set the session directly using only the refresh token
-          // Supabase Flutter will automatically fetch and validate the access token
-          final authResponse = await Supabase.instance.client.auth.setSession(
-            refreshToken,
-          );
-          
-          // Verify session was set successfully
-          if (authResponse.session == null || authResponse.user == null) {
-            Logger.d('❌ [DEBUG] Failed to set session - no user or session returned');
-            _error = 'فشل تسجيل الدخول';
-            return false;
-          }
-          
-          Logger.d('✅ [DEBUG] Session set successfully');
-          Logger.d('   User ID: ${authResponse.user?.id}');
-          Logger.d('   Session expires at: ${authResponse.session?.expiresAt}');
-          
-          // Verify the session is actually active
-          final currentUser = Supabase.instance.client.auth.currentUser;
-          if (currentUser == null) {
-            Logger.d('❌ [DEBUG] Session was set but currentUser is still null!');
-            _error = 'فشل تسجيل الدخول';
-            return false;
-          }
-          Logger.d('✅ [DEBUG] Current user confirmed: ${currentUser.id}');
-          
-          // Load user profile
-          Logger.d('📥 [DEBUG] Loading user profile...');
-          await _loadUserProfile();
-          Logger.d('✅ [DEBUG] Profile loading complete');
-          
-          _verifiedPhone = phone;
 
-          Logger.d('✅ [DEBUG] User profile loaded, authentication complete');
-          return true;
-        } catch (sessionError) {
-          Logger.d('❌ [DEBUG] Failed to set session: $sessionError');
-          Logger.d('   Error type: ${sessionError.runtimeType}');
-          Logger.d('   Error details: ${sessionError.toString()}');
-          _error = 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+      // Use the session tokens returned by OtpService
+      final sessionData = result.session!;
+      try {
+        Logger.d('🔑 [DEBUG] Setting session from Edge Function tokens');
+        final refreshToken = sessionData['refresh_token'] as String;
+        final authResponse =
+            await Supabase.instance.client.auth.setSession(refreshToken);
+
+        if (authResponse.session == null || authResponse.user == null) {
+          Logger.d('❌ [DEBUG] Failed to set session - no user or session returned');
+          _error = 'فشل تسجيل الدخول';
           return false;
         }
+
+        final currentUser = Supabase.instance.client.auth.currentUser;
+        if (currentUser == null) {
+          Logger.d('❌ [DEBUG] Session was set but currentUser is still null!');
+          _error = 'فشل تسجيل الدخول';
+          return false;
+        }
+
+        Logger.d('✅ [DEBUG] Current user confirmed: ${currentUser.id}');
+        await _loadUserProfile();
+        _verifiedPhone = phone;
+        Logger.d('✅ [DEBUG] Authentication complete');
+        return true;
+      } catch (sessionError) {
+        Logger.d('❌ [DEBUG] Failed to set session: $sessionError');
+        _error = 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+        return false;
       }
-      
-      // otp-handler-clean must always return session tokens.
-      _error = 'فشل التحقق: يرجى المحاولة مرة أخرى';
-      return false;
     } catch (e) {
       Logger.d('❌ authenticate error: $e');
       _error = _getErrorMessage(e);
@@ -2201,32 +1785,23 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       // Set offline status
       if (_user != null) {
         await setOnlineStatus(false);
-        
+
         // Dispose FlutterFire notification service
         await FlutterFireNotificationService.dispose();
-        
-        // Logout device session
-        if (_deviceId != null) {
-          await Supabase.instance.client.rpc(
-            'logout_device_session',
-            params: {
-              'p_user_id': _user!.id,
-              'p_device_id': _deviceId,
-            },
-          );
+
+        // Delegate RPC + signOut to SessionService
+        await SessionService.instance.performForceLogout(
+          userId: _user!.id,
+          deviceId: _deviceId,
+        );
+      } else {
+        // No user — just sign out
+        DeviceSessionService.instance.stopMonitoring();
+        try {
+          await Supabase.instance.client.auth.signOut();
+        } catch (e) {
+          Logger.d('⚠️ Error during logout signOut: $e');
         }
-      }
-
-      // Cancel session monitoring
-      _sessionSubscription?.cancel();
-      _sessionCheckTimer?.cancel();
-
-      // Sign out from Supabase
-      try {
-        await Supabase.instance.client.auth.signOut();
-      } catch (e) {
-        Logger.d('⚠️ Error during logout signOut: $e');
-        // Continue with local cleanup even if signOut fails
       }
       
       // Clear local data

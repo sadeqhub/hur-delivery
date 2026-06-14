@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
@@ -9,6 +8,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/driver_wallet_provider.dart';
 import '../../../core/providers/city_settings_provider.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../data/driver_repository.dart';
 
 class DriverRankScreen extends StatefulWidget {
   const DriverRankScreen({super.key});
@@ -87,12 +87,8 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
         _currentRank = user.rank ?? 'bronze';
       } else {
         // Fallback to database query if user model not available
-        final userResponse = await Supabase.instance.client
-            .from('users')
-            .select('rank, city')
-            .eq('id', driverId)
-            .maybeSingle();
-        
+        final userResponse = await DriverRepository.instance.getDriverRankAndCity(driverId);
+
         if (userResponse != null) {
           final city = (userResponse['city'] as String?)?.trim().toLowerCase();
           _driverCity = city; // Store city for commission rate reloading
@@ -101,11 +97,7 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
       }
 
       // Get monthly hours
-      final hoursResponse = await Supabase.instance.client.rpc(
-        'get_driver_monthly_online_hours',
-        params: {'p_driver_id': driverId},
-      );
-      _monthlyHours = (hoursResponse as num?)?.toDouble() ?? 0.0;
+      _monthlyHours = await DriverRepository.instance.getDriverMonthlyOnlineHours(driverId);
 
       // Reload commission rates if city is available
       if (_driverCity != null) {

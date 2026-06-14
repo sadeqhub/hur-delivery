@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -7,6 +6,7 @@ import '../../shared/models/order_model.dart';
 import '../constants/app_constants.dart';
 import '../services/notification_manager.dart';
 import '../services/error_manager.dart';
+import '../services/order_timeout_service.dart';
 import '../services/route_time_service.dart';
 import '../providers/location_provider.dart';
 import '../services/optimized_order_loader.dart';
@@ -23,19 +23,11 @@ class OrderProvider extends ChangeNotifier {
   OrderModel? _currentOrder;
   bool _isLoading = false;
   String? _error;
-  Timer? _autoRejectTimer;
-  Timer? _timeoutStateUpdateTimer;
   StreamSubscription? _ordersSubscription;
   StreamSubscription? _timeoutStatesSubscription;
-  RealtimeChannel? _timeoutStatesChannel; // For timeout states Realtime subscription
-  
-  // Map of order_id -> remaining_seconds from order_timeout_state table
-  Map<String, int> _timeoutStates = {};
-  
-  // Set of order IDs that have timed out (to prevent flickering)
-  final Set<String> _timedOutOrders = {};
+  RealtimeChannel? _timeoutStatesChannel;
 
-  // Cache user role to avoid repeated DB queries
+  // Cache user role to avoid repeated DB queries during order loading
   String? _cachedUserRole;
   DateTime? _roleCacheTime;
   static const _roleCacheExpiry = Duration(minutes: 5);
@@ -69,9 +61,8 @@ class OrderProvider extends ChangeNotifier {
   }
 
   // Get timeout remaining seconds for an order
-  int? getTimeoutRemaining(String orderId) {
-    return _timeoutStates[orderId];
-  }
+  int? getTimeoutRemaining(String orderId) =>
+      OrderTimeoutService.instance.getTimeoutRemaining(orderId);
 
   // Filtered orders by status — cached, O(1) after first call
   List<OrderModel> get pendingOrders =>
@@ -118,30 +109,32 @@ class OrderProvider extends ChangeNotifier {
             final elapsed = DateTime.now().difference(assignedAt).inSeconds;
             final isFreshAssignment = elapsed <= 5;
 
-            if (_timedOutOrders.contains(order.id)) {
+            final svc = OrderTimeoutService.instance;
+            if (svc.isTimedOut(order.id)) {
               if (isFreshAssignment) {
-                _timedOutOrders.remove(order.id);
+                svc.clearTimedOut(order.id);
               } else {
                 return false;
               }
             }
 
-            final remainingSeconds = _timeoutStates[order.id];
+            final remainingSeconds = svc.getTimeoutRemaining(order.id);
 
             if (remainingSeconds != null && remainingSeconds <= 0) {
-              _timedOutOrders.add(order.id);
+              svc.markTimedOut(order.id);
               return false;
             }
 
             if (elapsed >= 30) {
-              _timedOutOrders.add(order.id);
+              svc.markTimedOut(order.id);
               return false;
             }
           }
 
           // Clean up timed out marker if order progressed past pending
-          if (order.status != 'pending' && _timedOutOrders.contains(order.id)) {
-            _timedOutOrders.remove(order.id);
+          if (order.status != 'pending' &&
+              OrderTimeoutService.instance.isTimedOut(order.id)) {
+            OrderTimeoutService.instance.clearTimedOut(order.id);
           }
 
           return true;
@@ -172,11 +165,13 @@ class OrderProvider extends ChangeNotifier {
     try {
       await _loadOrders();
       await _subscribeToOrders();
-      // PERFORMANCE FIX: Removed real-time subscription to timeout states
-      // Using polling instead (already updating every 15s) - reduces ~20 subscriptions
-      // await _subscribeToTimeoutStates(); // REMOVED - using polling instead
-      _startAutoRejectTimer();
-      _startTimeoutStateUpdater(); // This now fetches timeout states via polling
+      OrderTimeoutService.instance.startAutoRejectTimer();
+      OrderTimeoutService.instance.startTimeoutStateUpdater(
+        onUpdate: (newStates) {
+          // Service already updated its internal map; just trigger a rebuild.
+          notifyListeners();
+        },
+      );
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -185,176 +180,14 @@ class OrderProvider extends ChangeNotifier {
     }
   }
   
-  // Subscribe to order_timeout_state table for real-time countdown values
-  // OPTIMIZED: Only subscribe to timeout states for orders relevant to current user (driver)
-  // This reduces Realtime query load by filtering at database level
-  Future<void> _subscribeToTimeoutStates() async {
-    try {
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser == null) {
-        Logger.d('⚠️ No current user - skipping timeout states subscription');
-        return;
-      }
-
-      // Get user role to determine if we need timeout states
-      final userResponse = await Supabase.instance.client
-          .from('users')
-          .select('role')
-          .eq('id', currentUser.id)
-          .single();
-      
-      final userRole = userResponse['role'] as String;
-      
-      // Only drivers need timeout states (for pending orders assigned to them)
-      if (userRole != 'driver') {
-        Logger.d('ℹ️  User is not a driver - skipping timeout states subscription');
-        return;
-      }
-
-      // Cancel existing subscription
-      await _timeoutStatesChannel?.unsubscribe();
-      
-      // Use PostgresChanges with filter for driver_id to reduce query load
-      // This only sends updates for timeout states relevant to this driver
-      _timeoutStatesChannel = Supabase.instance.client
-          .channel('timeout_states_${currentUser.id}')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'order_timeout_state',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'driver_id',
-              value: currentUser.id,
-            ),
-            callback: (payload) {
-              // Handle individual timeout state updates efficiently
-              final orderId = payload.newRecord['order_id'] as String;
-              final remaining = payload.newRecord['remaining_seconds'] as int;
-              
-              _timeoutStates[orderId] = remaining;
-              
-              if (remaining <= 10) {
-                Logger.d('   ⏰ Order $orderId: $remaining seconds');
-              }
-              
-              notifyListeners();
-                        },
-          )
-          .subscribe();
-      
-      Logger.d('✅ Subscribed to order_timeout_state table (filtered by driver_id)');
-    } catch (e) {
-      Logger.d('❌ Error subscribing to timeout states: $e');
-    }
-  }
-  
-  // PERFORMANCE FIX: Now fetches timeout states via polling instead of real-time subscription
-  // This reduces ~20 subscriptions (one per driver) and WAL polling overhead
-  // Updates every 5 seconds for responsive countdown (acceptable delay)
-  Future<String?> _getCachedUserRole(String userId) async {
-    final now = DateTime.now();
-    if (_cachedUserRole != null &&
-        _roleCacheTime != null &&
-        now.difference(_roleCacheTime!) < _roleCacheExpiry) {
-      return _cachedUserRole;
-    }
-    final userResponse = await Supabase.instance.client
-        .from('users')
-        .select('role')
-        .eq('id', userId)
-        .maybeSingle();
-    _cachedUserRole = userResponse?['role'] as String?;
-    _roleCacheTime = now;
-    return _cachedUserRole;
-  }
-
-  void _startTimeoutStateUpdater() {
-    _timeoutStateUpdateTimer?.cancel();
-    _timeoutStateUpdateTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      // Use unawaited to prevent blocking main thread - this is non-critical
-      unawaited(() async {
-        try {
-          final currentUser = Supabase.instance.client.auth.currentUser;
-          if (currentUser == null) return;
-
-          // Use cached role — avoids a DB query on every 5s tick
-          final role = await _getCachedUserRole(currentUser.id);
-          if (role != 'driver') {
-            return; // Not a driver, skip
-          }
-          
-          // Update all timeout states in database
-          await Supabase.instance.client.rpc('update_order_timeout_states')
-              .timeout(const Duration(seconds: 3), onTimeout: () {
-            Logger.d('⚠️ Timeout state update timed out');
-            return null;
-          });
-          
-          // Fetch timeout states for current driver via polling (replaces real-time subscription)
-          final response = await Supabase.instance.client
-              .from('order_timeout_state')
-              .select('order_id, remaining_seconds')
-              .eq('driver_id', currentUser.id)
-              .timeout(const Duration(seconds: 2), onTimeout: () {
-            return <Map<String, dynamic>>[];
-          });
-          
-          // Update local state
-          final Map<String, int> newTimeoutStates = {};
-          for (var state in response) {
-            final orderId = state['order_id'] as String;
-            final remaining = state['remaining_seconds'] as int;
-            newTimeoutStates[orderId] = remaining;
-          }
-          
-          // Only notify if there are actual changes (mapEquals avoids false positives)
-          if (!mapEquals(newTimeoutStates, _timeoutStates)) {
-            _timeoutStates = newTimeoutStates;
-            notifyListeners();
-          }
-        } catch (e) {
-          // Silence errors to prevent log spam
-        }
-      }());
-    });
-  }
-
-  // PERFORMANCE FIX: Increased interval from 10s to 30s to reduce database load
-  // With limited resources (0.5GB memory, shared CPU), we need to reduce polling frequency
-  // The database has triggers that handle most of this, so frequent polling is not critical
-  void _startAutoRejectTimer() {
-    // Cancel existing timer if any
-    _autoRejectTimer?.cancel();
-    
-    // Check for expired orders every 30 seconds (increased from 10s to reduce database load)
-    _autoRejectTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      // Use unawaited to prevent blocking main thread
-      unawaited(ErrorManager.safeExecute(
-        operation: () async {
-          await Supabase.instance.client.rpc('app_check_expired_orders')
-              .timeout(const Duration(seconds: 5), onTimeout: () => null);
-        },
-        operationName: 'auto-reject-check',
-        isCritical: false, // Non-critical - can fail silently
-      ));
-    });
-  }
-
-  // Stop auto-reject timer
-  void stopAutoRejectTimer() {
-    _autoRejectTimer?.cancel();
-    _autoRejectTimer = null;
-  }
+  // Thin delegates kept for any external callers
+  void stopAutoRejectTimer() => OrderTimeoutService.instance.stopAutoRejectTimer();
 
   @override
   void dispose() {
-    stopAutoRejectTimer();
-    _timeoutStateUpdateTimer?.cancel();
+    OrderTimeoutService.instance.dispose();
     _ordersSubscription?.cancel();
     _timeoutStatesSubscription?.cancel();
-    // PERFORMANCE FIX: No longer using real-time subscription for timeout states
-    // _timeoutStatesChannel?.unsubscribe(); // REMOVED
     super.dispose();
   }
 
@@ -605,11 +438,8 @@ class OrderProvider extends ChangeNotifier {
       
       // Clean up timed out orders set - remove IDs that no longer exist in orders
       final currentOrderIds = _orders.map((o) => o.id).toSet();
-      final timedOutToRemove = _timedOutOrders.where((id) => !currentOrderIds.contains(id)).toList();
-      for (var id in timedOutToRemove) {
-        _timedOutOrders.remove(id);
-        Logger.d('🧹 Removed non-existent order $id from timed out set');
-      }
+      OrderTimeoutService.instance.removeStaleTimedOutOrders(currentOrderIds);
+      Logger.d('🧹 Cleaned up stale timed-out order markers');
       
       // Invalidate cache when orders are updated
       final cacheKeyToInvalidate = 'orders_${currentUser.id}_${effectiveRole}_0';
@@ -812,12 +642,8 @@ class OrderProvider extends ChangeNotifier {
           
           // Clean up timed out orders set - remove IDs that no longer exist
           final currentOrderIds = _orders.map((o) => o.id).toSet();
-          final timedOutToRemove = _timedOutOrders.where((id) => !currentOrderIds.contains(id)).toList();
-          for (var id in timedOutToRemove) {
-            _timedOutOrders.remove(id);
-            Logger.d('🧹 Removed non-existent order $id from timed out set (driver subscription update)');
-          }
-          Logger.d('   Timed out orders after cleanup: $_timedOutOrders');
+          OrderTimeoutService.instance.removeStaleTimedOutOrders(currentOrderIds);
+          Logger.d('🧹 Cleaned up stale timed-out order markers (driver subscription)');
           
           notifyListeners();
         });
@@ -964,11 +790,8 @@ class OrderProvider extends ChangeNotifier {
           
           // Clean up timed out orders set - remove IDs that no longer exist
           final currentOrderIds = _orders.map((o) => o.id).toSet();
-          final timedOutToRemove = _timedOutOrders.where((id) => !currentOrderIds.contains(id)).toList();
-          for (var id in timedOutToRemove) {
-            _timedOutOrders.remove(id);
-            Logger.d('🧹 Removed non-existent order $id from timed out set (subscription update)');
-          }
+          OrderTimeoutService.instance.removeStaleTimedOutOrders(currentOrderIds);
+          Logger.d('🧹 Cleaned up stale timed-out order markers (merchant subscription)');
           
           Logger.d('✅ Merchant orders updated: ${_orders.length} total');
           Logger.d('   Status breakdown:');

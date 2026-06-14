@@ -6,6 +6,7 @@ import '../../../core/providers/voice_recording_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'dart:io';
+import '../../../core/utils/logger.dart';
 
 class VoiceRecordingCard extends StatefulWidget {
   final VoiceRecording recording;
@@ -102,7 +103,7 @@ class _VoiceRecordingCardState extends State<VoiceRecordingCard> {
         });
       }
     } catch (e) {
-      print('❌ Error playing audio: $e');
+      Logger.d('❌ Error playing audio: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

@@ -19,6 +19,7 @@ import '../../../shared/widgets/delivery_fee_dropdown.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../shared/widgets/navigation_overlay_system.dart';
 import '../screens/location_picker_screen.dart';
+import '../../../core/utils/logger.dart';
 
 class CreateScheduledOrderScreen extends StatefulWidget {
   final bool embedded;
@@ -239,9 +240,9 @@ class _CreateScheduledOrderScreenState extends State<CreateScheduledOrderScreen>
               // Refresh the user object to get the updated address
               await authProvider.refreshUser();
 
-              print('✅ Cached geocoded address: $geocodedAddress');
+              Logger.d('✅ Cached geocoded address: $geocodedAddress');
             } catch (e) {
-              print('⚠️ Failed to cache address: $e');
+              Logger.d('⚠️ Failed to cache address: $e');
               // Continue anyway - we have the address to display
             }
           }
@@ -261,7 +262,7 @@ class _CreateScheduledOrderScreenState extends State<CreateScheduledOrderScreen>
         _pickupAddressController.text = loc.storeLocation;
       });
     } catch (e) {
-      print('Error loading merchant location: $e');
+      Logger.d('Error loading merchant location: $e');
       final loc = AppLocalizations.of(context);
       setState(() {
         _pickupLatitude = 33.3152;
@@ -292,7 +293,7 @@ class _CreateScheduledOrderScreenState extends State<CreateScheduledOrderScreen>
       // Update the delivery fee controller
       _deliveryFeeController.text = calculatedFee.toStringAsFixed(0);
       
-      print('💰 Calculated delivery fee: $calculatedFee IQD');
+      Logger.d('💰 Calculated delivery fee: $calculatedFee IQD');
     }
   }
 

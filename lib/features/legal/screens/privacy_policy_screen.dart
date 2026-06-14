@@ -7,6 +7,7 @@ import '../../../core/utils/responsive_helper.dart';
 import '../../../core/utils/responsive_extensions.dart';
 import '../../../shared/widgets/responsive_container.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/utils/logger.dart';
 
 class PrivacyPolicyScreen extends StatefulWidget {
   const PrivacyPolicyScreen({super.key});
@@ -47,7 +48,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
         });
       }
     } catch (e) {
-      print('Error loading privacy policy: $e');
+      Logger.d('Error loading privacy policy: $e');
       if (mounted) {
         final loc = AppLocalizations.of(context);
         setState(() {

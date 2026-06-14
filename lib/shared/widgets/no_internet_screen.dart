@@ -9,6 +9,7 @@ import '../../core/localization/app_localizations.dart';
 import '../../core/providers/connectivity_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/global_order_notification_service.dart';
+import '../../core/utils/logger.dart';
 
 class NoInternetScreen extends StatefulWidget {
   const NoInternetScreen({super.key});
@@ -70,7 +71,7 @@ class _NoInternetScreenState extends State<NoInternetScreen> {
       navigatorContext ??= GlobalOrderNotificationService.navigatorKey.currentContext;
       
       if (navigatorContext == null || !navigatorContext.mounted) {
-        print('⚠️ No valid context for navigation after reconnection');
+        Logger.d('⚠️ No valid context for navigation after reconnection');
         return;
       }
 
@@ -82,7 +83,7 @@ class _NoInternetScreenState extends State<NoInternetScreen> {
         if (user != null) {
           // Check verification status first
           if (user.verificationStatus != 'approved') {
-            print('🔄 Reconnecting: Navigating to verification pending');
+            Logger.d('🔄 Reconnecting: Navigating to verification pending');
             navigatorContext.go('/verification-pending');
             return;
           }
@@ -111,20 +112,20 @@ class _NoInternetScreenState extends State<NoInternetScreen> {
               targetRoute = '/';
           }
           
-          print('🔄 Reconnecting: Navigating to $targetRoute for ${user.role}');
+          Logger.d('🔄 Reconnecting: Navigating to $targetRoute for ${user.role}');
           navigatorContext.go(targetRoute);
         } else {
-          print('🔄 Reconnecting: No user found, navigating to home');
+          Logger.d('🔄 Reconnecting: No user found, navigating to home');
           navigatorContext.go('/');
         }
       } else {
         // If not authenticated, go to landing page
-        print('🔄 Reconnecting: Not authenticated, navigating to home');
+        Logger.d('🔄 Reconnecting: Not authenticated, navigating to home');
         navigatorContext.go('/');
       }
     } catch (e, stackTrace) {
-      print('❌ Error navigating after reconnection: $e');
-      print('Stack trace: $stackTrace');
+      Logger.d('❌ Error navigating after reconnection: $e');
+      Logger.d('Stack trace: $stackTrace');
       
       // Fallback: try using router directly
       try {
@@ -133,7 +134,7 @@ class _NoInternetScreenState extends State<NoInternetScreen> {
           navigatorContext.go('/');
         }
       } catch (fallbackError) {
-        print('❌ Fallback navigation also failed: $fallbackError');
+        Logger.d('❌ Fallback navigation also failed: $fallbackError');
       }
     }
   }

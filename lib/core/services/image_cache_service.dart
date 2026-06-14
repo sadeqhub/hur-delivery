@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 
 /// Service for optimized image loading with URL generation
 class ImageCacheService {
@@ -25,7 +26,7 @@ class ImageCacheService {
       // storage provider supports it.
       return url;
     } catch (e) {
-      print('⚠️ Error getting image URL: $e');
+      Logger.d('⚠️ Error getting image URL: $e');
       return storagePath;
     }
   }

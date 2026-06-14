@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 
 /// City-specific settings model
 class CitySettings {
@@ -164,7 +165,7 @@ class CitySettingsProvider extends ChangeNotifier {
       _error = null;
     } catch (e) {
       _error = 'Failed to load city settings: $e';
-      print('Error loading city settings: $e');
+      Logger.d('Error loading city settings: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -181,7 +182,7 @@ class CitySettingsProvider extends ChangeNotifier {
       );
 
       if (response == null || response.isEmpty) {
-        print('⚠️ No city settings found for city: $normalizedCity');
+        Logger.d('⚠️ No city settings found for city: $normalizedCity');
         return null;
       }
 
@@ -196,10 +197,10 @@ class CitySettingsProvider extends ChangeNotifier {
       final settings = CitySettings.fromJson(rowMap);
       _settingsCache[normalizedCity] = settings;
       notifyListeners();
-      print('✅ Successfully loaded city settings for $normalizedCity');
+      Logger.d('✅ Successfully loaded city settings for $normalizedCity');
       return settings;
     } catch (e) {
-      print('❌ Error loading city settings for $city: $e');
+      Logger.d('❌ Error loading city settings for $city: $e');
       return null;
     }
   }

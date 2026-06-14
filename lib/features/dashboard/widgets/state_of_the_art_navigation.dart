@@ -8,6 +8,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../../../shared/models/order_model.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/route_cache_service.dart';
+import '../../../core/utils/logger.dart';
 
 /// State-of-the-art navigation system using best practices
 class StateOfTheArtNavigation {
@@ -46,7 +47,7 @@ class StateOfTheArtNavigation {
   /// Initialize the state-of-the-art system
   Future<bool> initialize(MapboxMap mapboxMap) async {
     try {
-      print('🚀 State-of-the-Art: Initializing navigation system...');
+      Logger.d('🚀 State-of-the-Art: Initializing navigation system...');
 
       _mapboxMap = mapboxMap;
 
@@ -67,14 +68,14 @@ class StateOfTheArtNavigation {
         _prepareSquarePinImages(), // Prepare pins in parallel
       ]);
 
-      print('✅ State-of-the-Art: Annotation managers and pins ready');
+      Logger.d('✅ State-of-the-Art: Annotation managers and pins ready');
 
       _isInitialized = true;
-      print(
+      Logger.d(
           '✅ State-of-the-Art: Navigation system initialized successfully - ready for instant annotations');
       return true;
     } catch (e) {
-      print('❌ State-of-the-Art: Initialization failed: $e');
+      Logger.d('❌ State-of-the-Art: Initialization failed: $e');
       // Retry once immediately (no delay)
       try {
         await Future.wait([
@@ -93,10 +94,10 @@ class StateOfTheArtNavigation {
           _prepareSquarePinImages(),
         ]);
         _isInitialized = true;
-        print('✅ State-of-the-Art: Navigation system initialized on retry');
+        Logger.d('✅ State-of-the-Art: Navigation system initialized on retry');
         return true;
       } catch (retryError) {
-        print(
+        Logger.d(
             '❌ State-of-the-Art: Initialization retry also failed: $retryError');
         return false;
       }
@@ -111,27 +112,27 @@ class StateOfTheArtNavigation {
   Future<void> setActiveOrder(OrderModel order) async {
     // Drop redundant / racing calls for the SAME order.
     if (_isSettingOrder) {
-      print(
+      Logger.d(
           '⚠️ State-of-the-Art: setActiveOrder already in progress, dropping duplicate call for ${order.id}');
       return;
     }
     _isSettingOrder = true;
 
-    print('🎯 State-of-the-Art: Setting active order ${order.id}');
+    Logger.d('🎯 State-of-the-Art: Setting active order ${order.id}');
 
     // If not initialized, wait very briefly — initialization should be nearly instant.
     if (!_isInitialized) {
-      print('⚠️ State-of-the-Art: Not initialized, waiting briefly...');
+      Logger.d('⚠️ State-of-the-Art: Not initialized, waiting briefly...');
       int retries = 0;
       while (!_isInitialized && retries < 6) {
         await Future.delayed(const Duration(milliseconds: 50));
         retries++;
       }
       if (!_isInitialized) {
-        print(
+        Logger.d(
             '⚠️ State-of-the-Art: Not yet initialized, proceeding anyway (will retry)');
       } else {
-        print(
+        Logger.d(
             '✅ State-of-the-Art: Initialization completed, proceeding with order');
       }
     }
@@ -151,18 +152,18 @@ class StateOfTheArtNavigation {
       // Always create fresh annotations for the newly focused order.
       // We never re-use cached annotation objects because deleted Mapbox
       // annotations become invalid — recreating is the safe path.
-      print('🆕 State-of-the-Art: Creating annotations for order ${order.id}');
+      Logger.d('🆕 State-of-the-Art: Creating annotations for order ${order.id}');
 
       await Future.wait([
         _createPickupMarker(order),
         _createDropoffMarker(order),
       ]);
-      print('✅ State-of-the-Art: Pickup and dropoff markers created');
+      Logger.d('✅ State-of-the-Art: Pickup and dropoff markers created');
 
       await _createRoute(order);
-      print('✅ State-of-the-Art: Order ${order.id} set successfully');
+      Logger.d('✅ State-of-the-Art: Order ${order.id} set successfully');
     } catch (e) {
-      print('❌ State-of-the-Art: Error setting order: $e');
+      Logger.d('❌ State-of-the-Art: Error setting order: $e');
     } finally {
       _isSettingOrder = false;
     }
@@ -188,13 +189,13 @@ class StateOfTheArtNavigation {
     try {
       if (_pointManager != null) await _pointManager!.deleteAll();
     } catch (e) {
-      print(
+      Logger.d(
           '⚠️ State-of-the-Art: deleteAll() on pointManager failed hiding $orderId: $e');
     }
     try {
       if (_polylineManager != null) await _polylineManager!.deleteAll();
     } catch (e) {
-      print(
+      Logger.d(
           '⚠️ State-of-the-Art: deleteAll() on polylineManager failed hiding $orderId: $e');
     }
 
@@ -202,7 +203,7 @@ class StateOfTheArtNavigation {
     _markers.clear();
     _routes.clear();
 
-    print('👁️ Hidden ALL annotations (was showing order $orderId)');
+    Logger.d('👁️ Hidden ALL annotations (was showing order $orderId)');
   }
 
   /// Prepare and register square pin images with numbers (1, 2)
@@ -255,7 +256,7 @@ class StateOfTheArtNavigation {
         null,
       );
     } catch (e) {
-      print('❌ State-of-the-Art: Failed preparing square pins: $e');
+      Logger.d('❌ State-of-the-Art: Failed preparing square pins: $e');
     }
   }
 
@@ -329,7 +330,7 @@ class StateOfTheArtNavigation {
     try {
       final markerId = '${order.id}_pickup';
 
-      print(
+      Logger.d(
           '📍 State-of-the-Art: Creating pickup marker at ${order.pickupLatitude}, ${order.pickupLongitude}');
 
       // Only remove if marker already exists (prevent flickering)
@@ -351,9 +352,9 @@ class StateOfTheArtNavigation {
       );
 
       _markers[markerId] = marker;
-      print('✅ State-of-the-Art: Pickup marker created');
+      Logger.d('✅ State-of-the-Art: Pickup marker created');
     } catch (e) {
-      print('❌ State-of-the-Art: Error creating pickup marker: $e');
+      Logger.d('❌ State-of-the-Art: Error creating pickup marker: $e');
     }
   }
 
@@ -362,7 +363,7 @@ class StateOfTheArtNavigation {
     try {
       final markerId = '${order.id}_dropoff';
 
-      print(
+      Logger.d(
           '📍 State-of-the-Art: Creating dropoff marker at ${order.deliveryLatitude}, ${order.deliveryLongitude}');
 
       // Only remove if marker already exists (prevent flickering)
@@ -385,9 +386,9 @@ class StateOfTheArtNavigation {
       );
 
       _markers[markerId] = marker;
-      print('✅ State-of-the-Art: Dropoff marker created');
+      Logger.d('✅ State-of-the-Art: Dropoff marker created');
     } catch (e) {
-      print('❌ State-of-the-Art: Error creating dropoff marker: $e');
+      Logger.d('❌ State-of-the-Art: Error creating dropoff marker: $e');
     }
   }
 
@@ -397,13 +398,13 @@ class StateOfTheArtNavigation {
     try {
       final routeId = '${order.id}_route';
 
-      print('🛣️ State-of-the-Art: Creating route for order ${order.id}');
+      Logger.d('🛣️ State-of-the-Art: Creating route for order ${order.id}');
 
       // Get route coordinates using proper API format
       final coordinates = await _getRouteCoordinates(order);
 
       if (coordinates.isNotEmpty) {
-        print(
+        Logger.d(
             '🛣️ State-of-the-Art: Creating polyline with ${coordinates.length} points');
 
         final polyline = await _polylineManager!.create(
@@ -416,14 +417,14 @@ class StateOfTheArtNavigation {
         );
 
         _routes[routeId] = polyline;
-        print('✅ State-of-the-Art: Route created successfully');
+        Logger.d('✅ State-of-the-Art: Route created successfully');
       } else {
-        print(
+        Logger.d(
             '⚠️ State-of-the-Art: No route coordinates, creating straight line');
         await _createStraightLineRoute(order);
       }
     } catch (e) {
-      print('❌ State-of-the-Art: Error creating route: $e');
+      Logger.d('❌ State-of-the-Art: Error creating route: $e');
       await _createStraightLineRoute(order);
     }
   }
@@ -432,36 +433,36 @@ class StateOfTheArtNavigation {
   Future<void> recalculateRouteForOrder(OrderModel order) async {
     // Prevent concurrent updates
     if (_isUpdatingRoute) {
-      print(
+      Logger.d(
           '⚠️ State-of-the-Art: Route update already in progress, skipping...');
       return;
     }
 
     try {
       if (!_isInitialized || _mapboxMap == null) {
-        print('⚠️ State-of-the-Art: Cannot recalculate - not initialized');
+        Logger.d('⚠️ State-of-the-Art: Cannot recalculate - not initialized');
         return;
       }
 
       _isUpdatingRoute = true;
 
-      print('🔄 State-of-the-Art: Recalculating route for order ${order.id}');
-      print(
+      Logger.d('🔄 State-of-the-Art: Recalculating route for order ${order.id}');
+      Logger.d(
           '   New coordinates: (${order.deliveryLatitude}, ${order.deliveryLongitude})');
 
       _currentOrderId = order.id;
 
       // CRITICAL: Clear ALL annotations FIRST to prevent duplicates
       // This ensures we start completely fresh
-      print('🧹 STEP 1: Clearing ALL existing annotations...');
+      Logger.d('🧹 STEP 1: Clearing ALL existing annotations...');
 
       // Clear all polylines (routes) from manager
       if (_polylineManager != null) {
         try {
           await _polylineManager!.deleteAll();
-          print('   ✅ All polylines cleared from manager');
+          Logger.d('   ✅ All polylines cleared from manager');
         } catch (e) {
-          print('   ⚠️ Error clearing polylines: $e');
+          Logger.d('   ⚠️ Error clearing polylines: $e');
         }
       }
 
@@ -469,35 +470,35 @@ class StateOfTheArtNavigation {
       if (_pointManager != null) {
         try {
           await _pointManager!.deleteAll();
-          print('   ✅ All point markers cleared from manager');
+          Logger.d('   ✅ All point markers cleared from manager');
         } catch (e) {
-          print('   ⚠️ Error clearing point markers: $e');
+          Logger.d('   ⚠️ Error clearing point markers: $e');
         }
       }
 
       // Clear internal maps
       _routes.clear();
       _markers.clear();
-      print('   ✅ Internal maps cleared');
+      Logger.d('   ✅ Internal maps cleared');
 
       // Note: deleteAll() is awaited above, so no extra delay is needed.
       // The previous 200ms sleep was the dominant cost of route recalc and
       // contributed to perceived map lag on customer-location updates.
 
-      print('🧹 STEP 2: Creating new annotations with updated coordinates...');
+      Logger.d('🧹 STEP 2: Creating new annotations with updated coordinates...');
 
       // Create new annotations with updated coordinates
-      print('   📍 Creating new dropoff marker...');
+      Logger.d('   📍 Creating new dropoff marker...');
       await _createDropoffMarker(order);
 
-      print('   🛣️ Creating new route...');
+      Logger.d('   🛣️ Creating new route...');
       await _createRoute(order);
 
-      print('✅ State-of-the-Art: Route recalculated successfully');
-      print('   Old annotations cleared, new ones created');
+      Logger.d('✅ State-of-the-Art: Route recalculated successfully');
+      Logger.d('   Old annotations cleared, new ones created');
     } catch (e) {
-      print('❌ State-of-the-Art: Error recalculating route: $e');
-      print('   Stack trace: ${StackTrace.current}');
+      Logger.d('❌ State-of-the-Art: Error recalculating route: $e');
+      Logger.d('   Stack trace: ${StackTrace.current}');
     } finally {
       _isUpdatingRoute = false;
     }
@@ -545,7 +546,7 @@ class StateOfTheArtNavigation {
         await _driverPointManager!.update(_driverMarker!);
       }
     } catch (e) {
-      print('❌ State-of-the-Art: Error updating driver marker: $e');
+      Logger.d('❌ State-of-the-Art: Error updating driver marker: $e');
     }
   }
 
@@ -601,7 +602,7 @@ class StateOfTheArtNavigation {
     try {
       const token = AppConstants.mapboxAccessToken;
       if (token.isEmpty) {
-        print(
+        Logger.d(
             '⚠️ State-of-the-Art: Mapbox token unavailable, skipping API call.');
         return [];
       }
@@ -615,7 +616,7 @@ class StateOfTheArtNavigation {
       );
 
       if (cached != null && cached.isNotEmpty) {
-        print(
+        Logger.d(
             '✅ State-of-the-Art: Loaded ${cached.length} cached route points for order ${order.id}');
         return cached.map((pair) => Position(pair[0], pair[1])).toList();
       }
@@ -633,22 +634,22 @@ class StateOfTheArtNavigation {
             'https://api.mapbox.com/directions/v5/mapbox/driving/$coordinatesPath'
             '?alternatives=false&geometries=geojson&overview=full&access_token=$token',
           );
-          print('🌐 Trying Mapbox Directions API...');
+          Logger.d('🌐 Trying Mapbox Directions API...');
           final mapboxResponse =
               await http.get(mapboxUri).timeout(const Duration(seconds: 10));
           if (mapboxResponse.statusCode == 200) {
             coordinatePairs =
                 _parseGeoJsonRouteBody(mapboxResponse.body, order.id);
             if (coordinatePairs != null) {
-              print(
+              Logger.d(
                   '✅ Mapbox route: ${coordinatePairs.length} points for order ${order.id}');
             }
           } else {
-            print(
+            Logger.d(
                 '⚠️ Mapbox Directions: ${mapboxResponse.statusCode} – falling back to OSRM');
           }
         } catch (e) {
-          print('⚠️ Mapbox Directions error: $e – falling back to OSRM');
+          Logger.d('⚠️ Mapbox Directions error: $e – falling back to OSRM');
         }
       }
 
@@ -659,21 +660,21 @@ class StateOfTheArtNavigation {
             'https://router.project-osrm.org/route/v1/driving/$coordinatesPath'
             '?overview=full&geometries=geojson',
           );
-          print('🌐 Trying OSRM fallback...');
+          Logger.d('🌐 Trying OSRM fallback...');
           final osrmResponse =
               await http.get(osrmUri).timeout(const Duration(seconds: 15));
           if (osrmResponse.statusCode == 200) {
             coordinatePairs =
                 _parseGeoJsonRouteBody(osrmResponse.body, order.id);
             if (coordinatePairs != null) {
-              print(
+              Logger.d(
                   '✅ OSRM route: ${coordinatePairs.length} points for order ${order.id}');
             }
           } else {
-            print('⚠️ OSRM: ${osrmResponse.statusCode} – ${osrmResponse.body}');
+            Logger.d('⚠️ OSRM: ${osrmResponse.statusCode} – ${osrmResponse.body}');
           }
         } catch (e) {
-          print('⚠️ OSRM error: $e');
+          Logger.d('⚠️ OSRM error: $e');
         }
       }
 
@@ -692,7 +693,7 @@ class StateOfTheArtNavigation {
 
       return coordinatePairs.map((pair) => Position(pair[0], pair[1])).toList();
     } catch (e) {
-      print('❌ State-of-the-Art: Route fetch error: $e');
+      Logger.d('❌ State-of-the-Art: Route fetch error: $e');
       return [];
     }
   }
@@ -713,7 +714,7 @@ class StateOfTheArtNavigation {
       }).toList();
       return pairs.isEmpty ? null : pairs;
     } catch (e) {
-      print('⚠️ Route body parse error for order $orderId: $e');
+      Logger.d('⚠️ Route body parse error for order $orderId: $e');
       return null;
     }
   }
@@ -759,7 +760,7 @@ class StateOfTheArtNavigation {
     try {
       final routeId = '${order.id}_route';
 
-      print('📏 State-of-the-Art: Creating straight line route');
+      Logger.d('📏 State-of-the-Art: Creating straight line route');
 
       final polyline = await _polylineManager!.create(
         PolylineAnnotationOptions(
@@ -776,9 +777,9 @@ class StateOfTheArtNavigation {
       );
 
       _routes[routeId] = polyline;
-      print('✅ State-of-the-Art: Straight line route created');
+      Logger.d('✅ State-of-the-Art: Straight line route created');
     } catch (e) {
-      print('❌ State-of-the-Art: Error creating straight line route: $e');
+      Logger.d('❌ State-of-the-Art: Error creating straight line route: $e');
     }
   }
 
@@ -796,9 +797,9 @@ class StateOfTheArtNavigation {
       _markers.remove(markerId);
       try {
         await _pointManager!.delete(marker);
-        print('🗑️ State-of-the-Art: Marker removed - $markerId');
+        Logger.d('🗑️ State-of-the-Art: Marker removed - $markerId');
       } catch (e) {
-        print(
+        Logger.d(
             '⚠️ State-of-the-Art: Mapbox delete failed for $markerId (already evicted from cache): $e');
       }
     }
@@ -813,9 +814,9 @@ class StateOfTheArtNavigation {
       _routes.remove(routeId);
       try {
         await _polylineManager!.delete(route);
-        print('🗑️ State-of-the-Art: Route removed - $routeId');
+        Logger.d('🗑️ State-of-the-Art: Route removed - $routeId');
       } catch (e) {
-        print(
+        Logger.d(
             '⚠️ State-of-the-Art: Mapbox delete failed for $routeId (already evicted from cache): $e');
       }
     }
@@ -844,10 +845,10 @@ class StateOfTheArtNavigation {
         _visibleOrderId = null;
       }
 
-      print(
+      Logger.d(
           '🧹 State-of-the-Art: Order $orderId cleared and removed from cache');
     } catch (e) {
-      print('❌ State-of-the-Art: Error clearing order: $e');
+      Logger.d('❌ State-of-the-Art: Error clearing order: $e');
     }
   }
 
@@ -893,34 +894,34 @@ class StateOfTheArtNavigation {
       // Remove orphaned markers
       for (final markerId in markersToRemove) {
         await _removeMarker(markerId);
-        print('🧹 State-of-the-Art: Removed orphaned marker - $markerId');
+        Logger.d('🧹 State-of-the-Art: Removed orphaned marker - $markerId');
       }
 
       // Remove orphaned routes
       for (final routeId in routesToRemove) {
         await _removeRoute(routeId);
-        print('🧹 State-of-the-Art: Removed orphaned route - $routeId');
+        Logger.d('🧹 State-of-the-Art: Removed orphaned route - $routeId');
       }
 
       // Clear current order ID if it's no longer active
       if (_currentOrderId != null && !activeIdsSet.contains(_currentOrderId!)) {
-        print(
+        Logger.d(
             '🧹 State-of-the-Art: Current order $_currentOrderId no longer active, clearing');
         _currentOrderId = null;
       }
 
       if (markersToRemove.isNotEmpty || routesToRemove.isNotEmpty) {
-        print(
+        Logger.d(
             '🧹 State-of-the-Art: Cleared ${markersToRemove.length} orphaned markers and ${routesToRemove.length} orphaned routes');
       }
     } catch (e) {
-      print('❌ State-of-the-Art: Error clearing orphaned annotations: $e');
+      Logger.d('❌ State-of-the-Art: Error clearing orphaned annotations: $e');
     }
   }
 
   Future<void> rebuildAnnotations() async {
     if (!_isInitialized) return;
-    print('🔄 State-of-the-Art: Rebuilding annotations after style change...');
+    Logger.d('🔄 State-of-the-Art: Rebuilding annotations after style change...');
     try {
       // Re-create annotation managers
       _polylineManager =
@@ -947,7 +948,7 @@ class StateOfTheArtNavigation {
         await setActiveOrder(_cachedOrderData[_currentOrderId]!);
       }
     } catch (e) {
-      print('❌ State-of-the-Art: Failed rebuilding annotations: $e');
+      Logger.d('❌ State-of-the-Art: Failed rebuilding annotations: $e');
     }
   }
 
@@ -955,7 +956,7 @@ class StateOfTheArtNavigation {
   Future<void> clearAll() async {
     try {
       if (!_isInitialized) {
-        print(
+        Logger.d(
             '⚠️ State-of-the-Art: clearAll called before initialization (continuing best-effort)');
       }
 
@@ -963,14 +964,14 @@ class StateOfTheArtNavigation {
         try {
           await _pointManager!.deleteAll();
         } catch (e) {
-          print('⚠️ State-of-the-Art: deleteAll on pointManager failed ($e)');
+          Logger.d('⚠️ State-of-the-Art: deleteAll on pointManager failed ($e)');
         }
       }
       if (_polylineManager != null) {
         try {
           await _polylineManager!.deleteAll();
         } catch (e) {
-          print(
+          Logger.d(
               '⚠️ State-of-the-Art: deleteAll on polylineManager failed ($e)');
         }
       }
@@ -978,7 +979,7 @@ class StateOfTheArtNavigation {
         try {
           await _circleManager!.deleteAll();
         } catch (e) {
-          print('⚠️ State-of-the-Art: deleteAll on circleManager failed ($e)');
+          Logger.d('⚠️ State-of-the-Art: deleteAll on circleManager failed ($e)');
         }
       }
 
@@ -988,10 +989,10 @@ class StateOfTheArtNavigation {
       _visibleOrderId = null;
       _cachedOrderIds.clear();
       _cachedOrderData.clear();
-      print(
+      Logger.d(
           '🧹 State-of-the-Art: All annotations cleared via manager deleteAll');
     } catch (e) {
-      print('❌ State-of-the-Art: Error clearing all: $e');
+      Logger.d('❌ State-of-the-Art: Error clearing all: $e');
     } finally {
       // Always clear local caches even if Mapbox calls fail (e.g., after style swaps).
       // Also reset the lock so the next setActiveOrder call isn't permanently blocked.
@@ -1020,6 +1021,6 @@ class StateOfTheArtNavigation {
   void dispose() {
     clearAll();
     _isInitialized = false;
-    print('🗑️ State-of-the-Art: Disposed');
+    Logger.d('🗑️ State-of-the-Art: Disposed');
   }
 }

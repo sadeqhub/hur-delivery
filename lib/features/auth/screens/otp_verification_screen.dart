@@ -14,6 +14,7 @@ import '../../../core/utils/responsive_extensions.dart';
 import '../../../shared/widgets/responsive_container.dart';
 import 'user_registration_screen.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/utils/logger.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phone;
@@ -122,7 +123,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       // Check if user is authenticated
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser == null) {
-        print('⚠️ No authenticated user after OTP verification');
+        Logger.d('⚠️ No authenticated user after OTP verification');
         if (mounted) {
           final loc = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -136,7 +137,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         return;
       }
       
-      print('✅ OTP verified successfully for user: ${currentUser.id}');
+      Logger.d('✅ OTP verified successfully for user: ${currentUser.id}');
       
       // Load profile in background (keeps logic responsive)
       unawaited(auth.loadUserProfile());
@@ -196,7 +197,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     // 1) Cache/profile memory
     final cachedRole = auth.user?.role;
     if (cachedRole != null && cachedRole.isNotEmpty) {
-      print('⚡ Using cached profile role: $cachedRole');
+      Logger.d('⚡ Using cached profile role: $cachedRole');
       return cachedRole;
     }
 
@@ -210,17 +211,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           .timeout(
             const Duration(seconds: 3),
             onTimeout: () {
-              print('⏱️ Role lookup timed out');
+              Logger.d('⏱️ Role lookup timed out');
               return null;
             },
           );
       final dbRole = response?['role'] as String?;
       if (dbRole != null && dbRole.isNotEmpty) {
-        print('⚡ Quick DB role lookup succeeded: $dbRole');
+        Logger.d('⚡ Quick DB role lookup succeeded: $dbRole');
         return dbRole;
       }
     } catch (e) {
-      print('⚠️ Quick role lookup error: $e');
+      Logger.d('⚠️ Quick role lookup error: $e');
     }
 
     // 3) No role yet (probably new user)
@@ -228,7 +229,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   Future<void> _handleRoleResolutionFallback(AuthProvider auth, User currentUser) async {
-    print('🧭 Entering fallback role resolution flow');
+    Logger.d('🧭 Entering fallback role resolution flow');
     
     Map<String, dynamic>? profileCheck;
     String? userRole;
@@ -241,7 +242,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           .eq('id', currentUser.id)
           .maybeSingle();
     } catch (e) {
-      print('⚠️ Fallback lookup by ID failed: $e');
+      Logger.d('⚠️ Fallback lookup by ID failed: $e');
     }
     
     if (profileCheck != null) {
@@ -263,7 +264,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
         userRole ??= profileCheck?['role'] as String?;
       } catch (e) {
-        print('⚠️ Fallback phone search failed: $e');
+        Logger.d('⚠️ Fallback phone search failed: $e');
       }
     }
 
@@ -298,13 +299,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
 
     if (routeRole == 'merchant' || routeRole == 'driver') {
-      print('🆕 New user detected, navigating to registration: $routeRole');
+      Logger.d('🆕 New user detected, navigating to registration: $routeRole');
       if (mounted) context.go('/user-registration', extra: routeRole);
       return;
     }
 
     if (user != null) {
-      print('🚨 Existing user but no role found even after fallback');
+      Logger.d('🚨 Existing user but no role found even after fallback');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -324,7 +325,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   void _navigateByRole(String role) {
     final normalizedRole = role.trim().toLowerCase();
-    print('➡️ Fast navigation using role: $normalizedRole');
+    Logger.d('➡️ Fast navigation using role: $normalizedRole');
 
     switch (normalizedRole) {
       case 'merchant':

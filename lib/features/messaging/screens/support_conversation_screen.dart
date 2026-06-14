@@ -6,6 +6,7 @@ import '../../../core/providers/notification_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'messaging_thread_screen.dart';
 import 'messaging_list_screen.dart';
+import '../../../core/utils/logger.dart';
 
 /// Thin wrapper that ensures the driver support chat opens directly without
 /// showing the conversation list. It always resolves (or creates) the single
@@ -80,7 +81,7 @@ class _SupportConversationScreenState extends State<SupportConversationScreen> {
         } catch (_) {}
         return; // Exit successfully
       } on MessagingException catch (e) {
-        print('❌ Support conversation error (attempt ${attempt + 1}/$maxRetries): ${e.code} -> ${e.message}');
+        Logger.d('❌ Support conversation error (attempt ${attempt + 1}/$maxRetries): ${e.code} -> ${e.message}');
         
         // Retry on transient errors, but not on authentication errors
         if (attempt < maxRetries - 1 && e.code != 'NOT_AUTHENTICATED') {
@@ -96,7 +97,7 @@ class _SupportConversationScreenState extends State<SupportConversationScreen> {
         });
         return;
       } catch (e) {
-        print('❌ Support conversation error (attempt ${attempt + 1}/$maxRetries): $e');
+        Logger.d('❌ Support conversation error (attempt ${attempt + 1}/$maxRetries): $e');
         
         // Retry on generic errors
         if (attempt < maxRetries - 1) {

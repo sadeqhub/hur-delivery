@@ -16,6 +16,7 @@ import '../../../core/config/env.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../orders/screens/location_picker_screen.dart';
+import '../../../core/utils/logger.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   final String role;
@@ -276,7 +277,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       final authProvider = context.read<AuthProvider>();
 
       // Step 1: Verify ID card with AI
-      print('🆔 Verifying ID card with AI...');
+      Logger.d('🆔 Verifying ID card with AI...');
       final verificationResult = await _verifyIdWithAI();
 
       if (verificationResult == null || !verificationResult['success']) {
@@ -293,7 +294,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         return;
       }
 
-      print('✅ ID verification passed');
+      Logger.d('✅ ID verification passed');
 
       // Extract legal name from verification result
       final legalName = verificationResult['legal_name'];
@@ -301,8 +302,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           '${legalName['first']} ${legalName['father']} ${legalName['grandfather']} ${legalName['family']}';
       final idNumber = verificationResult['id_number'];
 
-      print('📝 Extracted name: $fullName');
-      print('🆔 Extracted ID: $idNumber');
+      Logger.d('📝 Extracted name: $fullName');
+      Logger.d('🆔 Extracted ID: $idNumber');
 
       // Validate ID number format if document type is national_id
       String? idNumberToUse = idNumber;
@@ -395,7 +396,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         );
       }
     } catch (e) {
-      print('❌ Registration error: $e');
+      Logger.d('❌ Registration error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -417,7 +418,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
     try {
       final userId = context.read<AuthProvider>().user?.id;
 
-      print('📤 Sending images to ID verification edge function...');
+      Logger.d('📤 Sending images to ID verification edge function...');
 
       var request = http.MultipartRequest(
         'POST',
@@ -456,8 +457,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         request.fields['user_id'] = userId;
       }
 
-      print('⏳ Waiting for verification response...');
-      print('📄 Document type: $_selectedDocumentType');
+      Logger.d('⏳ Waiting for verification response...');
+      Logger.d('📄 Document type: $_selectedDocumentType');
 
       var response = await request.send().timeout(
         const Duration(seconds: 60),
@@ -469,11 +470,11 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       final responseData = await response.stream.bytesToString();
       final jsonData = json.decode(responseData);
 
-      print('📥 Verification response: ${jsonData.toString()}');
+      Logger.d('📥 Verification response: ${jsonData.toString()}');
 
       return jsonData;
     } catch (e) {
-      print('❌ ID verification error: $e');
+      Logger.d('❌ ID verification error: $e');
       return {
         'success': false,
         'reason': AppLocalizations.of(context).connectionFailed(e.toString()),

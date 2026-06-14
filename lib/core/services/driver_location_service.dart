@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 
 class DriverLocationService {
   static const String _baseUrl = 'https://bvtoxmmiitznagsbubhg.supabase.co';
@@ -11,11 +12,11 @@ class DriverLocationService {
   /// Returns list of orders that need driver attention
   static Future<List<CustomerLocationUpdate>> checkForLocationUpdates() async {
     try {
-      print('📍 ===========================================');
-      print('📍 DRIVER LOCATION SERVICE - CHECKING UPDATES');
-      print('📍 URL: $_baseUrl/functions/v1/check-customer-location-updates');
-      print('📍 Time: ${DateTime.now()}');
-      print('📍 ===========================================');
+      Logger.d('📍 ===========================================');
+      Logger.d('📍 DRIVER LOCATION SERVICE - CHECKING UPDATES');
+      Logger.d('📍 URL: $_baseUrl/functions/v1/check-customer-location-updates');
+      Logger.d('📍 Time: ${DateTime.now()}');
+      Logger.d('📍 ===========================================');
       
       final response = await http.get(
         Uri.parse('$_baseUrl/functions/v1/check-customer-location-updates'),
@@ -25,67 +26,67 @@ class DriverLocationService {
         },
       );
 
-      print('📍 API Response Status: ${response.statusCode}');
-      print('📍 API Response Body: ${response.body}');
+      Logger.d('📍 API Response Status: ${response.statusCode}');
+      Logger.d('📍 API Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('📍 Parsed JSON data: $data');
+        Logger.d('📍 Parsed JSON data: $data');
         
         // Handle different response formats
         List<dynamic> orders = [];
         if (data is List) {
           orders = data;
-          print('📍 Response is a List with ${orders.length} items');
+          Logger.d('📍 Response is a List with ${orders.length} items');
         } else if (data is Map) {
-          print('📍 Response is a Map with keys: ${data.keys.toList()}');
+          Logger.d('📍 Response is a Map with keys: ${data.keys.toList()}');
           if (data.containsKey('orders_with_updates')) {
             orders = data['orders_with_updates'] ?? [];
-            print('📍 Found orders_with_updates key with ${orders.length} items');
+            Logger.d('📍 Found orders_with_updates key with ${orders.length} items');
           } else if (data.containsKey('data')) {
             orders = data['data'] ?? [];
-            print('📍 Found data key with ${orders.length} items');
+            Logger.d('📍 Found data key with ${orders.length} items');
           } else {
-            print('📍 No recognized keys found in response');
+            Logger.d('📍 No recognized keys found in response');
           }
         }
         
-        print('📍 Final orders count: ${orders.length}');
+        Logger.d('📍 Final orders count: ${orders.length}');
         
         if (orders.isNotEmpty) {
-          print('📍 ✅ SUCCESS: Found ${orders.length} orders with location updates:');
+          Logger.d('📍 ✅ SUCCESS: Found ${orders.length} orders with location updates:');
           for (int i = 0; i < orders.length; i++) {
             final order = orders[i];
-            print('   📍 Order ${i + 1}:');
-            print('      ID: ${order['order_id']}');
-            print('      Customer: ${order['customer_name']}');
-            print('      Phone: ${order['customer_phone']}');
-            print('      Address: ${order['delivery_address']}');
-            print('      Coordinates: ${order['delivery_latitude']}, ${order['delivery_longitude']}');
-            print('      Merchant: ${order['merchant_name']}');
-            print('      Status: ${order['status']}');
-            print('      Updated: ${order['updated_at']}');
+            Logger.d('   📍 Order ${i + 1}:');
+            Logger.d('      ID: ${order['order_id']}');
+            Logger.d('      Customer: ${order['customer_name']}');
+            Logger.d('      Phone: ${order['customer_phone']}');
+            Logger.d('      Address: ${order['delivery_address']}');
+            Logger.d('      Coordinates: ${order['delivery_latitude']}, ${order['delivery_longitude']}');
+            Logger.d('      Merchant: ${order['merchant_name']}');
+            Logger.d('      Status: ${order['status']}');
+            Logger.d('      Updated: ${order['updated_at']}');
           }
         } else {
-          print('📍 No orders with location updates found');
+          Logger.d('📍 No orders with location updates found');
         }
         
         final result = orders.map((order) => CustomerLocationUpdate.fromJson(order)).toList();
-        print('📍 Returning ${result.length} CustomerLocationUpdate objects');
+        Logger.d('📍 Returning ${result.length} CustomerLocationUpdate objects');
         return result;
       } else {
-        print('❌ API Error: ${response.statusCode}');
-        print('❌ Error Response: ${response.body}');
+        Logger.d('❌ API Error: ${response.statusCode}');
+        Logger.d('❌ Error Response: ${response.body}');
         return [];
       }
     } catch (e) {
-      print('❌ Exception in checkForLocationUpdates: $e');
-      print('❌ Stack trace: ${StackTrace.current}');
+      Logger.d('❌ Exception in checkForLocationUpdates: $e');
+      Logger.d('❌ Stack trace: ${StackTrace.current}');
       return [];
     } finally {
-      print('📍 ===========================================');
-      print('📍 DRIVER LOCATION SERVICE CHECK COMPLETE');
-      print('📍 ===========================================');
+      Logger.d('📍 ===========================================');
+      Logger.d('📍 DRIVER LOCATION SERVICE CHECK COMPLETE');
+      Logger.d('📍 ===========================================');
     }
   }
 
@@ -99,17 +100,17 @@ class DriverLocationService {
       );
 
       if (response != null) {
-        print('✅ Marked driver as notified for order $orderId');
+        Logger.d('✅ Marked driver as notified for order $orderId');
         return true;
       } else {
         if (kDebugMode) {
-          print('❌ Failed to mark driver as notified');
+          Logger.d('❌ Failed to mark driver as notified');
         }
         return false;
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error marking driver as notified: $e');
+        Logger.d('❌ Error marking driver as notified: $e');
       }
       return false;
     }

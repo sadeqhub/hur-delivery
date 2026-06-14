@@ -1,5 +1,6 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../utils/logger.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -61,7 +62,7 @@ class LocationService {
 
       return position;
     } catch (e) {
-      print('Error getting current position: $e');
+      Logger.d('Error getting current position: $e');
       return null;
     }
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/response_cache_service.dart';
 import '../services/network_quality_service.dart';
+import '../utils/logger.dart';
 
 class WalletProvider extends ChangeNotifier {
   double _balance = 0.0;
@@ -79,7 +80,7 @@ class WalletProvider extends ChangeNotifier {
       await loadWalletData(merchantId);
       await loadTransactions(merchantId);
       
-      print('📝 After initial load: ${_transactions.length} transactions, balance: $_balance');
+      Logger.d('📝 After initial load: ${_transactions.length} transactions, balance: $_balance');
       
       // Set up realtime listeners after initial load to avoid overwriting with empty data
       if (_isEnabled) {
@@ -96,7 +97,7 @@ class WalletProvider extends ChangeNotifier {
             .limit(50)
             .listen(
           (data) {
-            print('📝 Realtime update received (wallet disabled): ${data.length} transactions');
+            Logger.d('📝 Realtime update received (wallet disabled): ${data.length} transactions');
             // Only update if we have data, otherwise keep existing transactions
             if (data.isNotEmpty) {
               try {
@@ -110,17 +111,17 @@ class WalletProvider extends ChangeNotifier {
                     })
                     .toList();
                 _transactions = newTransactions;
-                print('📝 Transactions updated via realtime: ${_transactions.length} transactions');
+                Logger.d('📝 Transactions updated via realtime: ${_transactions.length} transactions');
                 notifyListeners();
               } catch (e) {
-                print('❌ Error parsing realtime transactions: $e');
+                Logger.d('❌ Error parsing realtime transactions: $e');
               }
             } else {
-              print('⚠️ Realtime returned empty list - keeping existing ${_transactions.length} transactions');
+              Logger.d('⚠️ Realtime returned empty list - keeping existing ${_transactions.length} transactions');
             }
           },
           onError: (error) {
-            print('❌ Transactions realtime error: $error');
+            Logger.d('❌ Transactions realtime error: $error');
           },
         );
         
@@ -139,17 +140,17 @@ class WalletProvider extends ChangeNotifier {
               _creditLimit = (walletData['credit_limit'] as num).toDouble();
               _canPlaceOrder = _balance >= _creditLimit;
               notifyListeners();
-              print('💰 Wallet updated via realtime: $_balance IQD');
+              Logger.d('💰 Wallet updated via realtime: $_balance IQD');
             }
           },
           onError: (error) {
-            print('❌ Wallet realtime error: $error');
+            Logger.d('❌ Wallet realtime error: $error');
           },
         );
       }
     } catch (e) {
       _error = 'فشل تحميل بيانات المحفظة: $e';
-      print('Error initializing wallet: $e');
+      Logger.d('Error initializing wallet: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -187,7 +188,7 @@ class WalletProvider extends ChangeNotifier {
       
       notifyListeners();
     } catch (e) {
-      print('Error checking fee exemption: $e');
+      Logger.d('Error checking fee exemption: $e');
       _isFeeExempt = false;
       _merchantCreatedAt = null;
       _feeExemptionEndDate = null;
@@ -249,7 +250,7 @@ class WalletProvider extends ChangeNotifier {
               }
             },
             onError: (error) {
-              print('❌ City settings realtime error: $error');
+              Logger.d('❌ City settings realtime error: $error');
             },
           );
         } else {
@@ -267,7 +268,7 @@ class WalletProvider extends ChangeNotifier {
               }
             },
             onError: (error) {
-              print('❌ Settings realtime error: $error');
+              Logger.d('❌ Settings realtime error: $error');
             },
           );
         }
@@ -286,12 +287,12 @@ class WalletProvider extends ChangeNotifier {
             }
           },
           onError: (error) {
-            print('❌ Settings realtime error: $error');
+            Logger.d('❌ Settings realtime error: $error');
           },
         );
       }
     } catch (e) {
-      print('Error checking wallet enabled status: $e');
+      Logger.d('Error checking wallet enabled status: $e');
       _isEnabled = true; // Default to enabled on error
     }
   }
@@ -316,11 +317,11 @@ class WalletProvider extends ChangeNotifier {
           _creditLimit = (walletData['credit_limit'] as num).toDouble();
           _canPlaceOrder = _balance >= _creditLimit;
           notifyListeners();
-          print('💰 Wallet updated via realtime: $_balance IQD');
+          Logger.d('💰 Wallet updated via realtime: $_balance IQD');
         }
       },
       onError: (error) {
-        print('❌ Wallet realtime error: $error');
+        Logger.d('❌ Wallet realtime error: $error');
       },
     );
     
@@ -333,9 +334,9 @@ class WalletProvider extends ChangeNotifier {
         .limit(50)
         .listen(
       (data) {
-        print('📝 Realtime update received: ${data.length} transactions');
+        Logger.d('📝 Realtime update received: ${data.length} transactions');
         if (data.isEmpty) {
-          print('⚠️ Realtime returned empty list - keeping existing transactions');
+          Logger.d('⚠️ Realtime returned empty list - keeping existing transactions');
           return; // Don't overwrite with empty list
         }
         try {
@@ -348,14 +349,14 @@ class WalletProvider extends ChangeNotifier {
                 return WalletTransaction.fromJson(json);
               })
               .toList();
-          print('📝 Transactions updated via realtime: ${_transactions.length} transactions');
+          Logger.d('📝 Transactions updated via realtime: ${_transactions.length} transactions');
           notifyListeners();
         } catch (e) {
-          print('❌ Error parsing realtime transactions: $e');
+          Logger.d('❌ Error parsing realtime transactions: $e');
         }
       },
       onError: (error) {
-        print('❌ Transactions realtime error: $error');
+        Logger.d('❌ Transactions realtime error: $error');
       },
     );
   }
@@ -409,7 +410,7 @@ class WalletProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Error loading wallet data: $e');
+      Logger.d('Error loading wallet data: $e');
       rethrow;
     }
   }
@@ -443,7 +444,7 @@ class WalletProvider extends ChangeNotifier {
       }
     } catch (e) {
       // Silently fail - we already have cached data
-      print('⚠️ Background wallet refresh failed: $e');
+      Logger.d('⚠️ Background wallet refresh failed: $e');
     }
   }
   
@@ -451,14 +452,14 @@ class WalletProvider extends ChangeNotifier {
   // 4G OPTIMIZATION: Uses caching and selective fields
   Future<void> loadTransactions(String merchantId, {int limit = _pageSize}) async {
     try {
-      print('📝 Loading transactions for merchant: $merchantId');
+      Logger.d('📝 Loading transactions for merchant: $merchantId');
       
       // Check cache first (if network is slow)
       final cacheKey = 'wallet_transactions_$merchantId$limit';
       if (_networkQuality.isSlowConnection) {
         final cached = await _responseCache.getCachedResponse<List<WalletTransaction>>(cacheKey);
         if (cached != null && cached.isNotEmpty) {
-          print('📝 Using cached transactions: ${cached.length} transactions');
+          Logger.d('📝 Using cached transactions: ${cached.length} transactions');
           _transactions = cached;
           notifyListeners();
           // Load fresh data in background
@@ -476,10 +477,10 @@ class WalletProvider extends ChangeNotifier {
           .order('created_at', ascending: false)
           .limit(limit);
       
-      print('📝 Raw response from database: ${response.length} transactions');
+      Logger.d('📝 Raw response from database: ${response.length} transactions');
       
       if (response.isEmpty) {
-        print('⚠️ No transactions found for merchant: $merchantId');
+        Logger.d('⚠️ No transactions found for merchant: $merchantId');
         _transactions = [];
         notifyListeners();
         return;
@@ -494,13 +495,13 @@ class WalletProvider extends ChangeNotifier {
               }
               return WalletTransaction.fromJson(json);
             } catch (e) {
-              print('❌ Error parsing transaction: $e, JSON: $json');
+              Logger.d('❌ Error parsing transaction: $e, JSON: $json');
               rethrow;
             }
           })
           .toList();
 
-      print('📝 Successfully parsed ${_transactions.length} transactions');
+      Logger.d('📝 Successfully parsed ${_transactions.length} transactions');
       _hasMoreTransactions = _transactions.length >= limit;
 
       await _loadOrderSummariesForTransactions(merchantId, _transactions);
@@ -514,11 +515,11 @@ class WalletProvider extends ChangeNotifier {
         );
       }
       
-      print('📝 Notifying listeners with ${_transactions.length} transactions');
+      Logger.d('📝 Notifying listeners with ${_transactions.length} transactions');
       notifyListeners();
     } catch (e, stackTrace) {
-      print('❌ Error loading transactions: $e');
-      print('❌ Stack trace: $stackTrace');
+      Logger.d('❌ Error loading transactions: $e');
+      Logger.d('❌ Stack trace: $stackTrace');
       _transactions = [];
       _error = 'فشل تحميل المعاملات: $e';
       notifyListeners();
@@ -595,7 +596,7 @@ class WalletProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       // Silently fail - we already have cached data
-      print('⚠️ Background transactions refresh failed: $e');
+      Logger.d('⚠️ Background transactions refresh failed: $e');
     }
   }
 
@@ -659,7 +660,7 @@ class WalletProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       _error = 'فشل شحن المحفظة: $e';
-      print('Error topping up wallet: $e');
+      Logger.d('Error topping up wallet: $e');
       return false;
     } finally {
       _isLoading = false;
@@ -678,7 +679,7 @@ class WalletProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
-      print('[WalletProvider] Creating Wayl payment link - merchantId: $merchantId, amount: $amount');
+      Logger.d('[WalletProvider] Creating Wayl payment link - merchantId: $merchantId, amount: $amount');
       
       final response = await Supabase.instance.client.functions.invoke(
         'wayl-payment',
@@ -690,24 +691,24 @@ class WalletProvider extends ChangeNotifier {
       ).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
-          print('[WalletProvider] Request timed out');
+          Logger.d('[WalletProvider] Request timed out');
           throw TimeoutException('Request timed out after 30 seconds');
         },
       );
       
-      print('[WalletProvider] Response received');
-      print('[WalletProvider] Response status: ${response.status}');
-      print('[WalletProvider] Response data type: ${response.data.runtimeType}');
-      print('[WalletProvider] Response data: ${response.data}');
+      Logger.d('[WalletProvider] Response received');
+      Logger.d('[WalletProvider] Response status: ${response.status}');
+      Logger.d('[WalletProvider] Response data type: ${response.data.runtimeType}');
+      Logger.d('[WalletProvider] Response data: ${response.data}');
       
       if (response.status == 200) {
         if (response.data != null) {
           final data = response.data as Map<String, dynamic>;
-          print('[WalletProvider] Payment link created successfully');
-          print('[WalletProvider] Payment URL: ${data['payment_url']}');
+          Logger.d('[WalletProvider] Payment link created successfully');
+          Logger.d('[WalletProvider] Payment URL: ${data['payment_url']}');
           return data;
         } else {
-          print('[WalletProvider] Response status is 200 but data is null');
+          Logger.d('[WalletProvider] Response status is 200 but data is null');
           _error = 'Received empty response from server';
           return null;
         }
@@ -718,24 +719,24 @@ class WalletProvider extends ChangeNotifier {
             : <String, dynamic>{};
         final errorMessage = errorData['error'] ?? 'فشل إنشاء رابط الدفع (Status: ${response.status})';
         _error = errorMessage;
-        print('[WalletProvider] Error response: $errorMessage');
-        print('[WalletProvider] Full error data: $errorData');
+        Logger.d('[WalletProvider] Error response: $errorMessage');
+        Logger.d('[WalletProvider] Full error data: $errorData');
         return null;
       }
     } on TimeoutException catch (e) {
       _error = 'انتهت مهلة الطلب. يرجى المحاولة مرة أخرى';
-      print('[WalletProvider] Timeout error: $e');
+      Logger.d('[WalletProvider] Timeout error: $e');
       return null;
     } catch (e, stackTrace) {
       _error = 'فشل إنشاء رابط الدفع: $e';
-      print('[WalletProvider] Error creating Wayl payment link: $e');
-      print('[WalletProvider] Error type: ${e.runtimeType}');
-      print('[WalletProvider] Stack trace: $stackTrace');
+      Logger.d('[WalletProvider] Error creating Wayl payment link: $e');
+      Logger.d('[WalletProvider] Error type: ${e.runtimeType}');
+      Logger.d('[WalletProvider] Stack trace: $stackTrace');
       return null;
     } finally {
       _isLoading = false;
       notifyListeners();
-      print('[WalletProvider] Finally block executed - isLoading: $_isLoading');
+      Logger.d('[WalletProvider] Finally block executed - isLoading: $_isLoading');
     }
   }
   
@@ -749,7 +750,7 @@ class WalletProvider extends ChangeNotifier {
       
       return response as Map<String, dynamic>?;
     } catch (e) {
-      print('Error getting wallet summary: $e');
+      Logger.d('Error getting wallet summary: $e');
       return null;
     }
   }

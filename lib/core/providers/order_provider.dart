@@ -16,6 +16,7 @@ import '../services/network_quality_service.dart';
 import '../services/response_cache_service.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
+import '../utils/logger.dart';
 
 class OrderProvider extends ChangeNotifier {
   List<OrderModel> _orders = [];
@@ -191,7 +192,7 @@ class OrderProvider extends ChangeNotifier {
     try {
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser == null) {
-        print('⚠️ No current user - skipping timeout states subscription');
+        Logger.d('⚠️ No current user - skipping timeout states subscription');
         return;
       }
 
@@ -206,7 +207,7 @@ class OrderProvider extends ChangeNotifier {
       
       // Only drivers need timeout states (for pending orders assigned to them)
       if (userRole != 'driver') {
-        print('ℹ️  User is not a driver - skipping timeout states subscription');
+        Logger.d('ℹ️  User is not a driver - skipping timeout states subscription');
         return;
       }
 
@@ -234,7 +235,7 @@ class OrderProvider extends ChangeNotifier {
               _timeoutStates[orderId] = remaining;
               
               if (remaining <= 10) {
-                print('   ⏰ Order $orderId: $remaining seconds');
+                Logger.d('   ⏰ Order $orderId: $remaining seconds');
               }
               
               notifyListeners();
@@ -242,9 +243,9 @@ class OrderProvider extends ChangeNotifier {
           )
           .subscribe();
       
-      print('✅ Subscribed to order_timeout_state table (filtered by driver_id)');
+      Logger.d('✅ Subscribed to order_timeout_state table (filtered by driver_id)');
     } catch (e) {
-      print('❌ Error subscribing to timeout states: $e');
+      Logger.d('❌ Error subscribing to timeout states: $e');
     }
   }
   
@@ -286,7 +287,7 @@ class OrderProvider extends ChangeNotifier {
           // Update all timeout states in database
           await Supabase.instance.client.rpc('update_order_timeout_states')
               .timeout(const Duration(seconds: 3), onTimeout: () {
-            print('⚠️ Timeout state update timed out');
+            Logger.d('⚠️ Timeout state update timed out');
             return null;
           });
           
@@ -370,7 +371,7 @@ class OrderProvider extends ChangeNotifier {
   // OPTIMIZED: Uses priority system for faster loading
   Future<void> refreshOrder(String orderId) async {
     try {
-      print('🔄 Refreshing order $orderId...');
+      Logger.d('🔄 Refreshing order $orderId...');
       
       final optimizer = PerformanceOptimizer();
       final loader = OptimizedOrderLoader();
@@ -394,7 +395,7 @@ class OrderProvider extends ChangeNotifier {
         final orderIndex = _orders.indexWhere((o) => o.id == orderId);
         if (orderIndex != -1) {
           _orders[orderIndex] = updatedOrder;
-          print('✅ Order $orderId refreshed with coordinates: ${updatedOrder.deliveryLatitude}, ${updatedOrder.deliveryLongitude}');
+          Logger.d('✅ Order $orderId refreshed with coordinates: ${updatedOrder.deliveryLatitude}, ${updatedOrder.deliveryLongitude}');
         }
         
         // Update current order if it's the same
@@ -405,7 +406,7 @@ class OrderProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('❌ Error refreshing order $orderId: $e');
+      Logger.d('❌ Error refreshing order $orderId: $e');
     }
   }
 
@@ -424,7 +425,7 @@ class OrderProvider extends ChangeNotifier {
           _roleCacheTime != null && 
           DateTime.now().difference(_roleCacheTime!) < _roleCacheExpiry) {
         userRole = _cachedUserRole;
-        print('✅ Using cached role: $userRole');
+        Logger.d('✅ Using cached role: $userRole');
       } else {
         // METHOD 2: Try to get from auth user metadata (no DB query)
         userRole = currentUser.userMetadata?['role'] as String? ??
@@ -441,7 +442,7 @@ class OrderProvider extends ChangeNotifier {
 
         // METHOD 4: If still unknown, fall back to safe default without hitting DB
         if (userRole == null || userRole.isEmpty) {
-          print(
+          Logger.d(
               '⚠️ User role not found in metadata/cache - defaulting to merchant to avoid network fetch');
           userRole = null; // let default below handle final value
         } else {
@@ -522,7 +523,7 @@ class OrderProvider extends ChangeNotifier {
           }
         }).catchError((e) {
           // Silently fail for background prefetch
-          print('⚠️ Background prefetch failed: $e');
+          Logger.d('⚠️ Background prefetch failed: $e');
         }); // Don't await - fire and forget
       }
 
@@ -542,7 +543,7 @@ class OrderProvider extends ChangeNotifier {
               .timeout(
                 const Duration(seconds: 10),
                 onTimeout: () {
-                  print('⚠️ Scheduled orders query timeout');
+                  Logger.d('⚠️ Scheduled orders query timeout');
                   return <Map<String, dynamic>>[];
                 },
               );
@@ -595,9 +596,9 @@ class OrderProvider extends ChangeNotifier {
 
           // Merge scheduled orders into the orders list
           _orders.addAll(scheduledOrders);
-          print('✅ Loaded ${scheduledOrders.length} scheduled order(s)');
+          Logger.d('✅ Loaded ${scheduledOrders.length} scheduled order(s)');
         } catch (e) {
-          print('⚠️ Error loading scheduled orders: $e');
+          Logger.d('⚠️ Error loading scheduled orders: $e');
           // Don't fail the entire load if scheduled orders fail
         }
       }
@@ -607,7 +608,7 @@ class OrderProvider extends ChangeNotifier {
       final timedOutToRemove = _timedOutOrders.where((id) => !currentOrderIds.contains(id)).toList();
       for (var id in timedOutToRemove) {
         _timedOutOrders.remove(id);
-        print('🧹 Removed non-existent order $id from timed out set');
+        Logger.d('🧹 Removed non-existent order $id from timed out set');
       }
       
       // Invalidate cache when orders are updated
@@ -628,7 +629,7 @@ class OrderProvider extends ChangeNotifier {
       } else {
         _error = 'حدث خطأ أثناء تحميل الطلبات. يرجى المحاولة مرة أخرى / An error occurred while loading orders. Please try again.';
       }
-      print('❌ Error in _loadOrders: $e');
+      Logger.d('❌ Error in _loadOrders: $e');
       // Set orders to empty list on error to avoid showing stale data
       _orders = [];
       notifyListeners();
@@ -661,12 +662,12 @@ class OrderProvider extends ChangeNotifier {
             .from('orders')
             .stream(primaryKey: ['id'])
             .handleError((error) {
-              print('❌ Realtime stream error: $error');
+              Logger.d('❌ Realtime stream error: $error');
               // Attempt to reconnect after delay
-              print('🔄 Scheduling stream reconnection...');
+              Logger.d('🔄 Scheduling stream reconnection...');
               Future.delayed(const Duration(seconds: 5), () {
                 if (_ordersSubscription != null) { // Only if still active
-                   print('🔄 Reconnecting order stream now...');
+                   Logger.d('🔄 Reconnecting order stream now...');
                    _subscribeToOrders();
                 }
               });
@@ -695,9 +696,9 @@ class OrderProvider extends ChangeNotifier {
               if (newLat != null && newLng != null && 
                   ((newLat - oldLat).abs() > 0.0001 || 
                    (newLng - oldLng).abs() > 0.0001)) {
-                print('📍 Customer location updated for order $orderId');
-                print('   Old: $oldLat, $oldLng');
-                print('   New: $newLat, $newLng');
+                Logger.d('📍 Customer location updated for order $orderId');
+                Logger.d('   Old: $oldLat, $oldLng');
+                Logger.d('   New: $newLat, $newLng');
                 
                 // Refresh the order to get complete data
                 await refreshOrder(orderId);
@@ -714,7 +715,7 @@ class OrderProvider extends ChangeNotifier {
                 // Database trigger (trigger_notify_driver_assignment) automatically
                 // creates notification when driver_id is set on an order
                 // App-side notification call disabled to prevent duplicates
-                print('ℹ️  New driver assignment detected - database trigger will send notification');
+                Logger.d('ℹ️  New driver assignment detected - database trigger will send notification');
               }
             }
             
@@ -732,7 +733,7 @@ class OrderProvider extends ChangeNotifier {
                       .eq('order_id', orderData['id']);
                   orderData['items'] = items;
                 } catch (e) {
-                  print('Error fetching items for order: $e');
+                  Logger.d('Error fetching items for order: $e');
                   orderData['items'] = [];
                 }
               }
@@ -753,33 +754,33 @@ class OrderProvider extends ChangeNotifier {
                   
                   orderData['timeout_remaining_seconds'] = remainingClamped;
                   
-                  print('');
-                  print('═══════════════════════════════════════════════════════');
-                  print('⏱️  TIMEOUT CALCULATION for order ${orderData['id']}');
-                  print('───────────────────────────────────────────────────────');
-                  print('   driver_assigned_at (string): $assignedAtStr');
-                  print('   driver_assigned_at (parsed): $assignedAt');
-                  print('   driver_assigned_at (UTC)   : $assignedAtUtc');
-                  print('   NOW() (UTC)                : $now');
-                  print('   Difference                 : ${now.difference(assignedAtUtc)}');
-                  print('   Elapsed seconds            : $elapsed');
-                  print('   Formula: 30 - $elapsed     : $remaining');
-                  print('   Clamped (0-30)            : $remainingClamped');
-                  print('═══════════════════════════════════════════════════════');
-                  print('');
+                  Logger.d('');
+                  Logger.d('═══════════════════════════════════════════════════════');
+                  Logger.d('⏱️  TIMEOUT CALCULATION for order ${orderData['id']}');
+                  Logger.d('───────────────────────────────────────────────────────');
+                  Logger.d('   driver_assigned_at (string): $assignedAtStr');
+                  Logger.d('   driver_assigned_at (parsed): $assignedAt');
+                  Logger.d('   driver_assigned_at (UTC)   : $assignedAtUtc');
+                  Logger.d('   NOW() (UTC)                : $now');
+                  Logger.d('   Difference                 : ${now.difference(assignedAtUtc)}');
+                  Logger.d('   Elapsed seconds            : $elapsed');
+                  Logger.d('   Formula: 30 - $elapsed     : $remaining');
+                  Logger.d('   Clamped (0-30)            : $remainingClamped');
+                  Logger.d('═══════════════════════════════════════════════════════');
+                  Logger.d('');
                   
                   if (remaining < 0) {
-                    print('⚠️  WARNING: Remaining is NEGATIVE ($remaining)');
-                    print('⚠️  This order should have been auto-rejected already!');
+                    Logger.d('⚠️  WARNING: Remaining is NEGATIVE ($remaining)');
+                    Logger.d('⚠️  This order should have been auto-rejected already!');
                   }
                   if (remaining > 30) {
-                    print('⚠️  WARNING: Remaining is > 30 seconds ($remaining)');
-                    print('⚠️  This suggests driver_assigned_at is in the FUTURE!');
+                    Logger.d('⚠️  WARNING: Remaining is > 30 seconds ($remaining)');
+                    Logger.d('⚠️  This suggests driver_assigned_at is in the FUTURE!');
                   }
                   
                 } catch (e) {
-                  print('❌ Error calculating timeout: $e');
-                  print('❌ driver_assigned_at value: ${orderData['driver_assigned_at']}');
+                  Logger.d('❌ Error calculating timeout: $e');
+                  Logger.d('❌ driver_assigned_at value: ${orderData['driver_assigned_at']}');
                   orderData['timeout_remaining_seconds'] = null;
                 }
               } else {
@@ -803,10 +804,10 @@ class OrderProvider extends ChangeNotifier {
       }
       _orders = byId.values.toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
           
-          print('📊 Driver orders update: ${_orders.length} orders processed');
-          print('   Orders for driver $currentUser.id:');
+          Logger.d('📊 Driver orders update: ${_orders.length} orders processed');
+          Logger.d('   Orders for driver $currentUser.id:');
           for (var o in _orders.where((o) => o.driverId == currentUser.id)) {
-            print('     - ${o.id}: status=${o.status}, assigned_at=${o.driverAssignedAt}');
+            Logger.d('     - ${o.id}: status=${o.status}, assigned_at=${o.driverAssignedAt}');
           }
           
           // Clean up timed out orders set - remove IDs that no longer exist
@@ -814,15 +815,15 @@ class OrderProvider extends ChangeNotifier {
           final timedOutToRemove = _timedOutOrders.where((id) => !currentOrderIds.contains(id)).toList();
           for (var id in timedOutToRemove) {
             _timedOutOrders.remove(id);
-            print('🧹 Removed non-existent order $id from timed out set (driver subscription update)');
+            Logger.d('🧹 Removed non-existent order $id from timed out set (driver subscription update)');
           }
-          print('   Timed out orders after cleanup: $_timedOutOrders');
+          Logger.d('   Timed out orders after cleanup: $_timedOutOrders');
           
           notifyListeners();
         });
       } else {
         // For merchants, listen to their orders with complete data loading
-        print('👨‍💼 Setting up merchant realtime subscription for user: ${currentUser.id}');
+        Logger.d('👨‍💼 Setting up merchant realtime subscription for user: ${currentUser.id}');
         
         await _ordersSubscription?.cancel();
         
@@ -833,11 +834,11 @@ class OrderProvider extends ChangeNotifier {
             .order('created_at', ascending: false)
             .limit(50) // PERFORMANCE FIX: Reduced from 200 to 50 to reduce memory usage
             .handleError((error) {
-              print('❌ Merchant realtime stream error: $error');
-              print('🔄 Scheduling stream reconnection...');
+              Logger.d('❌ Merchant realtime stream error: $error');
+              Logger.d('🔄 Scheduling stream reconnection...');
               Future.delayed(const Duration(seconds: 5), () {
                 if (_ordersSubscription != null) {
-                   print('🔄 Reconnecting merchant stream now...');
+                   Logger.d('🔄 Reconnecting merchant stream now...');
                    _subscribeToOrders();
                 }
               });
@@ -845,8 +846,8 @@ class OrderProvider extends ChangeNotifier {
 
         _ordersSubscription = stream.listen(
           (data) async {
-          print('📦 Merchant real-time update: ${data.length} orders received');
-          print('   Update time: ${DateTime.now()}');
+          Logger.d('📦 Merchant real-time update: ${data.length} orders received');
+          Logger.d('   Update time: ${DateTime.now()}');
           
           // Process each order and fetch related data
           
@@ -896,7 +897,7 @@ class OrderProvider extends ChangeNotifier {
                       }
                     } catch (e) {
                       // Log but don't fail - driver info is optional
-                      print('⚠️ Could not fetch driver info: $e');
+                      Logger.d('⚠️ Could not fetch driver info: $e');
                     }
                  }
               }
@@ -931,7 +932,7 @@ class OrderProvider extends ChangeNotifier {
             final existingOrder = _orders.where((o) => o.id == newOrder.id).firstOrNull;
             
             if (existingOrder != null && existingOrder.status != newOrder.status) {
-              print('📢 Order ${newOrder.id} status changed: ${existingOrder.status} → ${newOrder.status}');
+              Logger.d('📢 Order ${newOrder.id} status changed: ${existingOrder.status} → ${newOrder.status}');
               
              // 🔔 NOTIFICATIONS NOW HANDLED BY DATABASE TRIGGERS
              // Database triggers automatically create notifications for:
@@ -941,16 +942,16 @@ class OrderProvider extends ChangeNotifier {
              // - Order rejected → trigger_notify_order_rejected
              // App-side notification calls disabled to prevent duplicates
              if (newOrder.status == AppConstants.statusAccepted && existingOrder.status == AppConstants.statusPending) {
-               print('ℹ️  Order accepted - database trigger will send notification');
+               Logger.d('ℹ️  Order accepted - database trigger will send notification');
              } else if (newOrder.status == AppConstants.statusOnTheWay) {
-               print('ℹ️  Order on the way - database trigger will send notification');
+               Logger.d('ℹ️  Order on the way - database trigger will send notification');
              } else if (newOrder.status == AppConstants.statusDelivered) {
-               print('ℹ️  Order delivered - database trigger will send notification');
+               Logger.d('ℹ️  Order delivered - database trigger will send notification');
              } else if (newOrder.status == AppConstants.statusRejected) {
-               print('ℹ️  Order rejected - database trigger will send notification');
+               Logger.d('ℹ️  Order rejected - database trigger will send notification');
              }
             } else if (existingOrder == null) {
-              print('🆕 New order detected: ${newOrder.id} with status ${newOrder.status}');
+              Logger.d('🆕 New order detected: ${newOrder.id} with status ${newOrder.status}');
             }
           }
           
@@ -966,20 +967,20 @@ class OrderProvider extends ChangeNotifier {
           final timedOutToRemove = _timedOutOrders.where((id) => !currentOrderIds.contains(id)).toList();
           for (var id in timedOutToRemove) {
             _timedOutOrders.remove(id);
-            print('🧹 Removed non-existent order $id from timed out set (subscription update)');
+            Logger.d('🧹 Removed non-existent order $id from timed out set (subscription update)');
           }
           
-          print('✅ Merchant orders updated: ${_orders.length} total');
-          print('   Status breakdown:');
+          Logger.d('✅ Merchant orders updated: ${_orders.length} total');
+          Logger.d('   Status breakdown:');
           for (var status in ['pending', 'assigned', 'accepted', 'on_the_way', 'delivered', 'cancelled', 'rejected']) {
             final count = _orders.where((o) => o.status == status).length;
-            if (count > 0) print('      $status: $count');
+            if (count > 0) Logger.d('      $status: $count');
           }
           
           notifyListeners();
         },
         onError: (error) {
-          print('❌ Merchant realtime subscription error: $error');
+          Logger.d('❌ Merchant realtime subscription error: $error');
           // Try to resubscribe after error
           Future.delayed(const Duration(seconds: 3), () {
             _subscribeToOrders();
@@ -987,10 +988,10 @@ class OrderProvider extends ChangeNotifier {
         },
       );
       
-      print('✅ Merchant realtime subscription initialized');
+      Logger.d('✅ Merchant realtime subscription initialized');
       }
     } catch (e) {
-      print('❌ Error setting up order subscription: $e');
+      Logger.d('❌ Error setting up order subscription: $e');
     }
   }
 
@@ -1057,14 +1058,14 @@ class OrderProvider extends ChangeNotifier {
       }
       
       // Log the data being sent for debugging
-      print('📝 Creating order with data:');
-      print('   merchant_id: ${orderData['merchant_id']}');
-      print('   customer_name: ${orderData['customer_name']}');
-      print('   customer_phone: ${orderData['customer_phone']}');
-      print('   vehicle_type: ${orderData['vehicle_type']}');
-      print('   status: ${orderData['status']}');
-      print('   ready_at: ${orderData['ready_at']}');
-      print('   ready_countdown: ${orderData['ready_countdown']}');
+      Logger.d('📝 Creating order with data:');
+      Logger.d('   merchant_id: ${orderData['merchant_id']}');
+      Logger.d('   customer_name: ${orderData['customer_name']}');
+      Logger.d('   customer_phone: ${orderData['customer_phone']}');
+      Logger.d('   vehicle_type: ${orderData['vehicle_type']}');
+      Logger.d('   status: ${orderData['status']}');
+      Logger.d('   ready_at: ${orderData['ready_at']}');
+      Logger.d('   ready_countdown: ${orderData['ready_countdown']}');
       
       // Create order (wrap with ErrorManager to capture DB errors)
       final orderResponse = await ErrorManager.safeExecute<Map<String, dynamic>>(
@@ -1089,7 +1090,7 @@ class OrderProvider extends ChangeNotifier {
         _orders = [createdOrder, ..._orders];
         notifyListeners();
       } catch (e) {
-        print('⚠️ Failed to parse created order: $e');
+        Logger.d('⚠️ Failed to parse created order: $e');
       }
       
       // Invalidate cache when new order is created
@@ -1106,16 +1107,16 @@ class OrderProvider extends ChangeNotifier {
           totalAmount: totalAmount,
           deliveryFee: deliveryFee,
         );
-        print('✅ Order created notification sent: $success');
+        Logger.d('✅ Order created notification sent: $success');
       }));
 
       // Return the created order data (including ID)
       return orderResponse;
     } catch (e, stackTrace) {
       // Log detailed error information
-      print('❌ Error creating order:');
-      print('   Error: $e');
-      print('   Stack trace: $stackTrace');
+      Logger.d('❌ Error creating order:');
+      Logger.d('   Error: $e');
+      Logger.d('   Stack trace: $stackTrace');
       
       // Check if error is due to system being disabled
       final errorString = e.toString();
@@ -1136,7 +1137,7 @@ class OrderProvider extends ChangeNotifier {
           }
         }
         _error = detailedError.isNotEmpty ? detailedError : 'حدث خطأ في إنشاء الطلب. يرجى المحاولة مرة أخرى.';
-        print('   User-friendly error: $_error');
+        Logger.d('   User-friendly error: $_error');
       }
       return null;
     } finally {
@@ -1179,38 +1180,38 @@ class OrderProvider extends ChangeNotifier {
               },
             );
             
-            print('🔍 Update order status response: $functionResult');
-            print('🔍 Response type: ${functionResult.runtimeType}');
+            Logger.d('🔍 Update order status response: $functionResult');
+            Logger.d('🔍 Response type: ${functionResult.runtimeType}');
             
             // Function now returns JSON with success flag
             if (functionResult is Map) {
               if (functionResult['success'] == true) {
-                print('✅ Order status updated successfully');
+                Logger.d('✅ Order status updated successfully');
                 return true;
               } else {
                 // Function returned error details
                 final error = functionResult['error'] ?? 'UNKNOWN_ERROR';
                 final message = functionResult['message'] ?? 'Failed to update order status';
-                print('❌ Update failed: $error - $message');
-                print('   Full response: $functionResult');
+                Logger.d('❌ Update failed: $error - $message');
+                Logger.d('   Full response: $functionResult');
                 _error = message;
                 return false;
               }
             }
             
             // Unexpected response format
-            print('⚠️ Unexpected response format: $functionResult');
+            Logger.d('⚠️ Unexpected response format: $functionResult');
             _error = 'Unexpected response from server';
             return false;
           } catch (e) {
             // Exception occurred
-            print('❌ Exception updating order status: $e');
-            print('   Exception type: ${e.runtimeType}');
+            Logger.d('❌ Exception updating order status: $e');
+            Logger.d('   Exception type: ${e.runtimeType}');
             if (e is PostgrestException) {
-              print('   Postgrest code: ${e.code}');
-              print('   Postgrest message: ${e.message}');
-              print('   Postgrest details: ${e.details}');
-              print('   Postgrest hint: ${e.hint}');
+              Logger.d('   Postgrest code: ${e.code}');
+              Logger.d('   Postgrest message: ${e.message}');
+              Logger.d('   Postgrest details: ${e.details}');
+              Logger.d('   Postgrest hint: ${e.hint}');
             }
             rethrow;
           }
@@ -1477,7 +1478,7 @@ class OrderProvider extends ChangeNotifier {
                        merchantResponse['name'] as String? ?? 
                        'متجرنا';
         } catch (e) {
-          print('⚠️ Could not fetch merchant name: $e');
+          Logger.d('⚠️ Could not fetch merchant name: $e');
           merchantName = 'متجرنا';
         }
       } else {
@@ -1543,12 +1544,12 @@ class OrderProvider extends ChangeNotifier {
       },
     ).then((response) {
       if (response.status == 200) {
-        print('✅ WhatsApp location request sent successfully after phone update');
+        Logger.d('✅ WhatsApp location request sent successfully after phone update');
       } else {
-        print('⚠️ WhatsApp location request failed: ${response.status}');
+        Logger.d('⚠️ WhatsApp location request failed: ${response.status}');
       }
     }).catchError((error) {
-      print('⚠️ Failed to send WhatsApp location request (non-critical): $error');
+      Logger.d('⚠️ Failed to send WhatsApp location request (non-critical): $error');
       // Don't show error to user - this is a background operation
     });
   }
@@ -1591,20 +1592,20 @@ class OrderProvider extends ChangeNotifier {
             if (positionAge.inSeconds < 30) {
               // Use cached position - much faster!
               driverPosition = locationProvider.currentPosition;
-              print('✅ Using cached location (age: ${positionAge.inSeconds}s)');
+              Logger.d('✅ Using cached location (age: ${positionAge.inSeconds}s)');
             } else {
-              print('⚠️ Cached location too old (${positionAge.inSeconds}s), fetching new...');
+              Logger.d('⚠️ Cached location too old (${positionAge.inSeconds}s), fetching new...');
             }
           }
           
           // Only fetch new location if cached is not available or too old
           driverPosition ??= await locationProvider.getCurrentLocation()
                 .timeout(const Duration(seconds: 3), onTimeout: () {
-              print('⚠️ Location fetch timed out, using cached if available');
+              Logger.d('⚠️ Location fetch timed out, using cached if available');
               return locationProvider.currentPosition;
             });
         } catch (e) {
-          print('⚠️ Could not get location from LocationProvider: $e');
+          Logger.d('⚠️ Could not get location from LocationProvider: $e');
           // Fallback to cached position if available
           final locationProvider = Provider.of<LocationProvider>(context, listen: false);
           driverPosition = locationProvider.currentPosition;
@@ -1619,14 +1620,14 @@ class OrderProvider extends ChangeNotifier {
             timeLimit: const Duration(seconds: 3), // Short timeout
           );
         } catch (e) {
-          print('❌ Could not get location: $e');
+          Logger.d('❌ Could not get location: $e');
           _error = 'Unable to get current location. Please enable location services.';
           return false;
         }
       }
 
-      print('📍 Driver location: ${driverPosition.latitude}, ${driverPosition.longitude}');
-      print('📍 Pickup location: ${order.pickupLatitude}, ${order.pickupLongitude}');
+      Logger.d('📍 Driver location: ${driverPosition.latitude}, ${driverPosition.longitude}');
+      Logger.d('📍 Pickup location: ${order.pickupLatitude}, ${order.pickupLongitude}');
 
       // PERFORMANCE FIX: Start route calculation in parallel with validation
       // Route calculation can happen in background and doesn't block the status update
@@ -1647,7 +1648,7 @@ class OrderProvider extends ChangeNotifier {
           'p_driver_longitude': driverPosition.longitude,
         },
       ).timeout(const Duration(seconds: 5), onTimeout: () {
-        print('⚠️ Validation timed out');
+        Logger.d('⚠️ Validation timed out');
         return {'success': false, 'error': 'TIMEOUT', 'message': 'Validation timed out'};
       });
 
@@ -1655,17 +1656,17 @@ class OrderProvider extends ChangeNotifier {
         final error = validationResult['error'] ?? 'VALIDATION_FAILED';
         final message = validationResult['message'] ?? 'Cannot mark as picked up';
         _error = message;
-        print('❌ Pickup validation failed: $error - $message');
+        Logger.d('❌ Pickup validation failed: $error - $message');
         return false;
       }
 
-      print('✅ Pickup location validated');
+      Logger.d('✅ Pickup location validated');
 
       // Wait for route calculation (should be done or nearly done by now)
       final routeTimeResult = await routeTimeFuture.timeout(
         const Duration(seconds: 3),
         onTimeout: () {
-          print('⚠️ Route calculation timed out, using default time limit');
+          Logger.d('⚠️ Route calculation timed out, using default time limit');
           return null; // Will use default time limit
         },
       );
@@ -1674,11 +1675,11 @@ class OrderProvider extends ChangeNotifier {
       int? timeLimitSeconds;
       if (routeTimeResult != null) {
         timeLimitSeconds = routeTimeResult.timeLimitSeconds;
-        print('✅ Route time calculated: ${routeTimeResult.timeLimitSeconds}s');
+        Logger.d('✅ Route time calculated: ${routeTimeResult.timeLimitSeconds}s');
       } else {
         // Use a reasonable default (e.g., 30 minutes) if route calculation fails
         timeLimitSeconds = 1800; // 30 minutes default
-        print('⚠️ Using default time limit: ${timeLimitSeconds}s');
+        Logger.d('⚠️ Using default time limit: ${timeLimitSeconds}s');
       }
 
       // Update order status with timer
@@ -1700,12 +1701,12 @@ class OrderProvider extends ChangeNotifier {
 
           if (functionResult is Map) {
             if (functionResult['success'] == true) {
-              print('✅ Order status updated with timer');
+              Logger.d('✅ Order status updated with timer');
               return true;
             } else {
               final error = functionResult['error'] ?? 'UNKNOWN_ERROR';
               final message = functionResult['message'] ?? 'Failed to update order status';
-              print('❌ Update failed: $error - $message');
+              Logger.d('❌ Update failed: $error - $message');
               _error = message;
               return false;
             }
@@ -1804,11 +1805,11 @@ class OrderProvider extends ChangeNotifier {
       return true;
     } on TimeoutException catch (e) {
       _error = 'انتهت مهلة الرفع. يرجى المحاولة مرة أخرى / Upload timeout. Please try again.';
-      print('❌ Upload timeout: $e');
+      Logger.d('❌ Upload timeout: $e');
       return false;
     } catch (e) {
       _error = _getErrorMessage(e);
-      print('❌ Upload error: $e');
+      Logger.d('❌ Upload error: $e');
       return false;
     }
   }
@@ -1854,7 +1855,7 @@ class OrderProvider extends ChangeNotifier {
         return false;
       }
 
-      print('🔄 Reposting order $orderId with new fee: $newDeliveryFee');
+      Logger.d('🔄 Reposting order $orderId with new fee: $newDeliveryFee');
 
       // Use the database function to repost with vehicle type checking
       final response = await Supabase.instance.client.rpc(
@@ -1865,8 +1866,8 @@ class OrderProvider extends ChangeNotifier {
         },
       );
 
-      print('📦 Repost response: $response');
-      print('📦 Response type: ${response.runtimeType}');
+      Logger.d('📦 Repost response: $response');
+      Logger.d('📦 Response type: ${response.runtimeType}');
 
       // Handle both boolean (old function) and JSON (new function) responses
       bool success = false;
@@ -1896,7 +1897,7 @@ class OrderProvider extends ChangeNotifier {
             errorMessage = message ?? 'فشل إعادة نشر الطلب';
           }
 
-          print('❌ Repost failed: $errorMessage');
+          Logger.d('❌ Repost failed: $errorMessage');
           _error = errorMessage;
           return false;
         }
@@ -1904,13 +1905,13 @@ class OrderProvider extends ChangeNotifier {
         // Success
         final newFee = response['new_fee'];
         final availableDrivers = response['available_drivers'];
-        print('✅ Order $orderId reposted successfully!');
-        print('   New fee: $newFee IQD');
-        print('   Available drivers: $availableDrivers');
+        Logger.d('✅ Order $orderId reposted successfully!');
+        Logger.d('   New fee: $newFee IQD');
+        Logger.d('   Available drivers: $availableDrivers');
       } else if (response is bool) {
         // Old boolean response (backward compatibility)
         success = response;
-        print('✅ Order $orderId reposted (legacy boolean response): $success');
+        Logger.d('✅ Order $orderId reposted (legacy boolean response): $success');
         if (!success) {
           errorMessage = 'فشل إعادة نشر الطلب';
           _error = errorMessage;
@@ -1918,7 +1919,7 @@ class OrderProvider extends ChangeNotifier {
         }
       } else {
         // Unexpected response type
-        print('⚠️ Unexpected response type: ${response.runtimeType}');
+        Logger.d('⚠️ Unexpected response type: ${response.runtimeType}');
         errorMessage = 'استجابة غير متوقعة من الخادم';
         _error = errorMessage;
         return false;
@@ -1933,7 +1934,7 @@ class OrderProvider extends ChangeNotifier {
       await _loadOrders();
       return true;
     } catch (e) {
-      print('❌ Error reposting order: $e');
+      Logger.d('❌ Error reposting order: $e');
       _error = _getErrorMessage(e);
       return false;
     } finally {
@@ -1986,7 +1987,7 @@ class OrderProvider extends ChangeNotifier {
     try {
       await notificationCall();
     } catch (e) {
-      print('❌ Merchant notification failed: $e');
+      Logger.d('❌ Merchant notification failed: $e');
     }
   }
 
@@ -1994,13 +1995,13 @@ class OrderProvider extends ChangeNotifier {
   /// This is used when an order is marked as delivered to ensure immediate disappearance
   /// The subscription will also handle removal, but this prevents visual lag
   void removeOrderFromLocalState(String orderId) {
-    print('🗑️  Manually removing order $orderId from local state');
+    Logger.d('🗑️  Manually removing order $orderId from local state');
     final initialCount = _orders.length;
     _orders.removeWhere((order) => order.id == orderId);
     final finalCount = _orders.length;
     
     if (initialCount != finalCount) {
-      print('✅ Order $orderId removed from local state ($initialCount → $finalCount orders)');
+      Logger.d('✅ Order $orderId removed from local state ($initialCount → $finalCount orders)');
       
       // Invalidate cache when order is removed
       final currentUser = Supabase.instance.client.auth.currentUser;
@@ -2012,7 +2013,7 @@ class OrderProvider extends ChangeNotifier {
       
       notifyListeners();
     } else {
-      print('⚠️  Order $orderId not found in local state (may already be removed)');
+      Logger.d('⚠️  Order $orderId not found in local state (may already be removed)');
     }
   }
   
@@ -2043,7 +2044,7 @@ class OrderProvider extends ChangeNotifier {
       }
     } catch (e) {
       // Silently fail - we already have cached data
-      print('⚠️ Background refresh failed: $e');
+      Logger.d('⚠️ Background refresh failed: $e');
     }
   }
 

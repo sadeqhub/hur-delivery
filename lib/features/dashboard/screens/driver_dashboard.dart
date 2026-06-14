@@ -48,6 +48,8 @@ import '../widgets/driver_map_section.dart';
 import '../widgets/driver_bottom_nav.dart';
 import '../widgets/driver_header_buttons.dart';
 import '../widgets/driver_sidebar.dart';
+import '../../../core/utils/logger.dart';
+import '../data/dashboard_repository.dart';
 
 // ---------------------------------------------------------------------------
 // Public entry point — provides dashboard-scoped providers then renders the
@@ -200,7 +202,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
     // Force refresh map route which will rebuild all annotations without destroying the geocoding cache
     _refreshMapRoute(order);
 
-    print('🔄 Rebuilding annotations for order ${order.id} after swipe');
+    Logger.d('🔄 Rebuilding annotations for order ${order.id} after swipe');
   }
 
   // Bulk order methods removed - bulk orders are no longer supported
@@ -434,7 +436,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
                 message.contains(loc.maintenanceMode)) {
               if (mounted) MaintenanceModeDialog.show(context, 'driver');
             } else {
-              print('❌ Error toggling online status: $e');
+              Logger.d('❌ Error toggling online status: $e');
               // Show a generic error so the driver knows it failed.
               if (mounted) {
                 showHeaderNotification(
@@ -759,10 +761,10 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         return;
       }
 
-      print('🚫 Rejecting order $orderId');
+      Logger.d('🚫 Rejecting order $orderId');
 
       // STEP 1: Clear map annotations BEFORE rejecting
-      print('🧹 STEP 1: Clearing routes and markers for rejected order');
+      Logger.d('🧹 STEP 1: Clearing routes and markers for rejected order');
       try {
         await StateOfTheArtNavigation().clearAll();
       } catch (_) {}
@@ -783,13 +785,13 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       }
 
       // STEP 3: Clear annotations again after rejection
-      print('🧹 STEP 3: Post-rejection clearing');
+      Logger.d('🧹 STEP 3: Post-rejection clearing');
       try {
         await StateOfTheArtNavigation().clearAll();
       } catch (_) {}
 
       // STEP 4: Force immediate removal from local state
-      print('🧹 STEP 4: Removing order from local state');
+      Logger.d('🧹 STEP 4: Removing order from local state');
       if (mounted) {
         orderProvider.removeOrderFromLocalState(orderId);
       }
@@ -811,9 +813,9 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         );
       }
 
-      print('✅ Order $orderId rejected successfully and annotations cleared');
+      Logger.d('✅ Order $orderId rejected successfully and annotations cleared');
     } catch (e) {
-      print('❌ Error rejecting order: $e');
+      Logger.d('❌ Error rejecting order: $e');
       if (mounted) {
         final loc = AppLocalizations.of(context);
         showHeaderNotification(
@@ -834,15 +836,15 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
     // Initialize or reinitialize PageController when orders change
     if (_lastOrderListHash != currentHash ||
         _orderCardsPageController == null) {
-      print('🔄 Order list changed - reinitializing PageController');
-      print('   Old hash: $_lastOrderListHash');
-      print('   New hash: $currentHash');
+      Logger.d('🔄 Order list changed - reinitializing PageController');
+      Logger.d('   Old hash: $_lastOrderListHash');
+      Logger.d('   New hash: $currentHash');
 
       _lastOrderListHash = currentHash;
 
       // Clear geocoding cache when orders change to avoid stale addresses
       _geocodedAddresses.clear();
-      print(
+      Logger.d(
           '🗺️ Cleared geocoding cache (${_geocodedAddresses.length} entries)');
 
       // Find index of first pending order (if only one exists)
@@ -854,7 +856,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       if (pendingItems.length == 1) {
         // Auto-scroll to the single pending item
         initialPage = allItemsToShow.indexOf(pendingItems.first);
-        print('🎯 Auto-scrolling to pending item at index $initialPage');
+        Logger.d('🎯 Auto-scrolling to pending item at index $initialPage');
       }
 
       // Ensure index is within bounds
@@ -1004,7 +1006,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
                           .setCurrentIndex(index);
 
                       final item = allItemsToShow[index];
-                      print('📄 Switched to card $index: ${item.id}');
+                      Logger.d('📄 Switched to card $index: ${item.id}');
                     },
                     itemBuilder: (context, index) {
                       final item = allItemsToShow[index];
@@ -2285,20 +2287,20 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   Future<void> _ensureOrderProofThenDeliver(dynamic order) async {
     final orderProvider = context.read<OrderProvider>();
 
-    print('🔍 Checking if order ${order.id} has proof...');
+    Logger.d('🔍 Checking if order ${order.id} has proof...');
     final hasProof = await orderProvider.hasOrderProof(order.id);
-    print('📸 Order ${order.id} proof status: $hasProof');
+    Logger.d('📸 Order ${order.id} proof status: $hasProof');
 
     if (hasProof) {
-      print('✅ Proof exists, proceeding to mark as delivered...');
+      Logger.d('✅ Proof exists, proceeding to mark as delivered...');
       // INSTANT CLEAR: Clear annotations immediately before marking as delivered
-      print(
+      Logger.d(
           '🧹 INSTANT CLEAR: Clearing annotations before delivery (proof exists)');
       StateOfTheArtNavigation().clearAll().catchError((e) {
-        print('⚠️ Error in instant clear: $e');
+        Logger.d('⚠️ Error in instant clear: $e');
       });
       StateOfTheArtNavigation().clearOrder(order.id).catchError((e) {
-        print('⚠️ Error clearing specific order: $e');
+        Logger.d('⚠️ Error clearing specific order: $e');
       });
 
       // Proof exists, proceed with delivery confirmation
@@ -2306,7 +2308,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       return;
     }
 
-    print('⚠️ No proof found, showing upload dialog...');
+    Logger.d('⚠️ No proof found, showing upload dialog...');
     if (!mounted) return;
 
     // No proof exists, show upload dialog
@@ -2332,40 +2334,40 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
             child: _OrderProofUploader(
               orderId: order.id,
               onUploaded: () async {
-                print('📸 ========================================');
-                print('📸 ORDER PROOF UPLOADED CALLBACK TRIGGERED');
-                print('📸 Order ID: ${order.id}');
-                print('📸 Time: ${DateTime.now()}');
-                print('📸 ========================================');
+                Logger.d('📸 ========================================');
+                Logger.d('📸 ORDER PROOF UPLOADED CALLBACK TRIGGERED');
+                Logger.d('📸 Order ID: ${order.id}');
+                Logger.d('📸 Time: ${DateTime.now()}');
+                Logger.d('📸 ========================================');
 
                 try {
                   // INSTANT CLEAR: Clear annotations immediately when proof is uploaded
-                  print(
+                  Logger.d(
                       '🧹 INSTANT CLEAR: Clearing annotations (proof uploaded)');
                   StateOfTheArtNavigation().clearAll().catchError((e) {
-                    print('⚠️ Error in instant clear: $e');
+                    Logger.d('⚠️ Error in instant clear: $e');
                   });
                   StateOfTheArtNavigation()
                       .clearOrder(order.id)
                       .catchError((e) {
-                    print('⚠️ Error clearing specific order: $e');
+                    Logger.d('⚠️ Error clearing specific order: $e');
                   });
 
                   // CRITICAL: Mark as delivered FIRST, then close the bottom sheet
                   // Skip confirmation dialog since uploading proof is the confirmation
-                  print(
+                  Logger.d(
                       '🚚 Marking order as delivered with skip confirmation...');
                   await _markOrderDelivered(order.id, skipConfirmation: true);
-                  print('✅ Order marked as delivered successfully');
+                  Logger.d('✅ Order marked as delivered successfully');
 
                   // Close the bottom sheet
-                  print('🚪 Closing bottom sheet...');
+                  Logger.d('🚪 Closing bottom sheet...');
                   if (Navigator.canPop(ctx)) {
                     Navigator.pop(ctx);
                   }
-                  print('✅ Bottom sheet closed');
+                  Logger.d('✅ Bottom sheet closed');
                 } catch (e) {
-                  print('❌ Error in onUploaded callback: $e');
+                  Logger.d('❌ Error in onUploaded callback: $e');
                   // Still close the bottom sheet even if there's an error
                   if (Navigator.canPop(ctx)) {
                     Navigator.pop(ctx);
@@ -3317,18 +3319,18 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
 
     // Only proceed if confirmed
     if (!confirmed) {
-      print('❌ Delivery not confirmed by user');
+      Logger.d('❌ Delivery not confirmed by user');
       return;
     }
 
-    print('✅ Delivery confirmed (skipConfirmation: $skipConfirmation)');
+    Logger.d('✅ Delivery confirmed (skipConfirmation: $skipConfirmation)');
 
     // INSTANT CLEAR: Clear annotations IMMEDIATELY when user confirms
     // Fire-and-forget async clear - don't wait for it
-    print(
+    Logger.d(
         '🧹 INSTANT CLEAR: Clearing annotations immediately (fire-and-forget)');
     StateOfTheArtNavigation().clearAll().catchError((e) {
-      print('⚠️ Error in instant clear: $e');
+      Logger.d('⚠️ Error in instant clear: $e');
     });
     _mapWidgetKey?.currentState?.forceClearAnnotations();
 
@@ -3337,27 +3339,27 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       final nav = StateOfTheArtNavigation();
       // Clear this specific order's markers and route
       nav.clearOrder(orderId).catchError((e) {
-        print('⚠️ Error clearing specific order: $e');
+        Logger.d('⚠️ Error clearing specific order: $e');
       });
     } catch (e) {
-      print('⚠️ Error in order-specific clear: $e');
+      Logger.d('⚠️ Error in order-specific clear: $e');
     }
 
     try {
-      print('🚚 ===========================================');
-      print('🚚 MARKING ORDER AS DELIVERED');
-      print('🚚 Order ID: $orderId');
-      print('🚚 Time: ${DateTime.now()}');
-      print('🚚 ===========================================');
+      Logger.d('🚚 ===========================================');
+      Logger.d('🚚 MARKING ORDER AS DELIVERED');
+      Logger.d('🚚 Order ID: $orderId');
+      Logger.d('🚚 Time: ${DateTime.now()}');
+      Logger.d('🚚 ===========================================');
 
       // STEP 1: Clear ONLY this specific order's annotations (not all orders)
-      print('🧹 STEP 1: CLEARING ROUTES AND MARKERS FOR ORDER $orderId ONLY');
+      Logger.d('🧹 STEP 1: CLEARING ROUTES AND MARKERS FOR ORDER $orderId ONLY');
       try {
         // Only clear the delivered order, keep other orders' cached annotations
         await StateOfTheArtNavigation().clearOrder(orderId);
-        print('✅ Cleared annotations for delivered order $orderId only');
+        Logger.d('✅ Cleared annotations for delivered order $orderId only');
       } catch (e) {
-        print('⚠️ Error clearing order-specific annotations: $e');
+        Logger.d('⚠️ Error clearing order-specific annotations: $e');
       }
 
       // STEP 2: Mark order as delivered
@@ -3366,11 +3368,11 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
 
       if (!success) {
         // If delivery marking failed, show error and don't continue cleanup
-        print('❌ Failed to mark order as delivered');
+        Logger.d('❌ Failed to mark order as delivered');
 
         // Get the specific error message from OrderProvider
         final errorMessage = context.read<OrderProvider>().error;
-        print('🔍 Specific error from provider: $errorMessage');
+        Logger.d('🔍 Specific error from provider: $errorMessage');
 
         if (mounted) {
           // Show detailed error dialog for debugging
@@ -3447,18 +3449,18 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       }
 
       // STEP 3: Clear annotations again immediately after to catch any stragglers
-      print('🧹 STEP 3: POST-DELIVERY CLEARING');
+      Logger.d('🧹 STEP 3: POST-DELIVERY CLEARING');
       try {
         // Clear all annotations
         await StateOfTheArtNavigation().clearAll();
         // Also clear this specific order
         await StateOfTheArtNavigation().clearOrder(orderId);
       } catch (e) {
-        print('⚠️ Error in post-delivery clear: $e');
+        Logger.d('⚠️ Error in post-delivery clear: $e');
       }
 
       // STEP 4: Force immediate removal from local state
-      print('🧹 STEP 4: REMOVING ORDER FROM LOCAL STATE');
+      Logger.d('🧹 STEP 4: REMOVING ORDER FROM LOCAL STATE');
       if (mounted) {
         final orderProvider = context.read<OrderProvider>();
         // The subscription will handle the removal, but we force a manual removal for immediate effect
@@ -3467,7 +3469,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       }
 
       // STEP 5: Clear cached orders and force map refresh
-      print('🧹 STEP 5: CLEARING CACHED ORDERS AND REFRESHING MAP');
+      Logger.d('🧹 STEP 5: CLEARING CACHED ORDERS AND REFRESHING MAP');
       if (mounted) {
         setState(() {
           _cachedActiveOrders = null;
@@ -3481,7 +3483,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
               StateOfTheArtNavigation().clearAll();
               // Note: StateOfTheArtNavigation().clearAll() already handles all route/marker clearing
             } catch (e) {
-              print('⚠️ Error in post-frame clear: $e');
+              Logger.d('⚠️ Error in post-frame clear: $e');
             }
           }
         });
@@ -3494,9 +3496,9 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         type: NotificationType.success,
       );
 
-      print('✅ Order delivery process complete - route cleared');
+      Logger.d('✅ Order delivery process complete - route cleared');
     } catch (e) {
-      print('❌ Error marking order as delivered: $e');
+      Logger.d('❌ Error marking order as delivered: $e');
       if (mounted) {
         showHeaderNotification(
           context,
@@ -3511,16 +3513,13 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   void _callMerchant(String merchantId) async {
     // Fetch merchant details from users table
     try {
-      print('📞 Fetching merchant details for: $merchantId');
+      Logger.d('📞 Fetching merchant details for: $merchantId');
 
-      final merchantResponse = await Supabase.instance.client
-          .from('users')
-          .select('id, phone, name, store_name')
-          .eq('id', merchantId)
-          .maybeSingle();
+      final merchantResponse =
+          await DashboardRepository.instance.getMerchantDetails(merchantId);
 
       if (merchantResponse == null) {
-        print(
+        Logger.d(
             '⚠️ Merchant not found in database (merchant may have been deleted)');
         if (mounted) {
           showHeaderNotification(
@@ -3538,7 +3537,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
           'التاجر';
       final merchantPhone = merchantResponse['phone'] as String;
 
-      print('✅ Merchant found: $merchantName - $merchantPhone');
+      Logger.d('✅ Merchant found: $merchantName - $merchantPhone');
 
       if (mounted) {
         _showContactDialog(
@@ -3551,7 +3550,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         );
       }
     } catch (e) {
-      print('❌ Error fetching merchant: $e');
+      Logger.d('❌ Error fetching merchant: $e');
       if (mounted) {
         showHeaderNotification(
           context,
@@ -4034,7 +4033,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         throw Exception(AppLocalizations.of(context).invalidCoordinates);
       }
 
-      print('📍 Opening Google Maps with: $latitude, $longitude');
+      Logger.d('📍 Opening Google Maps with: $latitude, $longitude');
 
       // Try multiple Google Maps URLs in order of preference
       final urls = [
@@ -4050,7 +4049,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       for (final url in urls) {
         try {
           final uri = Uri.parse(url);
-          print('   Trying: $url');
+          Logger.d('   Trying: $url');
 
           // For custom schemes (google.navigation, comgooglemaps), try to launch directly
           if (url.startsWith('google.navigation:') ||
@@ -4059,25 +4058,25 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
               final launched =
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
               if (launched) {
-                print('   ✅ Opened successfully with: $url');
+                Logger.d('   ✅ Opened successfully with: $url');
                 opened = true;
                 break;
               }
             } catch (e) {
-              print('   ❌ Failed: $e');
+              Logger.d('   ❌ Failed: $e');
               continue; // Try next URL
             }
           } else {
             // For https URLs, check first then launch
             if (await canLaunchUrl(uri)) {
               await launchUrl(uri, mode: LaunchMode.externalApplication);
-              print('   ✅ Opened successfully with: $url');
+              Logger.d('   ✅ Opened successfully with: $url');
               opened = true;
               break;
             }
           }
         } catch (e) {
-          print('   ❌ Failed: $e');
+          Logger.d('   ❌ Failed: $e');
           continue; // Try next URL
         }
       }
@@ -4092,7 +4091,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         );
       }
     } catch (e) {
-      print('❌ Google Maps error: $e');
+      Logger.d('❌ Google Maps error: $e');
       if (mounted) {
         showHeaderNotification(
           context,
@@ -4114,7 +4113,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         throw Exception(AppLocalizations.of(context).invalidCoordinates);
       }
 
-      print('🗺️ Opening Waze with: $latitude, $longitude');
+      Logger.d('🗺️ Opening Waze with: $latitude, $longitude');
 
       // Try multiple Waze URLs in order of preference
       final urls = [
@@ -4130,7 +4129,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       for (final url in urls) {
         try {
           final uri = Uri.parse(url);
-          print('   Trying: $url');
+          Logger.d('   Trying: $url');
 
           // For waze:// scheme, try to launch directly
           if (url.startsWith('waze://')) {
@@ -4138,25 +4137,25 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
               final launched =
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
               if (launched) {
-                print('   ✅ Opened successfully with: $url');
+                Logger.d('   ✅ Opened successfully with: $url');
                 opened = true;
                 break;
               }
             } catch (e) {
-              print('   ❌ Failed: $e');
+              Logger.d('   ❌ Failed: $e');
               continue; // Try next URL
             }
           } else {
             // For https URLs, check first then launch
             if (await canLaunchUrl(uri)) {
               await launchUrl(uri, mode: LaunchMode.externalApplication);
-              print('   ✅ Opened successfully with: $url');
+              Logger.d('   ✅ Opened successfully with: $url');
               opened = true;
               break;
             }
           }
         } catch (e) {
-          print('   ❌ Failed: $e');
+          Logger.d('   ❌ Failed: $e');
           continue; // Try next URL
         }
       }
@@ -4171,7 +4170,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         );
       }
     } catch (e) {
-      print('❌ Waze error: $e');
+      Logger.d('❌ Waze error: $e');
       if (mounted) {
         showHeaderNotification(
           context,
@@ -4214,17 +4213,17 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    print('🔄 App lifecycle changed to $state');
+    Logger.d('🔄 App lifecycle changed to $state');
 
     // When app is detached (swiped away from recent apps), set driver offline
     // Note: We don't trigger on 'paused' as that happens when switching apps temporarily
     if (state == AppLifecycleState.detached) {
-      print('   Setting driver offline');
+      Logger.d('   Setting driver offline');
       _setDriverOfflineOnAppClose();
     }
     // When app is resumed, ensure UI is stable - don't clear cache
     else if (state == AppLifecycleState.resumed) {
-      print('   App resumed - maintaining cached orders for stability');
+      Logger.d('   App resumed - maintaining cached orders for stability');
       // Don't clear _cachedActiveOrders - this prevents flickering
       // The Consumer will update with fresh data naturally
     }
@@ -4235,10 +4234,10 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       final authProvider = context.read<AuthProvider>();
       if (authProvider.user != null && _isOnline) {
         await authProvider.setOnlineStatus(false);
-        print('✅ Driver set to offline due to app close');
+        Logger.d('✅ Driver set to offline due to app close');
       }
     } catch (e) {
-      print('❌ Error setting driver offline: $e');
+      Logger.d('❌ Error setting driver offline: $e');
     }
   }
 
@@ -4251,7 +4250,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
     setState(() {
       _hasLocationAlwaysPermission = isAlways;
     });
-    print(
+    Logger.d(
         '📍 Location Always Permission (Geolocator): ${isAlways ? "✅ Always" : "❌ $geoPermission"}');
   }
 
@@ -4359,7 +4358,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
                   _showLocationPermissionDialog();
                 } else {
                   // Permission granted, initialize dashboard using shared method
-                  print(
+                  Logger.d(
                       '✅ Permission granted! Starting full initialization...');
                   await _initializeDashboardWithPermission();
 
@@ -4496,32 +4495,32 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   Future<void> _updateDriverLocation() async {
     // Only update if driver is online
     if (!_isOnline) {
-      print('ℹ️ Skipping location update - driver is offline');
+      Logger.d('ℹ️ Skipping location update - driver is offline');
       return;
     }
 
     try {
-      print('🔄 _updateDriverLocation called...');
+      Logger.d('🔄 _updateDriverLocation called...');
       final locationProvider = context.read<LocationProvider>();
       final authProvider = context.read<AuthProvider>();
 
       // ANR FIX: Add timeout to prevent blocking main thread
       // Get current location with timeout
-      print('   📍 Getting current location from GPS...');
+      Logger.d('   📍 Getting current location from GPS...');
       final position = await locationProvider
           .getCurrentLocation()
           .timeout(const Duration(seconds: 5), onTimeout: () {
-        print('   ⚠️ Location fetch timed out');
+        Logger.d('   ⚠️ Location fetch timed out');
         return null;
       });
 
       if (position != null && authProvider.user != null && _isOnline) {
-        print(
+        Logger.d(
             '   ✅ GPS position obtained: ${position.latitude}, ${position.longitude}');
 
         // ANR FIX: Add timeout to database update
         // Update location in database (with full GPS data)
-        print('   💾 Saving to database...');
+        Logger.d('   💾 Saving to database...');
         final updateResult = await authProvider
             .updateUserLocation(
           position.latitude,
@@ -4531,29 +4530,29 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
           speed: position.speed,
         )
             .timeout(const Duration(seconds: 5), onTimeout: () {
-          print('   ⚠️ Database update timed out');
+          Logger.d('   ⚠️ Database update timed out');
           return false;
         });
 
         if (updateResult) {
-          print(
+          Logger.d(
               '   ✅ Driver location updated in DB: ${position.latitude}, ${position.longitude}');
         } else {
-          print('   ❌ Failed to update driver location in DB');
-          print('   ❌ AuthProvider error: ${authProvider.error}');
+          Logger.d('   ❌ Failed to update driver location in DB');
+          Logger.d('   ❌ AuthProvider error: ${authProvider.error}');
         }
-        print(
+        Logger.d(
             '   📡 LocationProvider currentPosition: ${locationProvider.currentPosition}');
 
         // Check dropoff proximity for active orders (non-blocking)
         unawaited(_checkDropoffProximity(position));
       } else {
-        print(
+        Logger.d(
             '   ❌ Cannot update: position=$position, user=${authProvider.user != null}');
       }
     } catch (e) {
-      print('❌ Error updating driver location: $e');
-      print('   Stack: ${StackTrace.current}');
+      Logger.d('❌ Error updating driver location: $e');
+      Logger.d('   Stack: ${StackTrace.current}');
     }
   }
 
@@ -4579,51 +4578,49 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       // Check each order
       for (final order in activeOrders) {
         try {
-          final result = await Supabase.instance.client.rpc(
-            'check_dropoff_proximity',
-            params: {
-              'p_order_id': order.id,
-              'p_driver_id': authProvider.user!.id,
-              'p_driver_latitude': driverPosition.latitude,
-              'p_driver_longitude': driverPosition.longitude,
-            },
+          final result =
+              await DashboardRepository.instance.checkDropoffProximity(
+            orderId: order.id,
+            driverId: authProvider.user!.id,
+            driverLatitude: driverPosition.latitude,
+            driverLongitude: driverPosition.longitude,
           );
 
           if (result is Map && result['timer_stopped'] == true) {
-            print(
+            Logger.d(
                 '✅ Timer stopped for order ${order.id} - driver reached dropoff');
             // Reload orders to get updated timer status
             await orderProvider.initialize();
           }
         } catch (e) {
-          print(
+          Logger.d(
               '⚠️ Error checking dropoff proximity for order ${order.id}: $e');
         }
       }
     } catch (e) {
-      print('❌ Error in _checkDropoffProximity: $e');
+      Logger.d('❌ Error in _checkDropoffProximity: $e');
     }
   }
 
   Future<void> _updateDriverLocationFromDatabase() async {
     try {
-      print('🔄 _updateDriverLocationFromDatabase called...');
+      Logger.d('🔄 _updateDriverLocationFromDatabase called...');
       final authProvider = context.read<AuthProvider>();
       final locationProvider = context.read<LocationProvider>();
 
       if (authProvider.user != null) {
-        print('   📥 Fetching user data from database...');
+        Logger.d('   📥 Fetching user data from database...');
         // ANR FIX: Add timeout to prevent blocking main thread
         // Fetch latest user data from database with timeout
         await authProvider.refreshUser().timeout(const Duration(seconds: 5),
             onTimeout: () {
-          print('   ⚠️ User refresh timed out');
+          Logger.d('   ⚠️ User refresh timed out');
         });
 
         // Update location provider with database location
         if (authProvider.user?.latitude != null &&
             authProvider.user?.longitude != null) {
-          print(
+          Logger.d(
               '   ✅ Got DB location: ${authProvider.user!.latitude}, ${authProvider.user!.longitude}');
 
           // Create a mock Position object from database coordinates
@@ -4635,19 +4632,19 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
           // Update location provider's current position
           locationProvider.updateCurrentPosition(dbPosition);
 
-          print('   ✅ LocationProvider updated with DB location');
-          print(
+          Logger.d('   ✅ LocationProvider updated with DB location');
+          Logger.d(
               '   📡 LocationProvider currentPosition: ${locationProvider.currentPosition}');
         } else {
-          print(
+          Logger.d(
               '   ⚠️ No location in database: lat=${authProvider.user?.latitude}, lng=${authProvider.user?.longitude}');
         }
       } else {
-        print('   ❌ No user logged in');
+        Logger.d('   ❌ No user logged in');
       }
     } catch (e) {
-      print('❌ Error updating driver location from database: $e');
-      print('   Stack: ${StackTrace.current}');
+      Logger.d('❌ Error updating driver location from database: $e');
+      Logger.d('   Stack: ${StackTrace.current}');
     }
   }
 
@@ -4703,12 +4700,12 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
                 SimpleLocationUpdateWidget(
                   driverId: authProvider.user!.id,
                   onLocationUpdate: (orderId, lat, lng) {
-                    print(
+                    Logger.d(
                         '📍 Driver received location update for order $orderId: $lat, $lng');
                     _handleLocationUpdate();
                   },
                   onRouteRebuildNeeded: () {
-                    print(
+                    Logger.d(
                         '🔄 Route rebuild requested from location update popup');
                     _forceMapRouteRebuild();
                   },
@@ -5148,7 +5145,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
 
   /// Aggressive route clearing for completed orders
   void _aggressiveRouteClear() {
-    print('🚨 AGGRESSIVE ROUTE CLEAR - Multiple attempts');
+    Logger.d('🚨 AGGRESSIVE ROUTE CLEAR - Multiple attempts');
 
     // Clear through route manager
     // legacy route manager removed
@@ -5159,7 +5156,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   /// Show location update popup to driver when coordinates change
   void _showLocationUpdatePopupToDriver(dynamic order) {
     if (order == null) return;
-    print('📍 Showing location update popup for order: ${order.id}');
+    Logger.d('📍 Showing location update popup for order: ${order.id}');
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -5263,7 +5260,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
 
   /// Handle location update - simplified
   Future<void> _handleLocationUpdate() async {
-    print('🔄 Handling location update - refreshing order data...');
+    Logger.d('🔄 Handling location update - refreshing order data...');
 
     try {
       // Refresh order provider to get updated coordinates
@@ -5278,19 +5275,19 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
           // to detect coordinate changes in didUpdateWidget
         });
 
-        print(
+        Logger.d(
             '✅ Location update handled - map will detect coordinate changes and update');
-        print(
+        Logger.d(
             '   Map widget will clear old annotations and create new ones automatically');
       }
     } catch (e) {
-      print('❌ Error handling location update: $e');
+      Logger.d('❌ Error handling location update: $e');
     }
   }
 
   /// Force map route rebuild - called from location update popup
   Future<void> _forceMapRouteRebuild() async {
-    print(
+    Logger.d(
         '🔄 Forcing map route rebuild after location update acknowledgment...');
 
     try {
@@ -5307,18 +5304,18 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
             orderProvider.getAllActiveOrdersForDriver(driverId);
         if (activeOrders.isNotEmpty) {
           final currentOrder = activeOrders.first;
-          print('📍 Active order found: ${currentOrder.id}');
-          print(
+          Logger.d('📍 Active order found: ${currentOrder.id}');
+          Logger.d(
               '📍 Delivery coordinates: (${currentOrder.deliveryLatitude}, ${currentOrder.deliveryLongitude})');
 
           // CRITICAL: Clear the coordinate cache to force recalculation
           // Access the map widget state and clear its cache
           if (_mapWidgetKey?.currentState != null) {
-            print('🧹 Clearing coordinate cache in map widget...');
+            Logger.d('🧹 Clearing coordinate cache in map widget...');
             _mapWidgetKey!.currentState!.clearCoordinateCache();
 
             // Directly trigger route recalculation on the map widget
-            print('🔄 Directly triggering route recalculation...');
+            Logger.d('🔄 Directly triggering route recalculation...');
             await _mapWidgetKey!.currentState!
                 .forceRouteRecalculation(currentOrder);
           }
@@ -5329,16 +5326,16 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
               // Force rebuild to ensure all UI elements reflect the changes
             });
 
-            print('✅ Route recalculation completed and UI updated');
+            Logger.d('✅ Route recalculation completed and UI updated');
           }
         } else {
-          print('⚠️  No active orders found for route rebuild');
+          Logger.d('⚠️  No active orders found for route rebuild');
         }
       } else {
-        print('⚠️  No driver ID found for route rebuild');
+        Logger.d('⚠️  No driver ID found for route rebuild');
       }
     } catch (e) {
-      print('❌ Error forcing map route rebuild: $e');
+      Logger.d('❌ Error forcing map route rebuild: $e');
     }
   }
 
@@ -5350,20 +5347,20 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       final driverId = authProvider.user?.id;
 
       if (driverId == null) {
-        print('🧹 No driver ID - clearing all routes');
+        Logger.d('🧹 No driver ID - clearing all routes');
         // legacy route manager removed
         return;
       }
 
       final activeOrders = orderProvider.getAllActiveOrdersForDriver(driverId);
       if (activeOrders.isEmpty) {
-        print('🧹 No active orders - clearing all routes');
+        Logger.d('🧹 No active orders - clearing all routes');
         // legacy route manager removed
         return;
       }
 
       final currentOrder = activeOrders.first;
-      print(
+      Logger.d(
           '🔍 Recalculating route after customer location update for order ${currentOrder.id}');
 
       // Trigger state-of-the-art navigation to rebuild route using updated delivery coords
@@ -5372,20 +5369,20 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         // noop: forces rebuild so StateOfTheArtMapWidget re-reads activeOrder from provider
       });
     } catch (e) {
-      print('❌ Error applying strict route clearing: $e');
+      Logger.d('❌ Error applying strict route clearing: $e');
     }
   }
 
   /// Recreate pins and routes after location update (legacy method)
   Future<void> _recreatePinsAndRoutesAfterLocationUpdate() async {
-    print('🔄 Recreating pins and routes after location update');
+    Logger.d('🔄 Recreating pins and routes after location update');
 
     try {
       // Force refresh of the order provider to get updated locations
       final orderProvider = context.read<OrderProvider>();
       await orderProvider.initialize();
 
-      print('📍 Order provider refreshed after location update');
+      Logger.d('📍 Order provider refreshed after location update');
 
       // Get current active order with updated location
       final authProvider = context.read<AuthProvider>();
@@ -5396,29 +5393,29 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
             orderProvider.getAllActiveOrdersForDriver(driverId);
         if (activeOrders.isNotEmpty) {
           final currentOrder = activeOrders.first;
-          print('📍 Found active order: ${currentOrder.id}');
-          print(
+          Logger.d('📍 Found active order: ${currentOrder.id}');
+          Logger.d(
               '📍 Updated delivery location: ${currentOrder.deliveryLatitude}, ${currentOrder.deliveryLongitude}');
 
           // Clear existing route and markers first
-          print('🧹 Clearing existing route and markers...');
+          Logger.d('🧹 Clearing existing route and markers...');
           // legacy route manager removed
 
           // Clearing is immediate - no delay needed
 
           // Map will update automatically through coordinate change detection
-          print(
+          Logger.d(
               '🔄 Map will update automatically through coordinate change detection');
 
-          print('✅ Route recreation triggered for updated location');
+          Logger.d('✅ Route recreation triggered for updated location');
         } else {
-          print('📍 No active orders found after location update');
+          Logger.d('📍 No active orders found after location update');
         }
       } else {
-        print('📍 No driver ID found');
+        Logger.d('📍 No driver ID found');
       }
     } catch (e) {
-      print('❌ Error recreating pins and routes: $e');
+      Logger.d('❌ Error recreating pins and routes: $e');
     }
   }
 
@@ -6140,7 +6137,7 @@ class _OrderProofUploaderState extends State<_OrderProofUploader> {
           );
       if (!mounted) return;
       if (ok) {
-        print(
+        Logger.d(
             '✅ Order proof uploaded successfully, calling onUploaded callback...');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -6148,15 +6145,15 @@ class _OrderProofUploaderState extends State<_OrderProofUploader> {
         );
         // CRITICAL: Await the callback to ensure delivery is marked before continuing
         await widget.onUploaded();
-        print('✅ onUploaded callback completed');
+        Logger.d('✅ onUploaded callback completed');
       } else {
-        print('❌ Order proof upload failed');
+        Logger.d('❌ Order proof upload failed');
         final err = context.read<OrderProvider>().error ?? 'فشل رفع الصورة';
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(err)));
       }
     } catch (e) {
-      print('❌ Error during order proof upload: $e');
+      Logger.d('❌ Error during order proof upload: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('${AppLocalizations.of(context).errorColon}$e')));
@@ -6476,16 +6473,16 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
 
   // Public method to clear coordinate cache
   void clearCoordinateCache() {
-    print('🧹 Clearing coordinate cache from external call...');
+    Logger.d('🧹 Clearing coordinate cache from external call...');
     _lastRecalculatedOrderCoords = null;
   }
 
   // Public method to force route recalculation
   Future<void> forceRouteRecalculation(OrderModel order) async {
-    print('🔄 Force route recalculation called from external...');
+    Logger.d('🔄 Force route recalculation called from external...');
 
     if (!_isInitialized) {
-      print('⚠️  Map not initialized, cannot recalculate route');
+      Logger.d('⚠️  Map not initialized, cannot recalculate route');
       return;
     }
 
@@ -6503,9 +6500,9 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
       // 4. Add new annotations
       await _handleDeliveryLocationUpdate();
 
-      print('✅ Force route recalculation completed');
+      Logger.d('✅ Force route recalculation completed');
     } catch (e) {
-      print('❌ Error in force route recalculation: $e');
+      Logger.d('❌ Error in force route recalculation: $e');
       // Reset flag on error
       _isRecalculatingRoute = false;
     }
@@ -6515,7 +6512,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
   void initState() {
     super.initState();
     _mapboxAccessToken = const String.fromEnvironment('MAPBOX_ACCESS_TOKEN');
-    print('🗺️ Legacy bulletproof map widget removed');
+    Logger.d('🗺️ Legacy bulletproof map widget removed');
   }
 
   @override
@@ -6528,11 +6525,11 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
     if (_appliedStyleUri != null &&
         _appliedStyleUri != newStyle &&
         _mapboxMap != null) {
-      print('🎨 Theme changed — reloading map style: $newStyle');
+      Logger.d('🎨 Theme changed — reloading map style: $newStyle');
       _appliedStyleUri = newStyle;
       _customIconsLoaded = false; // Icons must be re-added after style reload
       _mapboxMap!.loadStyleURI(newStyle).catchError((e) {
-        print('❌ Error reloading map style: $e');
+        Logger.d('❌ Error reloading map style: $e');
       });
     } else {
       _appliedStyleUri = newStyle;
@@ -6543,15 +6540,15 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
     setState(() {
       _mapboxMap = mapboxMap;
     });
-    print('🗺️ Map created');
+    Logger.d('🗺️ Map created');
 
     // Create point annotation manager for driver marker
     try {
       _pointAnnotationManager =
           await mapboxMap.annotations.createPointAnnotationManager();
-      print('✅ Point annotation manager created');
+      Logger.d('✅ Point annotation manager created');
     } catch (e) {
-      print('⚠️ Error creating point annotation manager: $e');
+      Logger.d('⚠️ Error creating point annotation manager: $e');
     }
 
     // Load custom icons (driver marker)
@@ -6561,7 +6558,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
     try {
       final initialized = await _navigationSystem.initialize(mapboxMap);
       if (initialized) {
-        print('✅ Navigation system ready inside map widget');
+        Logger.d('✅ Navigation system ready inside map widget');
         if (widget.activeOrder != null) {
           await _navigationSystem
               .setActiveOrder(widget.activeOrder as OrderModel);
@@ -6569,10 +6566,10 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
           await _navigationSystem.clearAll();
         }
       } else {
-        print('⚠️ Navigation system failed to initialize');
+        Logger.d('⚠️ Navigation system failed to initialize');
       }
     } catch (e) {
-      print('❌ Error initializing navigation system: $e');
+      Logger.d('❌ Error initializing navigation system: $e');
     }
 
     // Add neighborhood labels (use a separate manager or reuse the existing one)
@@ -6581,7 +6578,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         // Neighborhood labels removed
       }
     } catch (e) {
-      print('⚠️ Error adding neighborhood labels to driver map: $e');
+      Logger.d('⚠️ Error adding neighborhood labels to driver map: $e');
     }
 
     // Update driver marker if location is available
@@ -6617,9 +6614,9 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         // Check if coordinates changed (with tolerance for floating point precision)
         if ((newLat - oldLat).abs() > 0.0001 ||
             (newLng - oldLng).abs() > 0.0001) {
-          print('📍 DELIVERY COORDINATES CHANGED - Recalculating route');
-          print('   Old: ($oldLat, $oldLng)');
-          print('   New: ($newLat, $newLng)');
+          Logger.d('📍 DELIVERY COORDINATES CHANGED - Recalculating route');
+          Logger.d('   Old: ($oldLat, $oldLng)');
+          Logger.d('   New: ($newLat, $newLng)');
           // Recalculate route WITHOUT calling notifyListeners
           // (that would cause a loop since we're already in a rebuild)
           _handleDeliveryLocationUpdate();
@@ -6652,9 +6649,9 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         await _navigationSystem
             .setActiveOrder(widget.activeOrder as OrderModel);
       }
-      print('✅ Active order set - ${widget.activeOrder!.id}');
+      Logger.d('✅ Active order set - ${widget.activeOrder!.id}');
     } catch (e) {
-      print('❌ Bulletproof: Error setting active order: $e');
+      Logger.d('❌ Bulletproof: Error setting active order: $e');
     }
   }
 
@@ -6667,7 +6664,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
 
     // Prevent concurrent recalculations (avoid loop)
     if (_isRecalculatingRoute) {
-      print('⚠️  Route recalculation already in progress, skipping...');
+      Logger.d('⚠️  Route recalculation already in progress, skipping...');
       return;
     }
 
@@ -6677,21 +6674,21 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         '${order.id}_${order.deliveryLatitude}_${order.deliveryLongitude}';
 
     if (_lastRecalculatedOrderCoords == coordsKey) {
-      print(
+      Logger.d(
           '⚠️  Route already recalculated for these coordinates, skipping...');
       return;
     }
 
     try {
       _isRecalculatingRoute = true;
-      print('📍 ===========================================');
-      print('📍 RECALCULATING ROUTE FOR LOCATION UPDATE');
-      print('📍 ===========================================');
-      print('   Order: ${order.id}');
-      print('   Old coords: $_lastRecalculatedOrderCoords');
-      print(
+      Logger.d('📍 ===========================================');
+      Logger.d('📍 RECALCULATING ROUTE FOR LOCATION UPDATE');
+      Logger.d('📍 ===========================================');
+      Logger.d('   Order: ${order.id}');
+      Logger.d('   Old coords: $_lastRecalculatedOrderCoords');
+      Logger.d(
           '   New coords: (${order.deliveryLatitude}, ${order.deliveryLongitude})');
-      print('   Coords key: $coordsKey');
+      Logger.d('   Coords key: $coordsKey');
 
       // CRITICAL: Clear coordinate cache to force recalculation
       _lastRecalculatedOrderCoords = '';
@@ -6703,12 +6700,12 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
       // Remember these coordinates to prevent duplicate recalculations
       _lastRecalculatedOrderCoords = coordsKey;
 
-      print('✅ Route recalculated with new customer location');
-      print('   Old annotations cleared, new route created');
-      print('📍 ===========================================');
+      Logger.d('✅ Route recalculated with new customer location');
+      Logger.d('   Old annotations cleared, new route created');
+      Logger.d('📍 ===========================================');
     } catch (e) {
-      print('❌ Error recalculating route: $e');
-      print('   Stack trace: ${StackTrace.current}');
+      Logger.d('❌ Error recalculating route: $e');
+      Logger.d('   Stack trace: ${StackTrace.current}');
     } finally {
       _isRecalculatingRoute = false;
     }
@@ -6724,9 +6721,9 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         await _pointAnnotationManager!.delete(_driverMarker!);
         _driverMarker = null;
       }
-      print('🧹 All annotations cleared');
+      Logger.d('🧹 All annotations cleared');
     } catch (e) {
-      print('❌ Bulletproof: Error clearing annotations: $e');
+      Logger.d('❌ Bulletproof: Error clearing annotations: $e');
     }
   }
 
@@ -6747,9 +6744,9 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
       );
 
       _customIconsLoaded = true;
-      print('✅ Custom icons loaded (driver bike marker)');
+      Logger.d('✅ Custom icons loaded (driver bike marker)');
     } catch (e) {
-      print('❌ Error loading custom icons: $e');
+      Logger.d('❌ Error loading custom icons: $e');
     }
   }
 
@@ -6819,7 +6816,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
     final img = await picture.toImage(iconSize.toInt(), iconSize.toInt());
     final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
 
-    print(
+    Logger.d(
         '✅ Driver location marker created (blue circle with black arrowhead${heading != null ? ', heading: $heading°' : ''})');
     return byteData!.buffer.asUint8List();
   }
@@ -6852,13 +6849,13 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
           lng = widget.driverLocation.longitude;
           heading = widget.driverLocation.heading;
         } catch (e) {
-          print('❌ Cannot access coordinates from driverLocation: $e');
+          Logger.d('❌ Cannot access coordinates from driverLocation: $e');
           return;
         }
       }
 
       if (lat == null || lng == null) {
-        print('⚠️ Invalid driver location coordinates');
+        Logger.d('⚠️ Invalid driver location coordinates');
         return;
       }
 
@@ -6869,7 +6866,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
         try {
           await _pointAnnotationManager!.delete(markerToDelete);
         } catch (e) {
-          print('⚠️ Error deleting old driver marker: $e');
+          Logger.d('⚠️ Error deleting old driver marker: $e');
         }
       }
 
@@ -6897,10 +6894,10 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
           iconSize: 0.2,
         ),
       );
-      print(
+      Logger.d(
           '✅ Driver location marker updated (blue circle with black arrowhead${heading != null ? ', heading: $heading°' : ''})');
     } catch (e) {
-      print('❌ Error updating driver marker: $e');
+      Logger.d('❌ Error updating driver marker: $e');
     } finally {
       _isUpdatingDriverMarker = false;
     }
@@ -6941,7 +6938,7 @@ class _InteractiveMapWidgetState extends State<_InteractiveMapWidget> {
             onMapCreated: _onMapCreated,
             onStyleLoadedListener: (_) async {
               if (_mapboxMap == null) return;
-              print('🔄 Style loaded, restoring map state...');
+              Logger.d('🔄 Style loaded, restoring map state...');
               // Style reload wipes all custom images and annotations — restore them
               _customIconsLoaded = false;
               _driverMarker = null;
@@ -7192,7 +7189,7 @@ class _FloatingNavigationButtonState extends State<_FloatingNavigationButton>
   void _showFullRoute() {
     if (widget.mapboxMap == null || widget.activeOrder == null) return;
 
-    print('📹 Overview: Showing full route...');
+    Logger.d('📹 Overview: Showing full route...');
 
     // Get coordinates
     final pickupLat = widget.activeOrder.pickupLatitude;
@@ -7240,7 +7237,7 @@ class _FloatingNavigationButtonState extends State<_FloatingNavigationButton>
       MapAnimationOptions(duration: 1500),
     );
 
-    print('✅ Overview: Camera set to show full route at zoom $zoom');
+    Logger.d('✅ Overview: Camera set to show full route at zoom $zoom');
 
     // Close the expanded menu
     _toggleExpansion();

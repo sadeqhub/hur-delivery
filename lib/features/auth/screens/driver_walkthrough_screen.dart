@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../legal/screens/terms_conditions_screen.dart';
+import '../../../core/utils/logger.dart';
 
 class DriverWalkthroughScreen extends StatefulWidget {
   const DriverWalkthroughScreen({super.key});
@@ -73,7 +74,7 @@ class _DriverWalkthroughScreenState extends State<DriverWalkthroughScreen> {
         context.go('/driver-dashboard');
       }
     } catch (e) {
-      print('Error completing walkthrough: $e');
+      Logger.d('Error completing walkthrough: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context).errorOccurred(e.toString()))),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'notification_manager.dart';
+import '../utils/logger.dart';
 
 /// Notification Watcher Service
 /// 
@@ -17,15 +18,15 @@ class NotificationWatcher {
 
     final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
-      print('⚠️  Cannot watch notifications - user not authenticated');
+      Logger.d('⚠️  Cannot watch notifications - user not authenticated');
       return;
     }
 
-    print('\n═══════════════════════════════════════════════════════');
-    print('👁️  NOTIFICATION WATCHER: Starting');
-    print('═══════════════════════════════════════════════════════');
-    print('User ID: ${currentUser.id}');
-    print('═══════════════════════════════════════════════════════\n');
+    Logger.d('\n═══════════════════════════════════════════════════════');
+    Logger.d('👁️  NOTIFICATION WATCHER: Starting');
+    Logger.d('═══════════════════════════════════════════════════════');
+    Logger.d('User ID: ${currentUser.id}');
+    Logger.d('═══════════════════════════════════════════════════════\n');
 
     try {
       _subscription = Supabase.instance.client
@@ -45,10 +46,10 @@ class NotificationWatcher {
           // Mark as processed
           _processedIds.add(id);
           
-          print('\n🔔 New notification detected in database');
-          print('   ID: $id');
-          print('   Type: ${notification['type']}');
-          print('   Title: ${notification['title']}');
+          Logger.d('\n🔔 New notification detected in database');
+          Logger.d('   ID: $id');
+          Logger.d('   Type: ${notification['type']}');
+          Logger.d('   Title: ${notification['title']}');
           
           // Send push notification via Edge Function
           try {
@@ -68,19 +69,19 @@ class NotificationWatcher {
               skipDatabase: true, // Already in database
             );
             
-            print('   Result: ${success ? "✅ SENT" : "❌ FAILED"}');
+            Logger.d('   Result: ${success ? "✅ SENT" : "❌ FAILED"}');
             
           } catch (e) {
-            print('   ❌ Failed to send: $e');
+            Logger.d('   ❌ Failed to send: $e');
           }
         }
       });
 
       _isWatching = true;
-      print('✅ Notification watcher started successfully\n');
+      Logger.d('✅ Notification watcher started successfully\n');
 
     } catch (e) {
-      print('❌ Failed to start notification watcher: $e');
+      Logger.d('❌ Failed to start notification watcher: $e');
     }
   }
 
@@ -90,7 +91,7 @@ class NotificationWatcher {
     _subscription = null;
     _isWatching = false;
     _processedIds.clear();
-    print('🛑 Notification watcher stopped');
+    Logger.d('🛑 Notification watcher stopped');
   }
 
   /// Check if watching

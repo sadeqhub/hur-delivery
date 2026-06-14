@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import '../utils/logger.dart';
 
 class DeviceManager {
   static String? _deviceId;
@@ -27,7 +28,7 @@ class DeviceManager {
       
       return _deviceId!;
     } catch (e) {
-      print('Error getting device ID: $e');
+      Logger.d('Error getting device ID: $e');
       // Fallback to timestamp-based ID
       _deviceId = 'fallback_${DateTime.now().millisecondsSinceEpoch}';
       return _deviceId!;
@@ -69,7 +70,7 @@ class DeviceManager {
         'device': 'Unknown Device',
       };
     } catch (e) {
-      print('Error getting device info: $e');
+      Logger.d('Error getting device info: $e');
       return {
         'platform': 'Unknown',
         'device': 'Unknown Device',

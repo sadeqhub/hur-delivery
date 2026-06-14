@@ -5,6 +5,7 @@ import '../../../core/services/driver_location_service.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/utils/logger.dart';
 
 class SimpleLocationUpdateWidget extends StatefulWidget {
   final String driverId;
@@ -37,19 +38,19 @@ class _SimpleLocationUpdateWidgetState extends State<SimpleLocationUpdateWidget>
       try {
         await DriverLocationService.markDriverNotified(update.orderId);
         
-        print('📍 Location update acknowledged for order ${update.orderId}');
-        print('   New coordinates: (${update.deliveryLatitude}, ${update.deliveryLongitude})');
+        Logger.d('📍 Location update acknowledged for order ${update.orderId}');
+        Logger.d('   New coordinates: (${update.deliveryLatitude}, ${update.deliveryLongitude})');
         
         // Notify parent widget - this will trigger map recalculation
         widget.onLocationUpdate(update.orderId, update.deliveryLatitude, update.deliveryLongitude);
         
         // Trigger route rebuild to ensure map updates immediately
         if (widget.onRouteRebuildNeeded != null) {
-          print('🔄 Triggering route rebuild from popup acknowledgment');
+          Logger.d('🔄 Triggering route rebuild from popup acknowledgment');
           widget.onRouteRebuildNeeded!();
         }
       } catch (e) {
-        print('❌ Error acknowledging location update: $e');
+        Logger.d('❌ Error acknowledging location update: $e');
       }
     }
   }
@@ -127,7 +128,7 @@ class _SimpleLocationUpdateWidgetState extends State<SimpleLocationUpdateWidget>
   }
 
   void _startPolling() {
-    print('🔄 Starting simple location update polling every 3 seconds...');
+    Logger.d('🔄 Starting simple location update polling every 3 seconds...');
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
       _checkForLocationUpdates();
     });
@@ -135,7 +136,7 @@ class _SimpleLocationUpdateWidgetState extends State<SimpleLocationUpdateWidget>
 
   Future<void> _checkForLocationUpdates() async {
     try {
-      print('🔍 Checking for customer location updates...');
+      Logger.d('🔍 Checking for customer location updates...');
       
       // Query orders table directly for this driver's active orders
       // Only check orders where customer actually provided location (not auto-updated)
@@ -150,7 +151,7 @@ class _SimpleLocationUpdateWidgetState extends State<SimpleLocationUpdateWidget>
           .eq('coordinates_auto_updated', false); // Only real customer locations
 
       if (response.isNotEmpty) {
-        print('📍 Found ${response.length} orders with customer location updates');
+        Logger.d('📍 Found ${response.length} orders with customer location updates');
         
         for (final order in response) {
           final orderId = order['id'] as String;
@@ -161,7 +162,7 @@ class _SimpleLocationUpdateWidgetState extends State<SimpleLocationUpdateWidget>
           
           // Only notify if we haven't already notified for this order
           if (!_notifiedOrders.contains(orderId) && lat != null && lng != null) {
-            print('📍 New location update for order $orderId: $lat, $lng');
+            Logger.d('📍 New location update for order $orderId: $lat, $lng');
             _notifiedOrders.add(orderId);
             
             // Show popup immediately
@@ -172,17 +173,17 @@ class _SimpleLocationUpdateWidgetState extends State<SimpleLocationUpdateWidget>
           }
         }
       } else {
-        print('📍 No location updates found');
+        Logger.d('📍 No location updates found');
       }
     } catch (e) {
-      print('❌ Error checking for location updates: $e');
+      Logger.d('❌ Error checking for location updates: $e');
     }
   }
 
   void _showLocationUpdatePopup(String orderId, double lat, double lng, String? customerName, String? address) {
     if (!mounted) return;
     
-    print('📍 Showing location update popup for order $orderId');
+    Logger.d('📍 Showing location update popup for order $orderId');
     
     final isDark = Theme.of(context).brightness == Brightness.dark;
     

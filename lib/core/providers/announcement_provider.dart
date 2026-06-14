@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../shared/models/announcement_model.dart';
 import '../services/announcement_service.dart';
 import '../../shared/widgets/announcement_dialog.dart';
+import '../utils/logger.dart';
 
 /// Provider to manage and periodically check for announcements
 class AnnouncementProvider extends ChangeNotifier {
@@ -30,7 +31,7 @@ class AnnouncementProvider extends ChangeNotifier {
     _context = context;
     _isInitialized = true;
 
-    print('🔔 AnnouncementProvider initialized for role: $userRole');
+    Logger.d('🔔 AnnouncementProvider initialized for role: $userRole');
     
     // Check immediately on initialization
     await checkAndShowAnnouncements();
@@ -47,7 +48,7 @@ class AnnouncementProvider extends ChangeNotifier {
     if (!_context!.mounted) return;
 
     try {
-      print('🔍 Checking for announcements...');
+      Logger.d('🔍 Checking for announcements...');
       
       final announcements = await _announcementService
           .getUndismissedAnnouncements(_userRole!, _userId!);
@@ -61,7 +62,7 @@ class AnnouncementProvider extends ChangeNotifier {
         return;
       }
 
-      print('📢 Found ${newAnnouncements.length} new announcements to show');
+      Logger.d('📢 Found ${newAnnouncements.length} new announcements to show');
 
       // Show each announcement
       for (final announcement in newAnnouncements) {
@@ -86,7 +87,7 @@ class AnnouncementProvider extends ChangeNotifier {
       _announcements = announcements;
       notifyListeners();
     } catch (e) {
-      print('❌ Error checking announcements: $e');
+      Logger.d('❌ Error checking announcements: $e');
     }
   }
 
@@ -94,7 +95,7 @@ class AnnouncementProvider extends ChangeNotifier {
   void stopChecking() {
     _checkTimer?.cancel();
     _checkTimer = null;
-    print('⏹️ Stopped checking for announcements');
+    Logger.d('⏹️ Stopped checking for announcements');
   }
 
   /// Resume checking for announcements
@@ -103,7 +104,7 @@ class AnnouncementProvider extends ChangeNotifier {
       _checkTimer = Timer.periodic(const Duration(seconds: 5), (_) {
         checkAndShowAnnouncements();
       });
-      print('▶️ Resumed checking for announcements');
+      Logger.d('▶️ Resumed checking for announcements');
     }
   }
 

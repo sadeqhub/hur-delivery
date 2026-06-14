@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../utils/logger.dart';
 
 class ConnectivityProvider extends ChangeNotifier {
   final Connectivity _connectivity = Connectivity();
@@ -19,7 +20,7 @@ class ConnectivityProvider extends ChangeNotifier {
       final result = await _connectivity.checkConnectivity();
       _updateConnectionStatus(result);
     } catch (e) {
-      print('Could not check connectivity status: $e');
+      Logger.d('Could not check connectivity status: $e');
     }
   }
 

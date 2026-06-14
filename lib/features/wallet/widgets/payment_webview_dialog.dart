@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/utils/logger.dart';
 
 /// WebView dialog for displaying payment pages (Wayl checkout)
 class PaymentWebViewDialog extends StatefulWidget {
@@ -41,24 +42,24 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
-            print('[PaymentWebView] Page started loading: $url');
+            Logger.d('[PaymentWebView] Page started loading: $url');
             setState(() {
               _isLoading = true;
               _currentUrl = url;
             });
           },
           onPageFinished: (String url) {
-            print('[PaymentWebView] Page finished loading: $url');
+            Logger.d('[PaymentWebView] Page finished loading: $url');
             setState(() {
               _isLoading = false;
               _currentUrl = url;
             });
           },
           onWebResourceError: (WebResourceError error) {
-            print('[PaymentWebView] Error: ${error.description}');
-            print('[PaymentWebView] Error code: ${error.errorCode}');
-            print('[PaymentWebView] Error type: ${error.errorType}');
-            print('[PaymentWebView] Is for main frame: ${error.isForMainFrame}');
+            Logger.d('[PaymentWebView] Error: ${error.description}');
+            Logger.d('[PaymentWebView] Error code: ${error.errorCode}');
+            Logger.d('[PaymentWebView] Error type: ${error.errorType}');
+            Logger.d('[PaymentWebView] Is for main frame: ${error.isForMainFrame}');
 
             // Only surface errors for the main frame — sub-resource failures
             // (analytics, ads, iframes) fire this callback too and should be ignored,
@@ -79,7 +80,7 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
           },
           onNavigationRequest: (NavigationRequest request) {
             final url = request.url.toLowerCase();
-            print('[PaymentWebView] Navigation request: $url');
+            Logger.d('[PaymentWebView] Navigation request: $url');
 
             // Check if this is a success/redirect URL
             // Wayl typically redirects to redirectionUrl after payment
@@ -91,7 +92,7 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
                 url.contains('payment_completed') ||
                 url.contains('completed') ||
                 (widget.referenceId != null && url.contains(widget.referenceId!.toLowerCase()))) {
-              print('[PaymentWebView] Payment success detected from URL: $url');
+              Logger.d('[PaymentWebView] Payment success detected from URL: $url');
               // Close dialog and notify parent
               // The webhook will handle updating the wallet balance
               Future.microtask(() {
@@ -108,7 +109,7 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
                 url.contains('payment_cancelled') ||
                 url.contains('/cancel') ||
                 url.contains('/cancelled')) {
-              print('[PaymentWebView] Payment cancelled');
+              Logger.d('[PaymentWebView] Payment cancelled');
               Future.microtask(() {
                 if (mounted) {
                   Navigator.of(context).pop();
@@ -123,11 +124,11 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
           },
           onUrlChange: (UrlChange change) {
             final url = change.url?.toLowerCase() ?? '';
-            print('[PaymentWebView] URL changed: $url');
+            Logger.d('[PaymentWebView] URL changed: $url');
             
             // Check for success indicators in URL changes
             if (url.contains('success') || url.contains('completed')) {
-              print('[PaymentWebView] Success detected in URL change');
+              Logger.d('[PaymentWebView] Success detected in URL change');
               Future.delayed(const Duration(seconds: 2), () {
                 if (mounted) {
                   Navigator.of(context).pop();
@@ -140,7 +141,7 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
       )
       ..loadRequest(Uri.parse(widget.paymentUrl));
 
-    print('[PaymentWebView] Initialized with URL: ${widget.paymentUrl}');
+    Logger.d('[PaymentWebView] Initialized with URL: ${widget.paymentUrl}');
   }
 
   @override

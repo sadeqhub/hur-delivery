@@ -8,6 +8,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import '../../../shared/models/order_model.dart';
 import '../../../core/utils/map_style_helper.dart';
+import '../../../core/utils/logger.dart';
+import '../data/dashboard_repository.dart';
 import '../widgets/state_of_the_art_navigation.dart';
 
 /// Map widget for merchant dashboard showing all orders and driver locations
@@ -65,7 +67,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
     setState(() {
       _mapboxMap = mapboxMap;
     });
-    print('🗺️ Merchant map created');
+    Logger.d('🗺️ Merchant map created');
     
     // Create annotation managers
     try {
@@ -73,20 +75,20 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
           await mapboxMap.annotations.createPointAnnotationManager();
       _polylineAnnotationManager =
           await mapboxMap.annotations.createPolylineAnnotationManager();
-      print('✅ Merchant map annotation managers created');
+      Logger.d('✅ Merchant map annotation managers created');
     } catch (e) {
-      print('⚠️ Error creating annotation managers: $e');
+      Logger.d('⚠️ Error creating annotation managers: $e');
     }
     
     // Initialize navigation system first (this loads pin images)
     try {
       final initialized = await _navigationSystem.initialize(mapboxMap);
       if (initialized) {
-        print('✅ Merchant map navigation system ready');
+        Logger.d('✅ Merchant map navigation system ready');
         // Pin images are now loaded by navigation system
       }
     } catch (e) {
-      print('❌ Error initializing navigation system: $e');
+      Logger.d('❌ Error initializing navigation system: $e');
     }
     
     // Load custom icons (driver marker)
@@ -126,9 +128,9 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
       );
       
       _customIconsLoaded = true;
-      print('✅ Merchant map custom icons loaded');
+      Logger.d('✅ Merchant map custom icons loaded');
     } catch (e) {
-      print('❌ Error loading custom icons: $e');
+      Logger.d('❌ Error loading custom icons: $e');
     }
   }
 
@@ -214,11 +216,8 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
     try {
       for (final driverId in driverIds) {
         // PERFORMANCE: Use materialized view (215ms → <10ms, 95% faster)
-        final response = await Supabase.instance.client
-            .from('recent_driver_locations')
-            .select()
-            .eq('driver_id', driverId)
-            .maybeSingle();
+        final response = await DashboardRepository.instance
+            .getRecentDriverLocation(driverId);
         
         if (response != null && mounted) {
           final lat = (response['latitude'] as num?)?.toDouble();
@@ -236,7 +235,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
         }
       }
     } catch (e) {
-      print('❌ Error fetching driver locations: $e');
+      Logger.e('Error fetching driver locations', e);
     }
   }
 
@@ -277,7 +276,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
       
       _driverMarkers[driverId] = marker;
     } catch (e) {
-      print('❌ Error updating driver marker: $e');
+      Logger.d('❌ Error updating driver marker: $e');
     }
   }
 
@@ -290,7 +289,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
         try {
           await _pointAnnotationManager?.delete(marker);
         } catch (e) {
-          print('⚠️ Error deleting order marker: $e');
+          Logger.d('⚠️ Error deleting order marker: $e');
         }
       }
       _orderMarkers.clear();
@@ -300,7 +299,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
         try {
           await _polylineAnnotationManager?.delete(route);
         } catch (e) {
-          print('⚠️ Error deleting route: $e');
+          Logger.d('⚠️ Error deleting route: $e');
         }
       }
       _orderRoutes.clear();
@@ -321,7 +320,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
       // Fit camera to show all markers
       _fitCameraToContent();
     } catch (e) {
-      print('❌ Error updating map annotations: $e');
+      Logger.d('❌ Error updating map annotations: $e');
     }
   }
 
@@ -361,7 +360,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
       );
       _orderMarkers['${order.id}_dropoff'] = dropoffMarker;
         } catch (e) {
-      print('❌ Error creating order markers: $e');
+      Logger.d('❌ Error creating order markers: $e');
     }
   }
 
@@ -404,7 +403,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
         _orderRoutes['${order.id}_route'] = route;
       }
     } catch (e) {
-      print('❌ Error creating route for order ${order.id}: $e');
+      Logger.d('❌ Error creating route for order ${order.id}: $e');
     }
   }
 
@@ -466,7 +465,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
         MapAnimationOptions(duration: 1000),
       );
     } catch (e) {
-      print('❌ Error fitting camera: $e');
+      Logger.d('❌ Error fitting camera: $e');
     }
   }
 

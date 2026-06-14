@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/models/voice_recording_model.dart';
+import '../utils/logger.dart';
 
 class VoiceRecordingProvider extends ChangeNotifier {
   final _supabase = Supabase.instance.client;
@@ -39,10 +40,10 @@ class VoiceRecordingProvider extends ChangeNotifier {
           .map((json) => VoiceRecording.fromJson(json))
           .toList();
 
-      print('✅ Loaded ${_recordings.length} voice recordings');
+      Logger.d('✅ Loaded ${_recordings.length} voice recordings');
     } catch (e) {
       _error = e.toString();
-      print('❌ Error loading recordings: $e');
+      Logger.d('❌ Error loading recordings: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -64,7 +65,7 @@ class VoiceRecordingProvider extends ChangeNotifier {
         throw Exception('User not authenticated');
       }
 
-      print('📤 Uploading voice recording: $filename');
+      Logger.d('📤 Uploading voice recording: $filename');
 
       // Get file size
       final fileSizeBytes = await audioFile.length();
@@ -83,7 +84,7 @@ class VoiceRecordingProvider extends ChangeNotifier {
             ),
           );
 
-      print('✅ Uploaded to storage: $storageResponse');
+      Logger.d('✅ Uploaded to storage: $storageResponse');
 
       // Save metadata to database
       final metadata = {
@@ -109,10 +110,10 @@ class VoiceRecordingProvider extends ChangeNotifier {
       _recordings.insert(0, recording);
       notifyListeners();
 
-      print('✅ Saved recording metadata: ${recording.id}');
+      Logger.d('✅ Saved recording metadata: ${recording.id}');
       return recording;
     } catch (e) {
-      print('❌ Error uploading recording: $e');
+      Logger.d('❌ Error uploading recording: $e');
       _error = e.toString();
       notifyListeners();
       return null;
@@ -156,7 +157,7 @@ class VoiceRecordingProvider extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      print('❌ Error updating recording: $e');
+      Logger.d('❌ Error updating recording: $e');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -174,10 +175,10 @@ class VoiceRecordingProvider extends ChangeNotifier {
       _recordings.removeWhere((r) => r.id == recordingId);
       notifyListeners();
 
-      print('✅ Archived recording: $recordingId');
+      Logger.d('✅ Archived recording: $recordingId');
       return true;
     } catch (e) {
-      print('❌ Error archiving recording: $e');
+      Logger.d('❌ Error archiving recording: $e');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -203,10 +204,10 @@ class VoiceRecordingProvider extends ChangeNotifier {
       _recordings.removeWhere((r) => r.id == recordingId);
       notifyListeners();
 
-      print('✅ Deleted recording: $recordingId');
+      Logger.d('✅ Deleted recording: $recordingId');
       return true;
     } catch (e) {
-      print('❌ Error deleting recording: $e');
+      Logger.d('❌ Error deleting recording: $e');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -222,7 +223,7 @@ class VoiceRecordingProvider extends ChangeNotifier {
 
       return response;
     } catch (e) {
-      print('❌ Error getting audio URL: $e');
+      Logger.d('❌ Error getting audio URL: $e');
       return null;
     }
   }
@@ -239,10 +240,10 @@ class VoiceRecordingProvider extends ChangeNotifier {
       final tempFile = File('${tempDir.path}/${recording.filename}');
       await tempFile.writeAsBytes(bytes);
 
-      print('✅ Downloaded audio: ${tempFile.path}');
+      Logger.d('✅ Downloaded audio: ${tempFile.path}');
       return tempFile;
     } catch (e) {
-      print('❌ Error downloading audio: $e');
+      Logger.d('❌ Error downloading audio: $e');
       return null;
     }
   }

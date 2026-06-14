@@ -9,6 +9,7 @@ import '../services/global_order_notification_service.dart';
 import '../services/messaging_service.dart';
 import '../constants/app_constants.dart';
 import '../widgets/header_notification.dart';
+import '../utils/logger.dart';
 
 class NotificationProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _notifications = [];
@@ -36,7 +37,7 @@ class NotificationProvider extends ChangeNotifier {
     
     // Set initialization time - use UTC for consistency with database
     _initializationTime = DateTime.now().toUtc();
-    print('📅 NotificationProvider initialized at: $_initializationTime (UTC)');
+    Logger.d('📅 NotificationProvider initialized at: $_initializationTime (UTC)');
     
     notifyListeners();
 
@@ -60,7 +61,7 @@ class NotificationProvider extends ChangeNotifier {
       }
     } catch (e) {
       _error = e.toString();
-      print('Error initializing notifications: $e');
+      Logger.d('Error initializing notifications: $e');
       // Don't crash - just log the error
     } finally {
       _isLoading = false;
@@ -76,7 +77,7 @@ class NotificationProvider extends ChangeNotifier {
     // Check cache first
     final cached = _responseCache.get<String>(cacheKey);
     if (cached != null) {
-      print('✅ Using cached user role: $cached');
+      Logger.d('✅ Using cached user role: $cached');
       return cached;
     }
 
@@ -90,11 +91,11 @@ class NotificationProvider extends ChangeNotifier {
 
       // Cache for 5 minutes
       _responseCache.set(cacheKey, role, const Duration(minutes: 5));
-      print('💾 Cached user role: $role');
+      Logger.d('💾 Cached user role: $role');
 
       return role;
     } catch (e) {
-      print('Error getting user role: $e');
+      Logger.d('Error getting user role: $e');
       return 'driver';
     }
   }
@@ -106,7 +107,7 @@ class NotificationProvider extends ChangeNotifier {
     // Check cache first
     final cached = _responseCache.get<bool>(cacheKey);
     if (cached != null) {
-      print('✅ Using cached online status: $cached');
+      Logger.d('✅ Using cached online status: $cached');
       return cached;
     }
 
@@ -120,11 +121,11 @@ class NotificationProvider extends ChangeNotifier {
 
       // Cache for 1 minute
       _responseCache.set(cacheKey, isOnline, const Duration(minutes: 1));
-      print('💾 Cached online status: $isOnline');
+      Logger.d('💾 Cached online status: $isOnline');
 
       return isOnline;
     } catch (e) {
-      print('Error getting user online status: $e');
+      Logger.d('Error getting user online status: $e');
       return false;
     }
   }
@@ -139,9 +140,9 @@ class NotificationProvider extends ChangeNotifier {
         AppConstants.supabaseAnonKey,
         driverName: driverName,
       );
-      print('✅ Background notifications started');
+      Logger.d('✅ Background notifications started');
     } catch (e) {
-      print('Error starting background notifications: $e');
+      Logger.d('Error starting background notifications: $e');
     }
   }
   
@@ -149,9 +150,9 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> stopBackgroundNotifications() async {
     try {
       await BackgroundService.stop();
-      print('✅ Background notifications stopped');
+      Logger.d('✅ Background notifications stopped');
     } catch (e) {
-      print('Error stopping background notifications: $e');
+      Logger.d('Error stopping background notifications: $e');
     }
   }
 
@@ -161,7 +162,7 @@ class NotificationProvider extends ChangeNotifier {
     try {
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser == null) {
-        print('No current user - skipping notification load');
+        Logger.d('No current user - skipping notification load');
         return;
       }
 
@@ -172,7 +173,7 @@ class NotificationProvider extends ChangeNotifier {
         final cached = _responseCache.get<List<Map<String, dynamic>>>(cacheKey);
         if (cached != null) {
           _notifications = cached;
-          print('✅ Using cached notifications (${cached.length} items) - slow connection detected');
+          Logger.d('✅ Using cached notifications (${cached.length} items) - slow connection detected');
           notifyListeners();
           // Continue to refresh in background
         }
@@ -189,10 +190,10 @@ class NotificationProvider extends ChangeNotifier {
 
       // Cache for 2 minutes
       _responseCache.set(cacheKey, _notifications, const Duration(minutes: 2));
-      print('Loaded ${_notifications.length} notifications');
+      Logger.d('Loaded ${_notifications.length} notifications');
     } catch (e) {
       _error = e.toString();
-      print('Error loading notifications: $e');
+      Logger.d('Error loading notifications: $e');
       // Don't throw - just log
       _notifications = [];
     }
@@ -207,7 +208,7 @@ class NotificationProvider extends ChangeNotifier {
       // Unsubscribe from previous channel if exists
       await _notificationChannel?.unsubscribe();
 
-      print('📡 Setting up persistent realtime channel for notifications...');
+      Logger.d('📡 Setting up persistent realtime channel for notifications...');
 
       // Create a persistent realtime channel with WebSocket
       _notificationChannel = Supabase.instance.client
@@ -222,15 +223,15 @@ class NotificationProvider extends ChangeNotifier {
               value: currentUser.id,
             ),
             callback: (payload) async {
-              print('🔔 Realtime INSERT notification received!');
+              Logger.d('🔔 Realtime INSERT notification received!');
               final notification = payload.newRecord;
               final notificationId = notification['id'] as String;
               final createdAtStr = notification['created_at'] as String;
               final createdAt = DateTime.parse(createdAtStr).toUtc();
               
-              print('⏰ Notification created at: $createdAt (UTC)');
-              print('⏰ App initialized at: $_initializationTime (UTC)');
-              print('⏰ Time difference: ${createdAt.difference(_initializationTime!).inSeconds}s');
+              Logger.d('⏰ Notification created at: $createdAt (UTC)');
+              Logger.d('⏰ App initialized at: $_initializationTime (UTC)');
+              Logger.d('⏰ Time difference: ${createdAt.difference(_initializationTime!).inSeconds}s');
               
               // Show if not already shown (primary check)
               // AND created after initialization (prevents spam on reconnect)
@@ -241,29 +242,29 @@ class NotificationProvider extends ChangeNotifier {
                 
                 if (ageInSeconds < 300) { // Less than 5 minutes old
                   _shownNotificationIds.add(notificationId);
-                  print('📬 Showing notification: ${notification['title']} (age: ${ageInSeconds}s)');
+                  Logger.d('📬 Showing notification: ${notification['title']} (age: ${ageInSeconds}s)');
                   await _showLocalNotification(notification);
                   
                   // Reload notifications list
                   await _loadNotifications();
                 } else {
-                  print('⏭️ Skipping old notification (age: ${ageInSeconds}s)');
+                  Logger.d('⏭️ Skipping old notification (age: ${ageInSeconds}s)');
                 }
               } else {
-                print('⏭️ Skipping duplicate notification: $notificationId');
+                Logger.d('⏭️ Skipping duplicate notification: $notificationId');
               }
             },
           )
           .subscribe();
 
-      print('✅ Realtime channel subscribed successfully');
+      Logger.d('✅ Realtime channel subscribed successfully');
       
       // Also set up periodic refresh as fallback (every 10 seconds)
       _startPeriodicRefresh(currentUser.id);
       
     } catch (e) {
       _error = e.toString();
-      print('❌ Error subscribing to notifications: $e');
+      Logger.d('❌ Error subscribing to notifications: $e');
     }
   }
 
@@ -276,7 +277,7 @@ class NotificationProvider extends ChangeNotifier {
       if (_notificationChannel != null) {
         // PERFORMANCE: Skip periodic refresh on poor connections - rely on realtime
         if (_networkQuality.currentQuality == NetworkQuality.poor) {
-          print('⏭️ Skipping periodic refresh - poor connection, trusting realtime subscription');
+          Logger.d('⏭️ Skipping periodic refresh - poor connection, trusting realtime subscription');
           _startPeriodicRefresh(userId); // Continue timer
           return;
         }
@@ -309,7 +310,7 @@ class NotificationProvider extends ChangeNotifier {
                 
                 // Only show if less than 5 minutes old
                 if (ageInSeconds < 300) {
-                  print('🔍 Periodic check found missed notification: ${notification['title']}');
+                  Logger.d('🔍 Periodic check found missed notification: ${notification['title']}');
                   _shownNotificationIds.add(notificationId);
                   await _showLocalNotification(notification);
                 }
@@ -317,7 +318,7 @@ class NotificationProvider extends ChangeNotifier {
             }
           }
         } catch (e) {
-          print('Error in periodic refresh: $e');
+          Logger.d('Error in periodic refresh: $e');
         }
         
         await _loadNotifications();
@@ -345,7 +346,7 @@ class NotificationProvider extends ChangeNotifier {
         await startSupportMessageListener(convId);
       }
     } catch (e) {
-      print('⚠️ Could not init support message listener: $e');
+      Logger.d('⚠️ Could not init support message listener: $e');
     }
   }
 
@@ -397,9 +398,9 @@ class NotificationProvider extends ChangeNotifier {
           )
           .subscribe();
 
-      print('✅ Support message listener active for conversation $conversationId');
+      Logger.d('✅ Support message listener active for conversation $conversationId');
     } catch (e) {
-      print('❌ Error starting support message listener: $e');
+      Logger.d('❌ Error starting support message listener: $e');
     }
   }
 
@@ -420,7 +421,7 @@ class NotificationProvider extends ChangeNotifier {
     
     try {
       // TODO: Fix notification handling - temporarily disabled due to signature mismatches
-      print('📱 Would send notification type: $type');
+      Logger.d('📱 Would send notification type: $type');
       /*
       switch (type) {
         case 'order_assigned':
@@ -435,7 +436,7 @@ class NotificationProvider extends ChangeNotifier {
       }
       */
     } catch (e) {
-      print('Error showing local notification: $e');
+      Logger.d('Error showing local notification: $e');
     }
   }
 

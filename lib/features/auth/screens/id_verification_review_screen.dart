@@ -11,6 +11,7 @@ import '../../../core/config/env.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../core/utils/logger.dart';
 
 class IdVerificationReviewScreen extends StatefulWidget {
   final Map<String, dynamic> extractedData;
@@ -101,7 +102,7 @@ class _IdVerificationReviewScreenState
       
       return false;
     } catch (e) {
-      print('⚠️ Error checking ID number: $e');
+      Logger.d('⚠️ Error checking ID number: $e');
       return false;
     }
   }
@@ -110,7 +111,7 @@ class _IdVerificationReviewScreenState
     try {
       final supabase = Supabase.instance.client;
       
-      print('📤 Uploading file to: $path');
+      Logger.d('📤 Uploading file to: $path');
       
       await supabase.storage.from('files').upload(
           path,
@@ -120,10 +121,10 @@ class _IdVerificationReviewScreenState
           ),
         );
       
-      print('✅ File uploaded successfully');
+      Logger.d('✅ File uploaded successfully');
       return path;
     } catch (e) {
-      print('❌ Upload error: $e');
+      Logger.d('❌ Upload error: $e');
       return null;
     }
   }
@@ -143,7 +144,7 @@ class _IdVerificationReviewScreenState
         throw Exception('User ID not found');
       }
 
-      print('📝 Submitting verified ID information...');
+      Logger.d('📝 Submitting verified ID information...');
 
       // Upload images to storage if provided
       String? idFrontPath;
@@ -157,7 +158,7 @@ class _IdVerificationReviewScreenState
       final storageBasePath = 'documents/$userId';
 
       if (widget.idFrontFile != null) {
-        print('📤 Uploading ID front image...');
+        Logger.d('📤 Uploading ID front image...');
         idFrontPath = await _uploadToStorage(
           widget.idFrontFile!,
           '$storageBasePath/id_front_review_$timestamp.jpg',
@@ -170,7 +171,7 @@ class _IdVerificationReviewScreenState
       }
 
       if (widget.idBackFile != null) {
-        print('📤 Uploading ID back image...');
+        Logger.d('📤 Uploading ID back image...');
         idBackPath = await _uploadToStorage(
           widget.idBackFile!,
           '$storageBasePath/id_back_review_$timestamp.jpg',
@@ -183,7 +184,7 @@ class _IdVerificationReviewScreenState
       }
 
       if (widget.selfieFile != null) {
-        print('📤 Uploading selfie image...');
+        Logger.d('📤 Uploading selfie image...');
         selfiePath = await _uploadToStorage(
           widget.selfieFile!,
           '$storageBasePath/selfie_review_$timestamp.jpg',
@@ -237,11 +238,11 @@ class _IdVerificationReviewScreenState
         }),
       );
 
-      print('📥 Response status: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
+      Logger.d('📥 Response status: ${response.statusCode}');
+      Logger.d('📥 Response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        print('✅ ID verification saved successfully');
+        Logger.d('✅ ID verification saved successfully');
         // Also update users table with edited info as source of truth
         try {
           final fullName =
@@ -267,9 +268,9 @@ class _IdVerificationReviewScreenState
               .from('users')
               .update(updateData)
               .eq('id', userId);
-          print('✅ Users table updated with reviewed info');
+          Logger.d('✅ Users table updated with reviewed info');
         } catch (e) {
-          print('⚠️ Failed to update users table with reviewed info: $e');
+          Logger.d('⚠️ Failed to update users table with reviewed info: $e');
         }
 
         // Refresh user data
@@ -302,7 +303,7 @@ class _IdVerificationReviewScreenState
             'Server returned ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      print('❌ Verification submission error: $e');
+      Logger.d('❌ Verification submission error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

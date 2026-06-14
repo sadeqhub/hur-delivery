@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 
 /// Network quality levels based on connection speed
 enum NetworkQuality {
@@ -70,7 +71,7 @@ class NetworkQualityService {
         return;
       }
     } catch (e) {
-      print('⚠️ Error checking connectivity: $e');
+      Logger.d('⚠️ Error checking connectivity: $e');
     }
   }
 
@@ -99,11 +100,11 @@ class NetworkQualityService {
         _currentQuality = NetworkQuality.poor;
       }
       
-      print('📊 Network quality: $_currentQuality (${duration}ms, $_connectivityType)');
+      Logger.d('📊 Network quality: $_currentQuality (${duration}ms, $_connectivityType)');
     } catch (e) {
       // If query fails, assume poor connection
       _currentQuality = NetworkQuality.poor;
-      print('⚠️ Network quality check failed: $e');
+      Logger.d('⚠️ Network quality check failed: $e');
     }
   }
 

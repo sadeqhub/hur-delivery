@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../utils/logger.dart';
 
 /// Comprehensive error types
 enum ErrorType {
@@ -316,16 +317,16 @@ class ErrorManager {
       try {
         final result = await operation();
         if (attempt > 0) {
-          print('✅ Operation ${operationName ?? "unknown"} succeeded after $attempt retries');
+          Logger.d('✅ Operation ${operationName ?? "unknown"} succeeded after $attempt retries');
         }
         return result;
       } catch (error, stackTrace) {
         lastError = analyzeError(error, stackTrace);
         
-        print('❌ Error in ${operationName ?? "operation"} (attempt ${attempt + 1}/${maxRetries + 1}):');
-        print('   Type: ${lastError.type}');
-        print('   Strategy: ${lastError.strategy}');
-        print('   Error: $error');
+        Logger.d('❌ Error in ${operationName ?? "operation"} (attempt ${attempt + 1}/${maxRetries + 1}):');
+        Logger.d('   Type: ${lastError.type}');
+        Logger.d('   Strategy: ${lastError.strategy}');
+        Logger.d('   Error: $error');
 
         // Apply recovery strategy
         final strategy = overrideStrategy ?? lastError.strategy;
@@ -335,7 +336,7 @@ class ErrorManager {
           case RecoveryStrategy.retry:
             if (shouldRetry) {
               final delay = _calculateRetryDelay(attempt);
-              print('⏳ Retrying in ${delay.inSeconds}s...');
+              Logger.d('⏳ Retrying in ${delay.inSeconds}s...');
               await Future.delayed(delay);
               onRetry?.call();
               continue;
@@ -344,11 +345,11 @@ class ErrorManager {
 
           case RecoveryStrategy.refreshSession:
             if (shouldRetry && await _refreshSession()) {
-              print('✅ Session refreshed, retrying...');
+              Logger.d('✅ Session refreshed, retrying...');
               onRetry?.call();
               continue;
             } else if (isCritical) {
-              print('❌ Critical operation failed after session refresh');
+              Logger.d('❌ Critical operation failed after session refresh');
               onFailure?.call();
               return null;
             }
@@ -356,11 +357,11 @@ class ErrorManager {
 
           case RecoveryStrategy.reconnect:
             if (shouldRetry && await _reconnectSupabase()) {
-              print('✅ Reconnected, retrying...');
+              Logger.d('✅ Reconnected, retrying...');
               onRetry?.call();
               continue;
             } else if (isCritical) {
-              print('❌ Critical operation failed after reconnect');
+              Logger.d('❌ Critical operation failed after reconnect');
               onFailure?.call();
               return null;
             }
@@ -368,26 +369,26 @@ class ErrorManager {
 
           case RecoveryStrategy.silentFail:
             if (!isCritical) {
-              print('⚠️ Non-critical error, failing silently');
+              Logger.d('⚠️ Non-critical error, failing silently');
               return null;
             }
             break;
 
           case RecoveryStrategy.forceLogout:
-            print('🔐 Forcing logout due to auth error');
+            Logger.d('🔐 Forcing logout due to auth error');
             // This should be handled by AuthProvider
             onFailure?.call();
             return null;
 
           case RecoveryStrategy.showError:
-            print('⚠️ Showing error to user');
+            Logger.d('⚠️ Showing error to user');
             onFailure?.call();
             return null;
         }
 
         // If we get here, all retries failed
         if (isCritical) {
-          print('❌ Critical operation failed after all retries');
+          Logger.d('❌ Critical operation failed after all retries');
           onFailure?.call();
         }
         return null;
@@ -412,7 +413,7 @@ class ErrorManager {
   Future<bool> _refreshSession() async {
     // Prevent concurrent refresh attempts
     if (_isRefreshingSession) {
-      print('⏳ Session refresh already in progress, waiting...');
+      Logger.d('⏳ Session refresh already in progress, waiting...');
       int waitCount = 0;
       while (_isRefreshingSession && waitCount < 10) {
         await Future.delayed(const Duration(milliseconds: 500));
@@ -425,7 +426,7 @@ class ErrorManager {
     if (_lastSessionRefresh != null) {
       final timeSinceLastRefresh = DateTime.now().difference(_lastSessionRefresh!);
       if (timeSinceLastRefresh < sessionRefreshTimeout) {
-        print('⏳ Session refresh throttled (${timeSinceLastRefresh.inSeconds}s ago)');
+        Logger.d('⏳ Session refresh throttled (${timeSinceLastRefresh.inSeconds}s ago)');
         return false;
       }
     }
@@ -434,7 +435,7 @@ class ErrorManager {
     _lastSessionRefresh = DateTime.now();
 
     try {
-      print('🔄 Refreshing Supabase session...');
+      Logger.d('🔄 Refreshing Supabase session...');
       final session = Supabase.instance.client.auth.currentSession;
       
       if (session != null) {
@@ -443,17 +444,17 @@ class ErrorManager {
             .timeout(sessionRefreshTimeout);
         
         if (response.session != null) {
-          print('✅ Session refreshed successfully');
+          Logger.d('✅ Session refreshed successfully');
           _isRefreshingSession = false;
           return true;
         }
       }
 
-      print('⚠️ No active session to refresh');
+      Logger.d('⚠️ No active session to refresh');
       _isRefreshingSession = false;
       return false;
     } catch (e) {
-      print('❌ Session refresh failed: $e');
+      Logger.d('❌ Session refresh failed: $e');
       _isRefreshingSession = false;
       return false;
     }
@@ -463,7 +464,7 @@ class ErrorManager {
   Future<bool> _reconnectSupabase() async {
     // Prevent concurrent reconnect attempts
     if (_isReconnecting) {
-      print('⏳ Reconnection already in progress, waiting...');
+      Logger.d('⏳ Reconnection already in progress, waiting...');
       int waitCount = 0;
       while (_isReconnecting && waitCount < 10) {
         await Future.delayed(const Duration(milliseconds: 500));
@@ -476,7 +477,7 @@ class ErrorManager {
     if (_lastReconnectAttempt != null) {
       final timeSinceLastReconnect = DateTime.now().difference(_lastReconnectAttempt!);
       if (timeSinceLastReconnect < connectionTimeout) {
-        print('⏳ Reconnect throttled (${timeSinceLastReconnect.inSeconds}s ago)');
+        Logger.d('⏳ Reconnect throttled (${timeSinceLastReconnect.inSeconds}s ago)');
         return false;
       }
     }
@@ -485,12 +486,12 @@ class ErrorManager {
     _lastReconnectAttempt = DateTime.now();
 
     try {
-      print('🔄 Reconnecting to Supabase...');
+      Logger.d('🔄 Reconnecting to Supabase...');
       
       // Check connectivity first
       final connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult == ConnectivityResult.none) {
-        print('❌ No internet connection');
+        Logger.d('❌ No internet connection');
         _isReconnecting = false;
         return false;
       }
@@ -502,11 +503,11 @@ class ErrorManager {
           .limit(1)
           .timeout(connectionTimeout);
 
-      print('✅ Reconnected to Supabase successfully');
+      Logger.d('✅ Reconnected to Supabase successfully');
       _isReconnecting = false;
       return true;
     } catch (e) {
-      print('❌ Reconnection failed: $e');
+      Logger.d('❌ Reconnection failed: $e');
       _isReconnecting = false;
       return false;
     }
@@ -518,7 +519,7 @@ class ErrorManager {
       final connectivityResult = await Connectivity().checkConnectivity();
       return connectivityResult != ConnectivityResult.none;
     } catch (e) {
-      print('❌ Error checking connectivity: $e');
+      Logger.d('❌ Error checking connectivity: $e');
       return false;
     }
   }

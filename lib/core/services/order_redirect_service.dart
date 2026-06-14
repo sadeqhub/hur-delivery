@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import '../utils/logger.dart';
 
 /// Global Order Redirect Service
 /// 
@@ -21,14 +22,14 @@ class OrderRedirectService {
     _currentDriverId = driverId;
     
     if (_isMonitoring) {
-      print('ℹ️ Order redirect service already monitoring');
+      Logger.d('ℹ️ Order redirect service already monitoring');
       return;
     }
     
-    print('\n═══════════════════════════════════════');
-    print('🔔 STARTING ORDER REDIRECT SERVICE');
-    print('═══════════════════════════════════════');
-    print('Driver ID: $driverId');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('🔔 STARTING ORDER REDIRECT SERVICE');
+    Logger.d('═══════════════════════════════════════');
+    Logger.d('Driver ID: $driverId');
     
     // Load last seen order from storage
     await _loadLastSeenOrder();
@@ -39,8 +40,8 @@ class OrderRedirectService {
       await _checkForNewOrders();
     });
     
-    print('✅ Order redirect service started (checking every 3 seconds)');
-    print('═══════════════════════════════════════\n');
+    Logger.d('✅ Order redirect service started (checking every 3 seconds)');
+    Logger.d('═══════════════════════════════════════\n');
   }
 
   /// Load last seen order from SharedPreferences
@@ -52,12 +53,12 @@ class OrderRedirectService {
       _lastSeenOrderId = prefs.getString('last_seen_order_id_$_currentDriverId');
       
       if (_lastSeenOrderId != null) {
-        print('📋 Last seen order loaded: $_lastSeenOrderId');
+        Logger.d('📋 Last seen order loaded: $_lastSeenOrderId');
       } else {
-        print('📋 No previous order found in storage');
+        Logger.d('📋 No previous order found in storage');
       }
     } catch (e) {
-      print('❌ Error loading last seen order: $e');
+      Logger.d('❌ Error loading last seen order: $e');
     }
   }
 
@@ -86,15 +87,15 @@ class OrderRedirectService {
       
       // Check if this is a NEW order (different from last seen)
       if (_lastSeenOrderId != currentOrderId) {
-        print('\n🚨 NEW ORDER DETECTED!');
-        print('═══════════════════════════════════════');
-        print('Order ID: $currentOrderId');
-        print('Status: $orderStatus');
-        print('Last seen: $_lastSeenOrderId');
+        Logger.d('\n🚨 NEW ORDER DETECTED!');
+        Logger.d('═══════════════════════════════════════');
+        Logger.d('Order ID: $currentOrderId');
+        Logger.d('Status: $orderStatus');
+        Logger.d('Last seen: $_lastSeenOrderId');
         
         // Only redirect for newly ASSIGNED orders (not accepted/on_the_way)
         if (orderStatus == 'assigned') {
-          print('🎯 Redirecting driver to dashboard...');
+          Logger.d('🎯 Redirecting driver to dashboard...');
           
           // Mark as seen BEFORE redirecting to prevent loops
           _lastSeenOrderId = currentOrderId;
@@ -103,19 +104,19 @@ class OrderRedirectService {
           // Redirect to dashboard
           if (_context != null && _context!.mounted) {
             _context!.go('/driver-dashboard');
-            print('✅ Driver redirected to dashboard');
+            Logger.d('✅ Driver redirected to dashboard');
           }
         } else {
           // For accepted/on_the_way, just mark as seen (driver already knows about it)
           _lastSeenOrderId = currentOrderId;
           await _saveLastSeenOrder(currentOrderId);
-          print('ℹ️ Order marked as seen (status: $orderStatus)');
+          Logger.d('ℹ️ Order marked as seen (status: $orderStatus)');
         }
         
-        print('═══════════════════════════════════════\n');
+        Logger.d('═══════════════════════════════════════\n');
       }
     } catch (e) {
-      print('❌ Error checking for new orders: $e');
+      Logger.d('❌ Error checking for new orders: $e');
     }
   }
 
@@ -126,9 +127,9 @@ class OrderRedirectService {
       
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('last_seen_order_id_$_currentDriverId', orderId);
-      print('💾 Last seen order saved: $orderId');
+      Logger.d('💾 Last seen order saved: $orderId');
     } catch (e) {
-      print('❌ Error saving last seen order: $e');
+      Logger.d('❌ Error saving last seen order: $e');
     }
   }
 
@@ -139,7 +140,7 @@ class OrderRedirectService {
 
   /// Stop monitoring
   static void stopMonitoring() {
-    print('🛑 Stopping order redirect service');
+    Logger.d('🛑 Stopping order redirect service');
     _monitorTimer?.cancel();
     _monitorTimer = null;
     _isMonitoring = false;

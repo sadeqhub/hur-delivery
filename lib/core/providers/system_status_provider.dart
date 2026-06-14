@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/system_status_service.dart';
+import '../utils/logger.dart';
 
 /// Provider to manage system-wide status (maintenance mode)
 class SystemStatusProvider extends ChangeNotifier {
@@ -14,7 +15,7 @@ class SystemStatusProvider extends ChangeNotifier {
 
   /// Initialize and start checking
   Future<void> initialize() async {
-    print('🔧 Initializing SystemStatusProvider...');
+    Logger.d('🔧 Initializing SystemStatusProvider...');
     
     // Check immediately
     await checkStatus();
@@ -28,7 +29,7 @@ class SystemStatusProvider extends ChangeNotifier {
       notifyListeners();
     });
     
-    print('✅ SystemStatusProvider initialized');
+    Logger.d('✅ SystemStatusProvider initialized');
   }
 
   /// Manually check system status

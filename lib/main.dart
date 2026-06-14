@@ -40,6 +40,7 @@ import 'shared/widgets/no_internet_screen.dart';
 import 'core/services/precache_service.dart';
 import 'core/services/performance_optimizer.dart';
 import 'core/utils/system_ui.dart';
+import 'core/utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -188,7 +189,7 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
         }
 
         if (userRole != null && (userRole == 'driver' || userRole == 'merchant')) {
-          print('🔔 Starting global notifications for $userRole: $userId');
+          Logger.d('🔔 Starting global notifications for $userRole: $userId');
           GlobalOrderNotificationService.initialize(
             userId: userId,
             userRole: userRole,

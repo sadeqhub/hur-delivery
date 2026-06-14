@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/response_cache_service.dart';
 import '../services/network_quality_service.dart';
+import '../utils/logger.dart';
 
 class DriverWalletProvider extends ChangeNotifier {
   double _balance = 0.0;
@@ -55,7 +56,7 @@ class DriverWalletProvider extends ChangeNotifier {
       }
     } catch (e) {
       _error = 'فشل تحميل بيانات المحفظة: $e';
-      print('Error initializing driver wallet: $e');
+      Logger.d('Error initializing driver wallet: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -71,7 +72,7 @@ class DriverWalletProvider extends ChangeNotifier {
     final cached = _responseCache.get<bool>(cacheKey);
     if (cached != null) {
       _isEnabled = cached;
-      print('✅ Using cached wallet enabled status: $cached');
+      Logger.d('✅ Using cached wallet enabled status: $cached');
       return;
     }
 
@@ -87,7 +88,7 @@ class DriverWalletProvider extends ChangeNotifier {
           _isEnabled = response as bool;
           // Cache for 5 minutes
           _responseCache.set(cacheKey, _isEnabled, const Duration(minutes: 5));
-          print('💾 Cached wallet enabled status: $_isEnabled');
+          Logger.d('💾 Cached wallet enabled status: $_isEnabled');
         } else {
           _isEnabled = true; // Default to enabled if function returns null
         }
@@ -131,7 +132,7 @@ class DriverWalletProvider extends ChangeNotifier {
               }
             },
             onError: (error) {
-              print('❌ City settings realtime error: $error');
+              Logger.d('❌ City settings realtime error: $error');
             },
           );
         } else {
@@ -149,7 +150,7 @@ class DriverWalletProvider extends ChangeNotifier {
               }
             },
             onError: (error) {
-              print('❌ Settings realtime error: $error');
+              Logger.d('❌ Settings realtime error: $error');
             },
           );
         }
@@ -168,12 +169,12 @@ class DriverWalletProvider extends ChangeNotifier {
             }
           },
           onError: (error) {
-            print('❌ Settings realtime error: $error');
+            Logger.d('❌ Settings realtime error: $error');
           },
         );
       }
     } catch (e) {
-      print('Error checking wallet enabled status: $e');
+      Logger.d('Error checking wallet enabled status: $e');
       _isEnabled = true; // Default to enabled on error
     }
   }
@@ -195,11 +196,11 @@ class DriverWalletProvider extends ChangeNotifier {
           final walletData = data.first;
           _balance = (walletData['balance'] as num).toDouble();
           notifyListeners();
-          print('💰 Driver wallet updated via realtime: $_balance IQD');
+          Logger.d('💰 Driver wallet updated via realtime: $_balance IQD');
         }
       },
       onError: (error) {
-        print('❌ Driver wallet realtime error: $error');
+        Logger.d('❌ Driver wallet realtime error: $error');
       },
     );
     
@@ -216,10 +217,10 @@ class DriverWalletProvider extends ChangeNotifier {
             .map((json) => DriverWalletTransaction.fromJson(json))
             .toList();
         notifyListeners();
-        print('📝 Driver transactions updated via realtime: ${_transactions.length} transactions');
+        Logger.d('📝 Driver transactions updated via realtime: ${_transactions.length} transactions');
       },
       onError: (error) {
-        print('❌ Driver transactions realtime error: $error');
+        Logger.d('❌ Driver transactions realtime error: $error');
       },
     );
   }
@@ -235,7 +236,7 @@ class DriverWalletProvider extends ChangeNotifier {
         final cached = _responseCache.get<double>(cacheKey);
         if (cached != null) {
           _balance = cached;
-          print('✅ Using cached driver wallet balance: $cached IQD (slow connection)');
+          Logger.d('✅ Using cached driver wallet balance: $cached IQD (slow connection)');
           notifyListeners();
           // Continue to refresh in background
         }
@@ -259,7 +260,7 @@ class DriverWalletProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Error loading driver wallet data: $e');
+      Logger.d('Error loading driver wallet data: $e');
       rethrow;
     }
   }
@@ -275,7 +276,7 @@ class DriverWalletProvider extends ChangeNotifier {
         final cached = _responseCache.get<List<DriverWalletTransaction>>(cacheKey);
         if (cached != null) {
           _transactions = cached;
-          print('✅ Using cached driver transactions (${cached.length} items) - slow connection');
+          Logger.d('✅ Using cached driver transactions (${cached.length} items) - slow connection');
           notifyListeners();
           // Continue to refresh in background
         }
@@ -299,12 +300,12 @@ class DriverWalletProvider extends ChangeNotifier {
       if (_networkQuality.currentQuality != NetworkQuality.poor) {
         await _loadOrderSummariesForTransactions(driverId, _transactions);
       } else {
-        print('⏭️ Deferring order summaries load - poor connection');
+        Logger.d('⏭️ Deferring order summaries load - poor connection');
       }
 
       notifyListeners();
     } catch (e) {
-      print('Error loading driver transactions: $e');
+      Logger.d('Error loading driver transactions: $e');
       rethrow;
     }
   }
@@ -336,7 +337,7 @@ class DriverWalletProvider extends ChangeNotifier {
     }
 
     if (uncachedOrderIds.isEmpty) {
-      print('✅ All order summaries loaded from cache');
+      Logger.d('✅ All order summaries loaded from cache');
       return;
     }
 

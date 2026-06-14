@@ -8,6 +8,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'payment_webview_dialog.dart';
+import '../../../core/utils/logger.dart';
 
 class TopUpDialog extends StatefulWidget {
   const TopUpDialog({super.key});
@@ -81,16 +82,16 @@ class _TopUpDialogState extends State<TopUpDialog> {
       );
 
       // Create payment link
-      print('[TopUpDialog] Calling createWaylPaymentLink...');
+      Logger.d('[TopUpDialog] Calling createWaylPaymentLink...');
       final result = await walletProvider.createWaylPaymentLink(
         merchantId: authProvider.user!.id,
         amount: amount,
         notes: loc.topUpViaWayl,
       );
 
-      print('[TopUpDialog] Received result: $result');
-      print('[TopUpDialog] Result is null: ${result == null}');
-      print('[TopUpDialog] Result keys: ${result?.keys}');
+      Logger.d('[TopUpDialog] Received result: $result');
+      Logger.d('[TopUpDialog] Result is null: ${result == null}');
+      Logger.d('[TopUpDialog] Result keys: ${result?.keys}');
       
       // Close loading dialog
       if (!mounted) return;
@@ -99,8 +100,8 @@ class _TopUpDialogState extends State<TopUpDialog> {
       if (result != null && result['payment_url'] != null) {
         final paymentUrl = result['payment_url'] as String;
         final referenceId = result['reference_id'] as String?;
-        print('[TopUpDialog] Payment URL found: $paymentUrl');
-        print('[TopUpDialog] Reference ID: $referenceId');
+        Logger.d('[TopUpDialog] Payment URL found: $paymentUrl');
+        Logger.d('[TopUpDialog] Reference ID: $referenceId');
 
         // Close top-up dialog first
         Navigator.of(context).pop();
@@ -114,7 +115,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
               paymentUrl: paymentUrl,
               referenceId: referenceId,
               onPaymentComplete: () {
-                print('[TopUpDialog] Payment completed callback');
+                Logger.d('[TopUpDialog] Payment completed callback');
                 // Refresh wallet balance - realtime listeners will also update automatically
                 if (authProvider.user != null) {
                   walletProvider.loadWalletData(authProvider.user!.id);
@@ -131,7 +132,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                 );
               },
               onPaymentCancelled: () {
-                print('[TopUpDialog] Payment cancelled');
+                Logger.d('[TopUpDialog] Payment cancelled');
                 final loc = AppLocalizations.of(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -141,7 +142,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
       );
               },
               onError: () {
-                print('[TopUpDialog] Payment error');
+                Logger.d('[TopUpDialog] Payment error');
                 final loc = AppLocalizations.of(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -155,9 +156,9 @@ class _TopUpDialogState extends State<TopUpDialog> {
           );
         }
       } else {
-        print('[TopUpDialog] No payment URL in result');
-        print('[TopUpDialog] Result: $result');
-        print('[TopUpDialog] Error: ${walletProvider.error}');
+        Logger.d('[TopUpDialog] No payment URL in result');
+        Logger.d('[TopUpDialog] Result: $result');
+        Logger.d('[TopUpDialog] Error: ${walletProvider.error}');
         
         // Close top-up dialog
         Navigator.of(context).pop();

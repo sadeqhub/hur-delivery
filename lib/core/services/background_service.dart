@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'foreground_service.dart';
+import '../utils/logger.dart';
 
 /// Background service that keeps the app alive and listens for notifications
 /// Integrates with foreground service for driver mode
@@ -15,7 +16,7 @@ class BackgroundService {
   
   /// Initialize background service
   static Future<void> initialize() async {
-    print('📱 Background service initialized');
+    Logger.d('📱 Background service initialized');
     // Initialize foreground service as well
     await ForegroundServiceManager.initialize();
   }
@@ -24,11 +25,11 @@ class BackgroundService {
   /// For drivers, this will start a foreground service for reliability
   static Future<void> start(String userId, String userRole, String supabaseUrl, String supabaseKey, {String? driverName}) async {
     if (_isRunning) {
-      print('⚠️ Background service already running');
+      Logger.d('⚠️ Background service already running');
       return;
     }
     
-    print('🔄 Starting background service for user: $userId ($userRole)');
+    Logger.d('🔄 Starting background service for user: $userId ($userRole)');
     _isRunning = true;
     
     // Store credentials for reconnection
@@ -40,7 +41,7 @@ class BackgroundService {
     // Record start time to filter out old notifications - use UTC
     _startTime = DateTime.now().toUtc();
     await prefs.setString('service_start_time', _startTime!.toIso8601String());
-    print('📅 Service start time: $_startTime (UTC)');
+    Logger.d('📅 Service start time: $_startTime (UTC)');
     
     // For drivers, use foreground service for maximum reliability
     if (userRole == 'driver') {
@@ -51,9 +52,9 @@ class BackgroundService {
       );
       
       if (started) {
-        print('✅ Foreground service started for driver');
+        Logger.d('✅ Foreground service started for driver');
       } else {
-        print('⚠️ Foreground service failed to start, falling back to background mode');
+        Logger.d('⚠️ Foreground service failed to start, falling back to background mode');
         _useForegroundService = false;
       }
     }
@@ -64,12 +65,12 @@ class BackgroundService {
       _subscribeToOrders(userId);
     }
     
-    print('✅ Background service started successfully');
+    Logger.d('✅ Background service started successfully');
   }
   
   /// Stop background service (call when driver goes offline or logs out)
   static Future<void> stop() async {
-    print('🛑 Stopping background service');
+    Logger.d('🛑 Stopping background service');
     _isRunning = false;
     
     // Stop foreground service if it was running
@@ -93,7 +94,7 @@ class BackgroundService {
     _startTime = null;
     _processedNotificationIds.clear();
     
-    print('✅ Background service stopped');
+    Logger.d('✅ Background service stopped');
   }
   
   /// Update foreground service notification with new order
@@ -136,8 +137,8 @@ class BackgroundService {
     // Unsubscribe from previous channel
     _notificationChannel?.unsubscribe();
     
-    print('📡 Setting up persistent realtime channel for notifications...');
-    print('🕐 Will only show notifications created after: $_startTime');
+    Logger.d('📡 Setting up persistent realtime channel for notifications...');
+    Logger.d('🕐 Will only show notifications created after: $_startTime');
     
     // Create persistent realtime channel with WebSocket
     _notificationChannel = Supabase.instance.client
@@ -152,14 +153,14 @@ class BackgroundService {
             value: userId,
           ),
           callback: (payload) {
-            print('🔔 Realtime notification INSERT received!');
+            Logger.d('🔔 Realtime notification INSERT received!');
             final notification = payload.newRecord;
             final notificationId = notification['id'] as String;
             final createdAtStr = notification['created_at'] as String;
             final createdAt = DateTime.parse(createdAtStr).toUtc();
             
-            print('⏰ Notification created at: $createdAt (UTC)');
-            print('⏰ Service started at: $_startTime (UTC)');
+            Logger.d('⏰ Notification created at: $createdAt (UTC)');
+            Logger.d('⏰ Service started at: $_startTime (UTC)');
             
             // Only show if not already processed
             if (!_processedNotificationIds.contains(notificationId)) {
@@ -168,25 +169,25 @@ class BackgroundService {
               final ageInSeconds = now.difference(createdAt).inSeconds;
               
               if (ageInSeconds < 300) { // Less than 5 minutes old
-                print('📬 Showing notification: ${notification['title']} (age: ${ageInSeconds}s)');
+                Logger.d('📬 Showing notification: ${notification['title']} (age: ${ageInSeconds}s)');
                 _processedNotificationIds.add(notificationId);
                 _showNotificationFromData(notification);
               } else {
-                print('⏭️ Skipping old notification (age: ${ageInSeconds}s)');
+                Logger.d('⏭️ Skipping old notification (age: ${ageInSeconds}s)');
               }
             } else {
-              print('⏭️ Skipping duplicate notification: $notificationId');
+              Logger.d('⏭️ Skipping duplicate notification: $notificationId');
             }
           },
         )
         .subscribe(
           (status, error) {
             if (status == 'SUBSCRIBED') {
-              print('✅ Background notification channel subscribed successfully');
+              Logger.d('✅ Background notification channel subscribed successfully');
             } else if (status == 'CHANNEL_ERROR') {
-              print('❌ Background notification channel error: $error');
+              Logger.d('❌ Background notification channel error: $error');
             } else if (status == 'TIMED_OUT') {
-              print('⚠️ Background notification channel timed out, retrying...');
+              Logger.d('⚠️ Background notification channel timed out, retrying...');
               // Retry subscription
               Future.delayed(const Duration(seconds: 5), () {
                 if (_isRunning) {
@@ -203,7 +204,7 @@ class BackgroundService {
     // Unsubscribe from previous channel
     _orderChannel?.unsubscribe();
     
-    print('📡 Setting up persistent realtime channel for orders...');
+    Logger.d('📡 Setting up persistent realtime channel for orders...');
     
     // Create persistent realtime channel for order updates
     _orderChannel = Supabase.instance.client
@@ -218,14 +219,14 @@ class BackgroundService {
             value: driverId,
           ),
           callback: (payload) {
-            print('📦 Realtime order UPDATE received!');
+            Logger.d('📦 Realtime order UPDATE received!');
             final order = payload.newRecord;
             
             // Check if order was just assigned
             if (order['driver_id'] == driverId && 
                 order['status'] == 'pending' &&
                 order['driver_assigned_at'] != null) {
-              print('🚨 Order assigned to driver!');
+              Logger.d('🚨 Order assigned to driver!');
               // TODO: Fix notification - disabled for now
               // NotificationManager calls handled by FCM directly
             }
@@ -234,11 +235,11 @@ class BackgroundService {
         .subscribe(
           (status, error) {
             if (status == 'SUBSCRIBED') {
-              print('✅ Background order channel subscribed successfully');
+              Logger.d('✅ Background order channel subscribed successfully');
             } else if (status == 'CHANNEL_ERROR') {
-              print('❌ Background order channel error: $error');
+              Logger.d('❌ Background order channel error: $error');
             } else if (status == 'TIMED_OUT') {
-              print('⚠️ Background order channel timed out, retrying...');
+              Logger.d('⚠️ Background order channel timed out, retrying...');
               Future.delayed(const Duration(seconds: 5), () {
                 if (_isRunning) {
                   _subscribeToOrders(driverId);
@@ -253,7 +254,7 @@ class BackgroundService {
   static Future<void> _showNotificationFromData(Map<String, dynamic> notification) async {
     // TODO: Fix notification method signatures - temporarily disabled
     // Notifications are handled by FCM directly via edge function
-    print('📱 Notification received: ${notification['type']}');
+    Logger.d('📱 Notification received: ${notification['type']}');
   }
 }
 

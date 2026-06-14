@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 
 /// Service to fetch and manage system settings from the database
 class SystemSettingsService {
@@ -39,15 +40,15 @@ class SystemSettingsService {
 
       return null;
     } catch (e) {
-      print('Error fetching system setting $key: $e');
+      Logger.d('Error fetching system setting $key: $e');
       
       // Check for 401 errors (session expired)
       if (e is PostgrestException && e.code == '401') {
-        print('🔐 Session expired while fetching system setting - clearing cache');
+        Logger.d('🔐 Session expired while fetching system setting - clearing cache');
         _settingsCache.clear();
         _lastFetchTime = null;
       } else if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
-        print('🔐 Unauthorized access while fetching system setting - clearing cache');
+        Logger.d('🔐 Unauthorized access while fetching system setting - clearing cache');
         _settingsCache.clear();
         _lastFetchTime = null;
       }
@@ -81,7 +82,7 @@ class SystemSettingsService {
 
       return settings;
     } catch (e) {
-      print('Error fetching system settings: $e');
+      Logger.d('Error fetching system settings: $e');
       return {};
     }
   }

@@ -23,6 +23,7 @@ import '../../../shared/widgets/delivery_fee_dropdown.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../shared/widgets/navigation_overlay_system.dart';
 import 'location_picker_screen.dart';
+import '../../../core/utils/logger.dart';
 
 class CreateOrderScreen extends StatefulWidget {
   final bool embedded;
@@ -262,7 +263,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
   
   void _prefillFormFromVoiceData(Map<String, dynamic> data) {
-    print('📝 Pre-filling form from voice data: $data');
+    Logger.d('📝 Pre-filling form from voice data: $data');
     
     if (data['customer_name'] != null) {
       _customerNameController.text = data['customer_name'];
@@ -273,7 +274,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       final digits = phone.replaceAll(RegExp(r'\D'), '');
       if (digits.length == 11 && digits.startsWith('0')) {
         phone = digits.substring(1);
-        print('📞 Normalized phone number: removed leading zero');
+        Logger.d('📞 Normalized phone number: removed leading zero');
       }
       _customerPhoneController.text = phone;
     }
@@ -281,10 +282,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     // Prioritize neighborhood field if provided (from voice transcription)
     if (data['neighborhood'] != null) {
       final neighborhoodName = data['neighborhood'].toString();
-      print('🏘️ Looking for neighborhood: $neighborhoodName');
+      Logger.d('🏘️ Looking for neighborhood: $neighborhoodName');
       final neighborhood = _findNeighborhoodByName(neighborhoodName);
       if (neighborhood != null) {
-        print('✅ Found neighborhood: ${neighborhood.name}');
+        Logger.d('✅ Found neighborhood: ${neighborhood.name}');
         setState(() {
           _selectedNeighborhood = neighborhood;
           _deliveryAddressController.text = neighborhood.name;
@@ -292,7 +293,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           _deliveryLongitude = neighborhood.longitude;
         });
       } else {
-        print('❌ Neighborhood not found: $neighborhoodName');
+        Logger.d('❌ Neighborhood not found: $neighborhoodName');
       }
     }
     
@@ -472,7 +473,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         });
       }
     } catch (e) {
-      print('Error fetching address suggestions: $e');
+      Logger.d('Error fetching address suggestions: $e');
     }
   }
 
@@ -517,7 +518,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       // Update the delivery fee controller
       _deliveryFeeController.text = calculatedFee.toStringAsFixed(0);
       
-      print('💰 Calculated delivery fee: $calculatedFee IQD');
+      Logger.d('💰 Calculated delivery fee: $calculatedFee IQD');
     }
   }
 
@@ -581,7 +582,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         // The lat/long will still be used for routing.
         if (storeName != null && storeName.isNotEmpty) {
           displayAddress = storeName;
-          print('✅ Using Store Name as pickup address: $displayAddress');
+          Logger.d('✅ Using Store Name as pickup address: $displayAddress');
         } else {
           // Fallback logic
           final storeLocationText = loc.storeLocation;
@@ -594,7 +595,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           
           if (needsGeocoding) {
             // Only geocode if we really don't have a name or address
-             print('🔄 Reverse geocoding merchant location...');
+             Logger.d('🔄 Reverse geocoding merchant location...');
              final geocodedAddress = await GeocodingService.reverseGeocode(lat, lng);
              displayAddress = geocodedAddress ?? storeLocationText;
           } else {
@@ -616,7 +617,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         _pickupAddressController.text = loc.storeLocation;
       });
     } catch (e) {
-      print('Error loading merchant location: $e');
+      Logger.d('Error loading merchant location: $e');
       // On error, use defaults
         final loc = AppLocalizations.of(context);
       setState(() {
@@ -658,34 +659,34 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               final newIsOnline = newRecord['is_online'] as bool?;
               
               if (oldIsOnline != newIsOnline) {
-                print('🔄 Driver online status changed: $oldIsOnline -> $newIsOnline');
+                Logger.d('🔄 Driver online status changed: $oldIsOnline -> $newIsOnline');
                 _checkOnlineDrivers();
               } else {
                 // Silently ignore other field updates (name, phone, etc.) to reduce processing
-                print('🔄 Driver update detected but is_online unchanged - skipping');
+                Logger.d('🔄 Driver update detected but is_online unchanged - skipping');
               }
             },
           )
           .subscribe((status, error) {
             if (error != null) {
-              print('❌ Subscription error: $error');
+              Logger.d('❌ Subscription error: $error');
             } else {
-              print('✅ Subscribed to driver status updates (optimized)');
+              Logger.d('✅ Subscribed to driver status updates (optimized)');
             }
           });
       
-      print('✅ Subscribed to driver status updates (optimized - only is_online changes)');
+      Logger.d('✅ Subscribed to driver status updates (optimized - only is_online changes)');
     } catch (e) {
-      print('❌ Failed to subscribe to driver updates: $e');
+      Logger.d('❌ Failed to subscribe to driver updates: $e');
     }
   }
 
   Future<void> _checkOnlineDrivers() async {
     try {
-      print('');
-      print('═══════════════════════════════════════');
-      print('🔍 CHECKING FOR AVAILABLE DRIVERS (ONLINE & FREE)');
-      print('═══════════════════════════════════════');
+      Logger.d('');
+      Logger.d('═══════════════════════════════════════');
+      Logger.d('🔍 CHECKING FOR AVAILABLE DRIVERS (ONLINE & FREE)');
+      Logger.d('═══════════════════════════════════════');
 
       final merchantId = Supabase.instance.client.auth.currentUser?.id;
       final merchantCityRow = merchantId == null
@@ -713,11 +714,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           .eq('role', 'driver')
           .ilike('city', merchantCity);
       
-      print('📊 Total drivers: ${allDrivers.length}');
+      Logger.d('📊 Total drivers: ${allDrivers.length}');
       for (var driver in allDrivers) {
         final online = driver['is_online'] ?? false;
         final verified = driver['manual_verified'] ?? false;
-        print('   ${driver['name']}: online=$online, verified=$verified');
+        Logger.d('   ${driver['name']}: online=$online, verified=$verified');
       }
       
       // Get only online drivers — ilike for case-insensitive city matching.
@@ -728,11 +729,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           .eq('is_online', true)
           .ilike('city', merchantCity);
       
-      print('');
-      print('📋 Online drivers: ${onlineDrivers.length}');
+      Logger.d('');
+      Logger.d('📋 Online drivers: ${onlineDrivers.length}');
       
       if (onlineDrivers.isEmpty) {
-        print('❌ NO ONLINE DRIVERS FOUND!');
+        Logger.d('❌ NO ONLINE DRIVERS FOUND!');
         if (mounted) {
           setState(() {
             _onlineDriversCount = 0;
@@ -764,44 +765,44 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       // Calculate free drivers
       final freeDriverCount = driverIds.where((id) => !busyDriverIds.contains(id)).length;
       
-      print('');
-      print('📊 Driver Status:');
-      print('   Online: ${driverIds.length}');
-      print('   Busy: ${busyDriverIds.length}');
-      print('   Free: $freeDriverCount');
+      Logger.d('');
+      Logger.d('📊 Driver Status:');
+      Logger.d('   Online: ${driverIds.length}');
+      Logger.d('   Busy: ${busyDriverIds.length}');
+      Logger.d('   Free: $freeDriverCount');
       
       for (var driver in onlineDrivers) {
         final id = driver['id'] as String;
         final name = driver['name'];
         final isBusy = busyDriverIds.contains(id);
-        print('   ${isBusy ? "🔴" : "🟢"} $name - ${isBusy ? "BUSY" : "FREE"}');
+        Logger.d('   ${isBusy ? "🔴" : "🟢"} $name - ${isBusy ? "BUSY" : "FREE"}');
       }
       
-      print('');
-      print('🔄 Updating UI state...');
-      print('   Current count: $_onlineDriversCount');
-      print('   New count: $freeDriverCount');
-      print('   Mounted: $mounted');
+      Logger.d('');
+      Logger.d('🔄 Updating UI state...');
+      Logger.d('   Current count: $_onlineDriversCount');
+      Logger.d('   New count: $freeDriverCount');
+      Logger.d('   Mounted: $mounted');
       
       if (mounted) {
         setState(() {
           _onlineDriversCount = freeDriverCount;
           _checkingDrivers = false;
         });
-        print('✅ UI STATE UPDATED to $_onlineDriversCount drivers');
+        Logger.d('✅ UI STATE UPDATED to $_onlineDriversCount drivers');
       } else {
-        print('❌ Widget not mounted - UI NOT updated');
+        Logger.d('❌ Widget not mounted - UI NOT updated');
       }
       
-      print('═══════════════════════════════════════');
-      print('');
+      Logger.d('═══════════════════════════════════════');
+      Logger.d('');
     } catch (e, stackTrace) {
-      print('');
-      print('❌❌❌ ERROR CHECKING DRIVERS ❌❌❌');
-      print('Error: $e');
-      print('Type: ${e.runtimeType}');
-      print('Stack: $stackTrace');
-      print('');
+      Logger.d('');
+      Logger.d('❌❌❌ ERROR CHECKING DRIVERS ❌❌❌');
+      Logger.d('Error: $e');
+      Logger.d('Type: ${e.runtimeType}');
+      Logger.d('Stack: $stackTrace');
+      Logger.d('');
       
       if (mounted) {
         setState(() {
@@ -862,7 +863,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         });
       }
     } catch (e) {
-      print('⚠️ Error checking active order for same driver: $e');
+      Logger.d('⚠️ Error checking active order for same driver: $e');
       if (mounted) {
         setState(() {
           _availableDrivers = [];
@@ -1252,12 +1253,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       },
     ).then((response) {
       if (response.status == 200) {
-        print('✅ WhatsApp location request sent successfully');
+        Logger.d('✅ WhatsApp location request sent successfully');
       } else {
-        print('⚠️ WhatsApp location request failed: ${response.status}');
+        Logger.d('⚠️ WhatsApp location request failed: ${response.status}');
       }
     }).catchError((error) {
-      print('⚠️ Failed to send WhatsApp location request (non-critical): $error');
+      Logger.d('⚠️ Failed to send WhatsApp location request (non-critical): $error');
       // Don't show error to user - this is a background operation
     });
   }

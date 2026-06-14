@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'flutterfire_notification_service.dart';
+import '../utils/logger.dart';
 
 /// Global In-App Order Notification Service
 /// 
@@ -26,18 +27,18 @@ class GlobalOrderNotificationService {
     required String userRole,
   }) async {
     if (_isMonitoring) {
-      print('ℹ️ Global notification service already running');
+      Logger.d('ℹ️ Global notification service already running');
       return;
     }
 
     _currentUserId = userId;
     _currentUserRole = userRole;
 
-    print('\n═══════════════════════════════════════');
-    print('🔔 STARTING GLOBAL ORDER NOTIFICATION SERVICE');
-    print('═══════════════════════════════════════');
-    print('User ID: $userId');
-    print('Role: $userRole');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('🔔 STARTING GLOBAL ORDER NOTIFICATION SERVICE');
+    Logger.d('═══════════════════════════════════════');
+    Logger.d('User ID: $userId');
+    Logger.d('Role: $userRole');
 
     if (userRole == 'driver') {
       await _startDriverMonitoring(userId);
@@ -46,13 +47,13 @@ class GlobalOrderNotificationService {
     }
 
     _isMonitoring = true;
-    print('✅ Global notification service started');
-    print('═══════════════════════════════════════\n');
+    Logger.d('✅ Global notification service started');
+    Logger.d('═══════════════════════════════════════\n');
   }
 
   /// Start monitoring for driver
   static Future<void> _startDriverMonitoring(String driverId) async {
-    print('👨‍✈️ Setting up driver order monitoring...');
+    Logger.d('👨‍✈️ Setting up driver order monitoring...');
 
     _driverOrderChannel = Supabase.instance.client
         .channel('global_driver_orders_$driverId')
@@ -71,12 +72,12 @@ class GlobalOrderNotificationService {
         )
         .subscribe();
 
-    print('✅ Driver order monitoring active');
+    Logger.d('✅ Driver order monitoring active');
   }
 
   /// Start monitoring for merchant
   static Future<void> _startMerchantMonitoring(String merchantId) async {
-    print('👨‍💼 Setting up merchant order monitoring...');
+    Logger.d('👨‍💼 Setting up merchant order monitoring...');
 
     _merchantOrderChannel = Supabase.instance.client
         .channel('global_merchant_orders_$merchantId')
@@ -95,7 +96,7 @@ class GlobalOrderNotificationService {
         )
         .subscribe();
 
-    print('✅ Merchant order monitoring active');
+    Logger.d('✅ Merchant order monitoring active');
   }
 
   /// Handle driver order updates
@@ -116,9 +117,9 @@ class GlobalOrderNotificationService {
       return;
     }
 
-    print('\n🔔 Driver order update detected:');
-    print('   Order ID: $orderId');
-    print('   Status: $oldStatus → $status');
+    Logger.d('\n🔔 Driver order update detected:');
+    Logger.d('   Order ID: $orderId');
+    Logger.d('   Status: $oldStatus → $status');
 
     // Determine notification based on status change
     String? title;
@@ -184,9 +185,9 @@ class GlobalOrderNotificationService {
       return;
     }
 
-    print('\n🔔 Merchant order update detected:');
-    print('   Order ID: $orderId');
-    print('   Status: $oldStatus → $status');
+    Logger.d('\n🔔 Merchant order update detected:');
+    Logger.d('   Order ID: $orderId');
+    Logger.d('   Status: $oldStatus → $status');
 
     // Determine notification
     String? title;
@@ -241,11 +242,11 @@ class GlobalOrderNotificationService {
   }) async {
     final context = navigatorKey.currentContext;
     if (context == null || !context.mounted) {
-      print('⚠️ No context available for overlay notification');
+      Logger.d('⚠️ No context available for overlay notification');
       return;
     }
 
-    print('📢 Showing overlay notification: $title');
+    Logger.d('📢 Showing overlay notification: $title');
 
     // Haptic feedback (vibration)
     try {
@@ -254,7 +255,7 @@ class GlobalOrderNotificationService {
       await Future.delayed(const Duration(milliseconds: 200));
       HapticFeedback.heavyImpact();
     } catch (e) {
-      print('⚠️ Could not trigger haptic feedback: $e');
+      Logger.d('⚠️ Could not trigger haptic feedback: $e');
     }
 
     // Show overlay banner
@@ -278,7 +279,7 @@ class GlobalOrderNotificationService {
 
   /// Stop monitoring
   static Future<void> stop() async {
-    print('🛑 Stopping global order notification service');
+    Logger.d('🛑 Stopping global order notification service');
     
     await _driverOrderChannel?.unsubscribe();
     await _merchantOrderChannel?.unsubscribe();
@@ -290,13 +291,13 @@ class GlobalOrderNotificationService {
     _isMonitoring = false;
     _shownNotifications.clear();
     
-    print('✅ Global notification service stopped');
+    Logger.d('✅ Global notification service stopped');
   }
 
   /// Clear notification history (e.g., on logout)
   static void clearHistory() {
     _shownNotifications.clear();
-    print('🧹 Notification history cleared');
+    Logger.d('🧹 Notification history cleared');
   }
 }
 

@@ -7,6 +7,7 @@ import '../../../core/providers/order_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../shared/widgets/skeletons.dart';
+import '../../../core/utils/logger.dart';
 
 class DriverEarningsScreen extends StatefulWidget {
   const DriverEarningsScreen({super.key});
@@ -93,11 +94,11 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
 
           final driverId = authProvider.user?.id;
           
-          print('🎯 Driver Analytics - Driver ID: $driverId');
-          print('📦 Total orders in provider: ${orderProvider.orders.length}');
+          Logger.d('🎯 Driver Analytics - Driver ID: $driverId');
+          Logger.d('📦 Total orders in provider: ${orderProvider.orders.length}');
           
           if (driverId == null) {
-            print('❌ ERROR: Driver ID is null!');
+            Logger.d('❌ ERROR: Driver ID is null!');
             return Center(
               child: Text(AppLocalizations.of(context).driverIdNotFound),
             );
@@ -108,27 +109,27 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
               .where((o) => o.driverId == driverId)
               .toList();
           
-          print('🚚 Driver orders: ${driverOrders.length}');
+          Logger.d('🚚 Driver orders: ${driverOrders.length}');
           
           // Filter by time period
-          print('🔄 Starting time filter...');
+          Logger.d('🔄 Starting time filter...');
           final filteredByTime = _filterOrdersByTimePeriod(driverOrders);
-          print('📅 After time filter: ${filteredByTime.length}');
+          Logger.d('📅 After time filter: ${filteredByTime.length}');
           
           // Filter by status
-          print('🔄 Starting status filter...');
+          Logger.d('🔄 Starting status filter...');
           final filteredOrders = _selectedStatus == 'all' 
               ? filteredByTime
               : filteredByTime.where((o) => o.status == _selectedStatus).toList();
-          print('🏷️  After status filter: ${filteredOrders.length}');
+          Logger.d('🏷️  After status filter: ${filteredOrders.length}');
           
           // Calculate statistics
-          print('🧮 Calculating statistics...');
+          Logger.d('🧮 Calculating statistics...');
           try {
             final stats = _calculateStatistics(filteredByTime, driverId);
-            print('✅ Stats calculated: $stats');
+            Logger.d('✅ Stats calculated: $stats');
             
-            print('🎨 Building UI...');
+            Logger.d('🎨 Building UI...');
             return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -202,8 +203,8 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
             ),
           );
         } catch (e, stackTrace) {
-            print('❌ ERROR building driver analytics UI: $e');
-            print('📍 Stack trace: $stackTrace');
+            Logger.d('❌ ERROR building driver analytics UI: $e');
+            Logger.d('📍 Stack trace: $stackTrace');
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(16),

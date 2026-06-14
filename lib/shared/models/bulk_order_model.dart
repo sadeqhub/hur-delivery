@@ -1,5 +1,6 @@
 import 'bulk_order_item.dart';
 import '../../core/data/neighborhoods_data.dart';
+import '../../core/utils/logger.dart';
 
 class BulkOrderModel {
   final String id;
@@ -57,7 +58,7 @@ class BulkOrderModel {
           );
         }).toList();
       } catch (e) {
-        print('⚠️ Error parsing neighborhood_items: $e');
+        Logger.d('⚠️ Error parsing neighborhood_items: $e');
         items = null;
       }
     }

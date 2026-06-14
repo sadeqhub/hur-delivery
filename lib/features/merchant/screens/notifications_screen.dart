@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/utils/logger.dart';
 
 class MerchantNotificationsScreen extends StatefulWidget {
   const MerchantNotificationsScreen({super.key});
@@ -50,7 +51,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
         });
       }
     } catch (e) {
-      print('Error loading notifications: $e');
+      Logger.d('Error loading notifications: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -72,7 +73,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
         }
       });
     } catch (e) {
-      print('Error marking notification as read: $e');
+      Logger.d('Error marking notification as read: $e');
     }
   }
 
@@ -98,7 +99,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
         );
       }
     } catch (e) {
-      print('Error deleting notification: $e');
+      Logger.d('Error deleting notification: $e');
     }
   }
 
@@ -130,7 +131,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
         );
       }
     } catch (e) {
-      print('Error marking all as read: $e');
+      Logger.d('Error marking all as read: $e');
     }
   }
   
@@ -158,7 +159,7 @@ class _MerchantNotificationsScreenState extends State<MerchantNotificationsScree
         }
         orderId = dataMap['order_id'] ?? dataMap['orderId'];
       } catch (e) {
-        print('Error parsing notification data: $e');
+        Logger.d('Error parsing notification data: $e');
       }
     }
     

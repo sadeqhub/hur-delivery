@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../utils/logger.dart';
 
 class WhatsAppService {
   // Use Supabase edge function proxy for security
@@ -15,7 +16,7 @@ class WhatsAppService {
       }
       return false;
     } catch (e) {
-      print('❌ Error checking WhatsApp connection: $e');
+      Logger.d('❌ Error checking WhatsApp connection: $e');
       return false;
     }
   }
@@ -26,7 +27,7 @@ class WhatsAppService {
     required String otp,
   }) async {
     try {
-      print('📱 Sending OTP via WhatsApp to: $phoneNumber');
+      Logger.d('📱 Sending OTP via WhatsApp to: $phoneNumber');
       
       final response = await http.post(
         Uri.parse('$_baseUrl/send-otp'),
@@ -39,9 +40,9 @@ class WhatsAppService {
         }),
       );
 
-      print('📡 WhatsApp API Response:');
-      print('Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
+      Logger.d('📡 WhatsApp API Response:');
+      Logger.d('Status Code: ${response.statusCode}');
+      Logger.d('Response Body: ${response.body}');
 
       final responseData = jsonDecode(response.body);
       
@@ -74,13 +75,13 @@ class WhatsAppService {
         );
       }
     } catch (e) {
-      print('❌ WhatsApp Service Error: $e');
+      Logger.d('❌ WhatsApp Service Error: $e');
       
       // Report error to edge function for better handling
       try {
         await _reportError(phoneNumber, e.toString(), 'otp_send');
       } catch (reportError) {
-        print('⚠️ Failed to report error: $reportError');
+        Logger.d('⚠️ Failed to report error: $reportError');
       }
       
       return WhatsAppResponse(
@@ -97,7 +98,7 @@ class WhatsAppService {
   }) async {
     // WhatsApp OTP doesn't require separate verification
     // The OTP is verified locally in the app
-    print('ℹ️ WhatsApp verification not required - OTP verified during sending');
+    Logger.d('ℹ️ WhatsApp verification not required - OTP verified during sending');
     
     return WhatsAppResponse(
       success: true,
@@ -145,10 +146,10 @@ Future<void> _reportError(String phoneNumber, String error, String context) asyn
 
     if (response.statusCode == 200) {
       final result = jsonDecode(response.body);
-      print('✅ Error reported successfully: ${result['user_message']}');
+      Logger.d('✅ Error reported successfully: ${result['user_message']}');
     }
   } catch (e) {
-    print('⚠️ Failed to report error: $e');
+    Logger.d('⚠️ Failed to report error: $e');
   }
 }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'error_manager.dart';
+import '../utils/logger.dart';
 
 /// Service to check system status and handle maintenance mode
 class SystemStatusService {
@@ -23,7 +24,7 @@ class SystemStatusService {
   void startPeriodicChecking() {
     if (_checkTimer != null) return;
     
-    print('🔄 Starting system status periodic checks...');
+    Logger.d('🔄 Starting system status periodic checks...');
     
     // Check immediately
     checkSystemStatus();
@@ -38,7 +39,7 @@ class SystemStatusService {
   void stopPeriodicChecking() {
     _checkTimer?.cancel();
     _checkTimer = null;
-    print('⏹️ Stopped system status periodic checks');
+    Logger.d('⏹️ Stopped system status periodic checks');
   }
 
   /// Check current system status
@@ -55,7 +56,7 @@ class SystemStatusService {
         
         // If status changed, notify callbacks
         if (newStatus != _isSystemEnabled) {
-          print('🔔 System status changed: ${newStatus ? "ENABLED" : "DISABLED"}');
+          Logger.d('🔔 System status changed: ${newStatus ? "ENABLED" : "DISABLED"}');
           _isSystemEnabled = newStatus;
           _notifyStatusChange(newStatus);
         }
@@ -87,7 +88,7 @@ class SystemStatusService {
       try {
         callback(isEnabled);
       } catch (e) {
-        print('Error in status change callback: $e');
+        Logger.d('Error in status change callback: $e');
       }
     }
   }

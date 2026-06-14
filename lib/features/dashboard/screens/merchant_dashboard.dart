@@ -26,6 +26,8 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/screen_visibility_tracker.dart';
 import '../../../shared/models/order_model.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../core/utils/logger.dart';
+import '../data/dashboard_repository.dart';
 // Removed legacy stable_order_card_manager import
 
 class MerchantDashboard extends StatefulWidget {
@@ -50,7 +52,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibi
         
         // Skip initialization in demo mode
         if (authProvider.isDemoMode) {
-          print('ℹ️ Demo mode: Skipping dashboard initialization');
+          Logger.d('ℹ️ Demo mode: Skipping dashboard initialization');
           return;
         }
         
@@ -92,7 +94,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibi
           }
         }
       } catch (e) {
-        print('Error initializing merchant dashboard: $e');
+        Logger.d('Error initializing merchant dashboard: $e');
         // Don't crash - just log error
       }
     });
@@ -1074,52 +1076,30 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
       // Get merchant's city
       final merchantId = Supabase.instance.client.auth.currentUser?.id;
       if (merchantId == null) return 0;
-      
-      final merchantCityRow = await Supabase.instance.client
-          .from('users')
-          .select('city')
-          .eq('id', merchantId)
-          .maybeSingle();
-      
-      final merchantCity = (merchantCityRow?['city'] ?? '').toString();
+
+      final merchantCity =
+          await DashboardRepository.instance.getMerchantCity(merchantId);
       if (merchantCity.isEmpty) return 0;
-      
+
       // Get online drivers in the same city (case-insensitive to handle
       // mixed-case city values stored by different clients).
-      final onlineDrivers = await Supabase.instance.client
-          .from('users')
-          .select('id')
-          .eq('role', 'driver')
-          .eq('is_online', true)
-          .ilike('city', merchantCity);
-      
-      if (onlineDrivers.isEmpty) return 0;
-      
-      // Get driver IDs
-      final driverIds = (onlineDrivers as List<dynamic>)
-          .map((driver) => driver['id'] as String?)
-          .whereType<String>()
-          .toList();
-      
+      final driverIds = await DashboardRepository.instance
+          .getOnlineDriversInCity(merchantCity);
+
+      if (driverIds.isEmpty) return 0;
+
       // Check for active orders
-      final activeOrders = await Supabase.instance.client
-          .from('orders')
-          .select('driver_id')
-          .inFilter('driver_id', driverIds)
-          .inFilter('status', ['pending', 'assigned', 'accepted', 'on_the_way']);
-      
-      // Get drivers with active orders
-      final busyDriverIds = (activeOrders as List<dynamic>)
-          .map((order) => order['driver_id'] as String?)
-          .whereType<String>()
+      final busyDriverIds = (await DashboardRepository.instance
+              .getActiveOrderDriverIds(driverIds))
           .toSet();
-      
+
       // Calculate free drivers (online without active orders)
-      final freeDriverCount = driverIds.where((id) => !busyDriverIds.contains(id)).length;
-      
+      final freeDriverCount =
+          driverIds.where((id) => !busyDriverIds.contains(id)).length;
+
       return freeDriverCount;
     } catch (e) {
-      print('Error checking online drivers: $e');
+      Logger.d('Error checking online drivers: $e');
       return 0;
     }
   }
@@ -1525,28 +1505,28 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
   Widget build(BuildContext context) {
     return Consumer<OrderProvider>(
       builder: (context, orderProvider, _) {
-        print('📊 Merchant Analytics - Building...');
-        print('📦 Total orders: ${orderProvider.orders.length}');
+        Logger.d('📊 Merchant Analytics - Building...');
+        Logger.d('📦 Total orders: ${orderProvider.orders.length}');
         
         try {
           // Filter orders by time period
-          print('🔄 Starting time filter...');
+          Logger.d('🔄 Starting time filter...');
           final filteredByTime = _filterOrdersByTimePeriod(orderProvider.orders);
-          print('📅 After time filter: ${filteredByTime.length}');
+          Logger.d('📅 After time filter: ${filteredByTime.length}');
           
           // Filter by status
-          print('🔄 Starting status filter...');
+          Logger.d('🔄 Starting status filter...');
           final filteredOrders = _selectedStatus == 'all' 
               ? filteredByTime
               : filteredByTime.where((o) => o.status == _selectedStatus).toList();
-          print('🏷️  After status filter: ${filteredOrders.length}');
+          Logger.d('🏷️  After status filter: ${filteredOrders.length}');
 
           // Calculate statistics
-          print('🧮 Calculating statistics...');
+          Logger.d('🧮 Calculating statistics...');
           final stats = _calculateStatistics(filteredByTime);
-          print('✅ Stats calculated: $stats');
+          Logger.d('✅ Stats calculated: $stats');
 
-          print('🎨 Building UI...');
+          Logger.d('🎨 Building UI...');
           return Container(
             color: AppColors.surfaceVariant,
             child: SingleChildScrollView(
@@ -1619,8 +1599,8 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
           ),
         );
         } catch (e, stackTrace) {
-          print('❌ ERROR building merchant analytics UI: $e');
-          print('📍 Stack trace: $stackTrace');
+          Logger.d('❌ ERROR building merchant analytics UI: $e');
+          Logger.d('📍 Stack trace: $stackTrace');
           return Container(
             color: AppColors.surfaceVariant,
             child: Center(

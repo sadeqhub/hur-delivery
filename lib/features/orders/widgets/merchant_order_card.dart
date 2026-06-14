@@ -7,6 +7,7 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../shared/models/order_model.dart';
 import '../../../shared/widgets/delivery_timer_widget.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/utils/logger.dart';
 
 /// Expandable order card specifically designed for merchant dashboard
 /// Shows minimal info when collapsed, full details when expanded
@@ -74,7 +75,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
       _initializeFlashAnimation();
       _subscribeToOrderUpdates();
     } catch (e) {
-      print('❌ Error initializing MerchantOrderCard: $e');
+      Logger.d('❌ Error initializing MerchantOrderCard: $e');
     }
   }
   
@@ -85,7 +86,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
     // If the order changed (different ID or status), reinitialize everything
     if (oldWidget.order.id != widget.order.id || 
         oldWidget.order.status != widget.order.status) {
-      print('🔄 MerchantOrderCard: Order changed from ${oldWidget.order.id}/${oldWidget.order.status} to ${widget.order.id}/${widget.order.status}');
+      Logger.d('🔄 MerchantOrderCard: Order changed from ${oldWidget.order.id}/${oldWidget.order.status} to ${widget.order.id}/${widget.order.status}');
       
       // Update current order
       _currentOrder = widget.order;
@@ -105,7 +106,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
         _flashAnimationController.dispose();
         _initializeFlashAnimation();
       } catch (e) {
-        print('⚠️ Error reinitializing flash animation: $e');
+        Logger.d('⚠️ Error reinitializing flash animation: $e');
       }
       
       // Subscribe to new order updates
@@ -605,9 +606,9 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
       ),
     );
     } catch (e, stackTrace) {
-      print('❌ ERROR in MerchantOrderCard: $e');
-      print('📋 Order ID: ${widget.order.id}');
-      print('📍 Stack trace: $stackTrace');
+      Logger.d('❌ ERROR in MerchantOrderCard: $e');
+      Logger.d('📋 Order ID: ${widget.order.id}');
+      Logger.d('📍 Stack trace: $stackTrace');
       
       // Return safe error widget instead of crashing
       return Container(

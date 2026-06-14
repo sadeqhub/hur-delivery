@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import '../utils/logger.dart';
 
 class NajafDistrict {
   final String name;
@@ -53,15 +54,15 @@ class NajafDistrictsService {
               ));
             }
           } catch (e) {
-            print('Error parsing district line $i: $e');
+            Logger.d('Error parsing district line $i: $e');
           }
         }
       }
       
       _isLoaded = true;
-      print('✅ Loaded ${_districts!.length} Najaf districts');
+      Logger.d('✅ Loaded ${_districts!.length} Najaf districts');
     } catch (e) {
-      print('❌ Error loading Najaf districts: $e');
+      Logger.d('❌ Error loading Najaf districts: $e');
       _districts = [];
       _isLoaded = true;
     }

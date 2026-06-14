@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../constants/app_constants.dart';
+import '../utils/logger.dart';
 
 class GeocodingService {
   // Reverse geocode using Mapbox Geocoding API v6
@@ -9,7 +10,7 @@ class GeocodingService {
     try {
       // Check if we have a Mapbox token
       if (AppConstants.mapboxAccessToken.isEmpty) {
-        print('⚠️ Mapbox token not available, returning coordinates');
+        Logger.d('⚠️ Mapbox token not available, returning coordinates');
         return 'الموقع: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
       }
 
@@ -24,7 +25,7 @@ class GeocodingService {
         'limit=1'
       );
 
-      print('🗺️ Reverse geocoding: lat=$latitude, lng=$longitude');
+      Logger.d('🗺️ Reverse geocoding: lat=$latitude, lng=$longitude');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -40,7 +41,7 @@ class GeocodingService {
             
             final fullAddress = properties['full_address'] as String?;
             if (fullAddress != null && fullAddress.isNotEmpty) {
-              print('✅ Reverse geocoded to full_address: $fullAddress');
+              Logger.d('✅ Reverse geocoded to full_address: $fullAddress');
               return fullAddress;
             }
             
@@ -49,17 +50,17 @@ class GeocodingService {
             
             if (name != null && placeFormatted != null) {
               final combined = '$name، $placeFormatted';
-              print('✅ Reverse geocoded to name+place: $combined');
+              Logger.d('✅ Reverse geocoded to name+place: $combined');
               return combined;
             }
             
             if (name != null && name.isNotEmpty) {
-              print('✅ Reverse geocoded to name: $name');
+              Logger.d('✅ Reverse geocoded to name: $name');
               return name;
             }
             
             if (placeFormatted != null && placeFormatted.isNotEmpty) {
-              print('✅ Reverse geocoded to place_formatted: $placeFormatted');
+              Logger.d('✅ Reverse geocoded to place_formatted: $placeFormatted');
               return placeFormatted;
             }
             
@@ -95,23 +96,23 @@ class GeocodingService {
               
               if (addressParts.isNotEmpty) {
                 final builtAddress = addressParts.join('، ');
-                print('✅ Reverse geocoded to built address: $builtAddress');
+                Logger.d('✅ Reverse geocoded to built address: $builtAddress');
                 return builtAddress;
               }
             }
           }
         }
       } else {
-        print('❌ Reverse geocoding failed with status: ${response.statusCode}');
-        print('Response: ${response.body}');
+        Logger.d('❌ Reverse geocoding failed with status: ${response.statusCode}');
+        Logger.d('Response: ${response.body}');
       }
       
       // Fallback to coordinates if geocoding fails
       return 'الموقع: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
       
     } catch (e, stackTrace) {
-      print('❌ Reverse geocoding error: $e');
-      print('Stack trace: $stackTrace');
+      Logger.d('❌ Reverse geocoding error: $e');
+      Logger.d('Stack trace: $stackTrace');
       // Return coordinates as fallback
       return 'الموقع: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
     }
@@ -123,7 +124,7 @@ class GeocodingService {
     
     // Check if we have a Mapbox token
     if (AppConstants.mapboxAccessToken.isEmpty) {
-      print('⚠️ Mapbox token not available for forward geocoding');
+      Logger.d('⚠️ Mapbox token not available for forward geocoding');
       return [];
     }
     
@@ -176,7 +177,7 @@ class GeocodingService {
       
       return [];
     } catch (e) {
-      print('Forward geocoding error: $e');
+      Logger.d('Forward geocoding error: $e');
       return [];
     }
   }
@@ -219,7 +220,7 @@ class GeocodingService {
     
     // Check if we have a Mapbox token
     if (AppConstants.mapboxAccessToken.isEmpty) {
-      print('⚠️ Mapbox token not available, using ${cityInfo['name']} center');
+      Logger.d('⚠️ Mapbox token not available, using ${cityInfo['name']} center');
       return {
         'latitude': cityInfo['latitude'],
         'longitude': cityInfo['longitude'],
@@ -257,7 +258,7 @@ class GeocodingService {
         'limit=1'
       );
 
-      print('🗺️ Geocoding ${cityInfo['name']} address (v6): $searchQuery');
+      Logger.d('🗺️ Geocoding ${cityInfo['name']} address (v6): $searchQuery');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -282,8 +283,8 @@ class GeocodingService {
                   : (name ?? placeFormatted ?? cityNameAr));
           
           if (resultLat != null && resultLng != null) {
-            print('✅ Geocoded to: lat=$resultLat, lng=$resultLng');
-            print('✅ Address: $formattedAddress');
+            Logger.d('✅ Geocoded to: lat=$resultLat, lng=$resultLng');
+            Logger.d('✅ Address: $formattedAddress');
             
             return {
               'latitude': resultLat,
@@ -294,12 +295,12 @@ class GeocodingService {
           }
         }
       } else {
-        print('❌ ${cityInfo['name']} geocoding failed with status: ${response.statusCode}');
-        print('Response: ${response.body}');
+        Logger.d('❌ ${cityInfo['name']} geocoding failed with status: ${response.statusCode}');
+        Logger.d('Response: ${response.body}');
       }
       
       // If geocoding fails, return city center coordinates as fallback
-      print('⚠️ Geocoding failed, using ${cityInfo['name']} center');
+      Logger.d('⚠️ Geocoding failed, using ${cityInfo['name']} center');
       return {
         'latitude': lat,
         'longitude': lng,
@@ -308,8 +309,8 @@ class GeocodingService {
       };
       
     } catch (e, stackTrace) {
-      print('❌ ${cityInfo['name']} geocoding error: $e');
-      print('Stack trace: $stackTrace');
+      Logger.d('❌ ${cityInfo['name']} geocoding error: $e');
+      Logger.d('Stack trace: $stackTrace');
       // Return city center as fallback
       return {
         'latitude': cityInfo['latitude'],
@@ -432,7 +433,7 @@ class GeocodingService {
       };
       
     } catch (e) {
-      print('Get formatted address error: $e');
+      Logger.d('Get formatted address error: $e');
       return {
         'full': 'الموقع: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}',
         'short': 'موقع محدد',

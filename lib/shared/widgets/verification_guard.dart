@@ -15,6 +15,7 @@ import '../../core/config/env.dart';
 import '../../shared/widgets/primary_button.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../features/auth/screens/id_verification_review_screen.dart';
+import '../../core/utils/logger.dart';
 
 /// Guard widget that checks user verification status and blocks access
 /// if verification is pending or rejected
@@ -72,7 +73,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
             _statusCheckTimer = null;
           }
         }).catchError((error) {
-          print('Error checking verification status: $error');
+          Logger.d('Error checking verification status: $error');
         });
       } else {
         // Status is not pending, cancel the timer
@@ -539,7 +540,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
     });
 
     try {
-      print('🆔 Resubmitting ID verification...');
+      Logger.d('🆔 Resubmitting ID verification...');
       final verificationResult = await _verifyIdWithAI(user.role, user.id);
       
       if (verificationResult == null || !verificationResult['success']) {
@@ -555,7 +556,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
         return;
       }
       
-      print('✅ ID verification passed by AI');
+      Logger.d('✅ ID verification passed by AI');
       
       // Restart polling after resubmission
       _statusCheckTimer?.cancel();
@@ -578,7 +579,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
         );
       }
     } catch (e) {
-      print('❌ Resubmission error: $e');
+      Logger.d('❌ Resubmission error: $e');
       if (mounted) {
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -599,7 +600,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
 
   Future<Map<String, dynamic>?> _verifyIdWithAI(String role, String userId) async {
     try {
-      print('📤 Sending images to ID verification edge function...');
+      Logger.d('📤 Sending images to ID verification edge function...');
       
       var request = http.MultipartRequest(
         'POST',
@@ -632,7 +633,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
       request.fields['role'] = role;
       request.fields['user_id'] = userId;
       
-      print('⏳ Waiting for verification response...');
+      Logger.d('⏳ Waiting for verification response...');
       
       var response = await request.send().timeout(
         const Duration(seconds: 60),
@@ -644,11 +645,11 @@ class _VerificationGuardState extends State<VerificationGuard> {
       final responseData = await response.stream.bytesToString();
       final jsonData = json.decode(responseData);
       
-      print('📥 Verification response: ${jsonData.toString()}');
+      Logger.d('📥 Verification response: ${jsonData.toString()}');
       
       return jsonData;
     } catch (e) {
-      print('❌ ID verification error: $e');
+      Logger.d('❌ ID verification error: $e');
       final loc = AppLocalizations.of(context);
       return {
         'success': false,

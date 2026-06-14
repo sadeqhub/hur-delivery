@@ -5,6 +5,7 @@ import '../../shared/models/order_model.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/utils/logger.dart';
 
 /// Widget to display delivery timer countdown
 class DeliveryTimerWidget extends StatefulWidget {
@@ -84,7 +85,7 @@ class _DeliveryTimerWidgetState extends State<DeliveryTimerWidget> {
         }
       } catch (e) {
         // If provider is not available, don't show popup to be safe
-        print('Warning: Could not check user role for late dialog: $e');
+        Logger.d('Warning: Could not check user role for late dialog: $e');
         return;
       }
       

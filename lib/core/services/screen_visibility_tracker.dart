@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/logger.dart';
 
 /// Tracks which screen is currently visible to prioritize requests
 class ScreenVisibilityTracker {
@@ -17,9 +18,9 @@ class ScreenVisibilityTracker {
       _screenHistory[screenName] = DateTime.now();
       
       if (previousScreen != null) {
-        print('📱 Screen changed: $previousScreen → $screenName');
+        Logger.d('📱 Screen changed: $previousScreen → $screenName');
       } else {
-        print('📱 Screen visible: $screenName');
+        Logger.d('📱 Screen visible: $screenName');
       }
     }
   }
@@ -28,7 +29,7 @@ class ScreenVisibilityTracker {
   void setScreenHidden(String screenName) {
     if (_currentScreen == screenName) {
       _currentScreen = null;
-      print('📱 Screen hidden: $screenName');
+      Logger.d('📱 Screen hidden: $screenName');
     }
   }
 

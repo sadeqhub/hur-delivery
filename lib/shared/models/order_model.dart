@@ -1,257 +1,93 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-class OrderModel {
-  final String id;
-  final String merchantId;
-  final String? merchantName;
-  final String? merchantPhone;
-  final String? driverId;
-  final String? driverName;
-  final String? driverPhone;
-  final String customerName;
-  final String? customerPhone;
-  final String pickupAddress;
-  final double pickupLatitude;
-  final double pickupLongitude;
-  final String deliveryAddress;
-  final double deliveryLatitude;
-  final double deliveryLongitude;
-  final String status;
-  final double totalAmount;
-  final double deliveryFee;
-  final String? notes;
-  final String vehicleType; // motorbike, car, or truck
-  final String? bulkOrderId; // Reference to bulk order if part of bulk
-  final DateTime createdAt;
-  final DateTime? updatedAt;
-  final DateTime? driverAssignedAt;
-  final DateTime? acceptedAt;
-  final DateTime? rejectedAt;
-  final int? timeoutRemainingSeconds; // Calculated from database
-  final DateTime? readyAt; // When order will be ready for pickup
-  final int? readyCountdown; // Minutes until ready (0 = ready now)
-  final bool? customerLocationProvided; // Whether customer provided GPS location
-  final String? userFriendlyCode; // User-friendly 6-character code for sharing
-  final int? deliveryTimeLimitSeconds; // Timer limit in seconds (Mapbox * 1.5)
-  final DateTime? deliveryTimerStartedAt; // When timer started (pickup confirmed)
-  final DateTime? deliveryTimerStoppedAt; // When timer stopped (reached dropoff)
-  final DateTime? deliveryTimerExpiresAt; // When timer expires
-  final List<OrderItemModel> items;
+part 'order_model.freezed.dart';
+part 'order_model.g.dart';
 
-  OrderModel({
-    required this.id,
-    required this.merchantId,
-    this.merchantName,
-    this.merchantPhone,
-    this.driverId,
-    this.driverName,
-    this.driverPhone,
-    required this.customerName,
-    this.customerPhone,
-    required this.pickupAddress,
-    required this.pickupLatitude,
-    required this.pickupLongitude,
-    required this.deliveryAddress,
-    required this.deliveryLatitude,
-    required this.deliveryLongitude,
-    this.status = 'pending',
-    this.totalAmount = 0.0,
-    this.deliveryFee = 0.0,
-    this.notes,
-    this.vehicleType = 'motorbike',
-    this.bulkOrderId,
-    required this.createdAt,
-    this.updatedAt,
-    this.driverAssignedAt,
-    this.acceptedAt,
-    this.rejectedAt,
-    this.timeoutRemainingSeconds,
-    this.readyAt,
-    this.readyCountdown,
-    this.customerLocationProvided,
-    this.userFriendlyCode,
-    this.deliveryTimeLimitSeconds,
-    this.deliveryTimerStartedAt,
-    this.deliveryTimerStoppedAt,
-    this.deliveryTimerExpiresAt,
-    this.items = const [],
-  });
+DateTime _dateTimeFromJson(dynamic v) => DateTime.parse(v as String);
+DateTime? _nullableDateTimeFromJson(dynamic v) =>
+    v == null ? null : DateTime.parse(v as String);
+String _dateTimeToJson(DateTime dt) => dt.toIso8601String();
+String? _nullableDateTimeToJson(DateTime? dt) => dt?.toIso8601String();
+double _doubleFromJson(dynamic v) =>
+    v == null ? 0.0 : double.parse(v.toString());
 
-  factory OrderModel.fromJson(Map<String, dynamic> json) {
-    return OrderModel(
-      id: json['id'] as String,
-      merchantId: json['merchant_id'] as String,
-      merchantName: json['merchant_name'] as String?,
-      merchantPhone: json['merchant_phone'] as String?,
-      driverId: json['driver_id'] as String?,
-      driverName: json['driver_name'] as String?,
-      driverPhone: json['driver_phone'] as String?,
-      customerName: json['customer_name'] as String,
-      customerPhone: json['customer_phone'] as String?,
-      pickupAddress: json['pickup_address'] as String,
-      pickupLatitude: double.parse(json['pickup_latitude'].toString()),
-      pickupLongitude: double.parse(json['pickup_longitude'].toString()),
-      deliveryAddress: json['delivery_address'] as String,
-      deliveryLatitude: double.parse(json['delivery_latitude'].toString()),
-      deliveryLongitude: double.parse(json['delivery_longitude'].toString()),
-      status: json['status'] as String? ?? 'pending',
-      totalAmount: double.parse(json['total_amount']?.toString() ?? '0'),
-      deliveryFee: double.parse(json['delivery_fee']?.toString() ?? '0'),
-      notes: json['notes'] as String?,
-      vehicleType: json['vehicle_type'] as String? ?? 'motorbike',
-      bulkOrderId: json['bulk_order_id'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
-      driverAssignedAt: json['driver_assigned_at'] != null ? DateTime.parse(json['driver_assigned_at'] as String) : null,
-      acceptedAt: json['accepted_at'] != null ? DateTime.parse(json['accepted_at'] as String) : null,
-      rejectedAt: json['rejected_at'] != null ? DateTime.parse(json['rejected_at'] as String) : null,
-      timeoutRemainingSeconds: json['timeout_remaining_seconds'] as int?,
-      readyAt: json['ready_at'] != null ? DateTime.parse(json['ready_at'] as String) : null,
-      readyCountdown: json['ready_countdown'] as int?,
-      customerLocationProvided: json['customer_location_provided'] as bool?,
-      userFriendlyCode: json['user_friendly_code'] as String?,
-      deliveryTimeLimitSeconds: json['delivery_time_limit_seconds'] as int?,
-      deliveryTimerStartedAt: json['delivery_timer_started_at'] != null 
-          ? DateTime.parse(json['delivery_timer_started_at'] as String) 
-          : null,
-      deliveryTimerStoppedAt: json['delivery_timer_stopped_at'] != null 
-          ? DateTime.parse(json['delivery_timer_stopped_at'] as String) 
-          : null,
-      deliveryTimerExpiresAt: json['delivery_timer_expires_at'] != null 
-          ? DateTime.parse(json['delivery_timer_expires_at'] as String) 
-          : null,
-      items: (json['items'] as List<dynamic>?)
-          ?.map((item) => OrderItemModel.fromJson(item as Map<String, dynamic>))
-          .toList() ?? [],
-    );
-  }
+@freezed
+class OrderModel with _$OrderModel {
+  const OrderModel._();
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'merchant_id': merchantId,
-      'merchant_name': merchantName,
-      'merchant_phone': merchantPhone,
-      'driver_id': driverId,
-      'driver_name': driverName,
-      'driver_phone': driverPhone,
-      'customer_name': customerName,
-      'customer_phone': customerPhone,
-      'pickup_address': pickupAddress,
-      'pickup_latitude': pickupLatitude,
-      'pickup_longitude': pickupLongitude,
-      'delivery_address': deliveryAddress,
-      'delivery_latitude': deliveryLatitude,
-      'delivery_longitude': deliveryLongitude,
-      'status': status,
-      'total_amount': totalAmount,
-      'delivery_fee': deliveryFee,
-      'notes': notes,
-      'vehicle_type': vehicleType,
-      'bulk_order_id': bulkOrderId,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
-      'driver_assigned_at': driverAssignedAt?.toIso8601String(),
-      'accepted_at': acceptedAt?.toIso8601String(),
-      'rejected_at': rejectedAt?.toIso8601String(),
-      'user_friendly_code': userFriendlyCode,
-      'items': items.map((item) => item.toJson()).toList(),
-    };
-  }
-
-  OrderModel copyWith({
-    String? id,
-    String? merchantId,
-    String? merchantName,
-    String? merchantPhone,
-    String? driverId,
-    String? driverName,
-    String? driverPhone,
-    String? customerName,
-    String? customerPhone,
-    String? pickupAddress,
-    double? pickupLatitude,
-    double? pickupLongitude,
-    String? deliveryAddress,
-    double? deliveryLatitude,
-    double? deliveryLongitude,
-    String? status,
-    double? totalAmount,
-    double? deliveryFee,
+  const factory OrderModel({
+    required String id,
+    @JsonKey(name: 'merchant_id') required String merchantId,
+    @JsonKey(name: 'merchant_name') String? merchantName,
+    @JsonKey(name: 'merchant_phone') String? merchantPhone,
+    @JsonKey(name: 'driver_id') String? driverId,
+    @JsonKey(name: 'driver_name') String? driverName,
+    @JsonKey(name: 'driver_phone') String? driverPhone,
+    @JsonKey(name: 'customer_name') required String customerName,
+    @JsonKey(name: 'customer_phone') String? customerPhone,
+    @JsonKey(name: 'pickup_address') required String pickupAddress,
+    @JsonKey(name: 'pickup_latitude', fromJson: _doubleFromJson)
+    required double pickupLatitude,
+    @JsonKey(name: 'pickup_longitude', fromJson: _doubleFromJson)
+    required double pickupLongitude,
+    @JsonKey(name: 'delivery_address') required String deliveryAddress,
+    @JsonKey(name: 'delivery_latitude', fromJson: _doubleFromJson)
+    required double deliveryLatitude,
+    @JsonKey(name: 'delivery_longitude', fromJson: _doubleFromJson)
+    required double deliveryLongitude,
+    @Default('pending') String status,
+    @JsonKey(name: 'total_amount', fromJson: _doubleFromJson)
+    @Default(0.0)
+    double totalAmount,
+    @JsonKey(name: 'delivery_fee', fromJson: _doubleFromJson)
+    @Default(0.0)
+    double deliveryFee,
     String? notes,
-    String? vehicleType,
-    String? bulkOrderId,
-    DateTime? createdAt,
+    @JsonKey(name: 'vehicle_type') @Default('motorbike') String vehicleType,
+    @JsonKey(name: 'bulk_order_id') String? bulkOrderId,
+    @JsonKey(name: 'created_at', fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
+    required DateTime createdAt,
+    @JsonKey(name: 'updated_at', fromJson: _nullableDateTimeFromJson, toJson: _nullableDateTimeToJson)
     DateTime? updatedAt,
+    @JsonKey(name: 'driver_assigned_at', fromJson: _nullableDateTimeFromJson, toJson: _nullableDateTimeToJson)
     DateTime? driverAssignedAt,
+    @JsonKey(name: 'accepted_at', fromJson: _nullableDateTimeFromJson, toJson: _nullableDateTimeToJson)
     DateTime? acceptedAt,
+    @JsonKey(name: 'rejected_at', fromJson: _nullableDateTimeFromJson, toJson: _nullableDateTimeToJson)
     DateTime? rejectedAt,
-    int? timeoutRemainingSeconds,
+    @JsonKey(name: 'timeout_remaining_seconds') int? timeoutRemainingSeconds,
+    @JsonKey(name: 'ready_at', fromJson: _nullableDateTimeFromJson, toJson: _nullableDateTimeToJson)
     DateTime? readyAt,
-    int? readyCountdown,
-    bool? customerLocationProvided,
-    String? userFriendlyCode,
-    int? deliveryTimeLimitSeconds,
+    @JsonKey(name: 'ready_countdown') int? readyCountdown,
+    @JsonKey(name: 'customer_location_provided') bool? customerLocationProvided,
+    @JsonKey(name: 'user_friendly_code') String? userFriendlyCode,
+    @JsonKey(name: 'delivery_time_limit_seconds') int? deliveryTimeLimitSeconds,
+    @JsonKey(name: 'delivery_timer_started_at', fromJson: _nullableDateTimeFromJson, toJson: _nullableDateTimeToJson)
     DateTime? deliveryTimerStartedAt,
+    @JsonKey(name: 'delivery_timer_stopped_at', fromJson: _nullableDateTimeFromJson, toJson: _nullableDateTimeToJson)
     DateTime? deliveryTimerStoppedAt,
+    @JsonKey(name: 'delivery_timer_expires_at', fromJson: _nullableDateTimeFromJson, toJson: _nullableDateTimeToJson)
     DateTime? deliveryTimerExpiresAt,
-    List<OrderItemModel>? items,
-  }) {
-    return OrderModel(
-      id: id ?? this.id,
-      merchantId: merchantId ?? this.merchantId,
-      merchantName: merchantName ?? this.merchantName,
-      merchantPhone: merchantPhone ?? this.merchantPhone,
-      driverId: driverId ?? this.driverId,
-      driverName: driverName ?? this.driverName,
-      driverPhone: driverPhone ?? this.driverPhone,
-      customerName: customerName ?? this.customerName,
-      customerPhone: customerPhone ?? this.customerPhone,
-      pickupAddress: pickupAddress ?? this.pickupAddress,
-      pickupLatitude: pickupLatitude ?? this.pickupLatitude,
-      pickupLongitude: pickupLongitude ?? this.pickupLongitude,
-      deliveryAddress: deliveryAddress ?? this.deliveryAddress,
-      deliveryLatitude: deliveryLatitude ?? this.deliveryLatitude,
-      deliveryLongitude: deliveryLongitude ?? this.deliveryLongitude,
-      status: status ?? this.status,
-      totalAmount: totalAmount ?? this.totalAmount,
-      deliveryFee: deliveryFee ?? this.deliveryFee,
-      notes: notes ?? this.notes,
-      vehicleType: vehicleType ?? this.vehicleType,
-      bulkOrderId: bulkOrderId ?? this.bulkOrderId,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      driverAssignedAt: driverAssignedAt ?? this.driverAssignedAt,
-      acceptedAt: acceptedAt ?? this.acceptedAt,
-      rejectedAt: rejectedAt ?? this.rejectedAt,
-      timeoutRemainingSeconds: timeoutRemainingSeconds ?? this.timeoutRemainingSeconds,
-      readyAt: readyAt ?? this.readyAt,
-      readyCountdown: readyCountdown ?? this.readyCountdown,
-      customerLocationProvided: customerLocationProvided ?? this.customerLocationProvided,
-      userFriendlyCode: userFriendlyCode ?? this.userFriendlyCode,
-      deliveryTimeLimitSeconds: deliveryTimeLimitSeconds ?? this.deliveryTimeLimitSeconds,
-      deliveryTimerStartedAt: deliveryTimerStartedAt ?? this.deliveryTimerStartedAt,
-      deliveryTimerStoppedAt: deliveryTimerStoppedAt ?? this.deliveryTimerStoppedAt,
-      deliveryTimerExpiresAt: deliveryTimerExpiresAt ?? this.deliveryTimerExpiresAt,
-      items: items ?? this.items,
-    );
-  }
+    @Default([]) List<OrderItemModel> items,
+  }) = _OrderModel;
 
-  // Status checks (matching database)
-  bool get isPending => status == 'pending'; // Not reached drivers
-  bool get isAssigned => status == 'assigned'; // Reached drivers but not accepted
-  bool get isAccepted => status == 'accepted'; // Driver accepted
-  bool get isOnTheWay => status == 'on_the_way'; // Being delivered
-  bool get isDelivered => status == 'delivered'; // Completed
-  bool get isCancelled => status == 'cancelled'; // Cancelled
-  bool get isUnassigned => status == 'unassigned'; // No driver assigned
-  bool get isRejected => status == 'rejected'; // All drivers rejected
+  factory OrderModel.fromJson(Map<String, dynamic> json) =>
+      _$OrderModelFromJson(json);
+
+  bool get isPending => status == 'pending';
+  bool get isAssigned => status == 'assigned';
+  bool get isAccepted => status == 'accepted';
+  bool get isOnTheWay => status == 'on_the_way';
+  bool get isDelivered => status == 'delivered';
+  bool get isCancelled => status == 'cancelled';
+  bool get isUnassigned => status == 'unassigned';
+  bool get isRejected => status == 'rejected';
 
   bool get isActive => !isDelivered && !isCancelled && !isRejected;
   bool get isCompleted => isDelivered;
   bool get isFailed => isCancelled || isRejected;
   bool get isBulkOrder => bulkOrderId != null;
 
-  // Status display
   String get statusDisplay {
     switch (status) {
       case 'pending':
@@ -275,12 +111,10 @@ class OrderModel {
     }
   }
 
-  // Total calculation
   double get grandTotal => totalAmount + deliveryFee;
 
-  // Ready time calculations
   bool get isReady {
-    if (readyAt == null) return true; // No ready time = ready now
+    if (readyAt == null) return true;
     return DateTime.now().isAfter(readyAt!);
   }
 
@@ -292,61 +126,22 @@ class OrderModel {
   }
 
   int get secondsUntilReady => timeUntilReady.inSeconds;
-
-  @override
-  String toString() {
-    return 'OrderModel(id: $id, status: $status, customerName: $customerName, totalAmount: $totalAmount)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is OrderModel && other.id == id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
 }
 
-class OrderItemModel {
-  final String id;
-  final String orderId;
-  final String name;
-  final int quantity;
-  final double price;
+@freezed
+class OrderItemModel with _$OrderItemModel {
+  const OrderItemModel._();
 
-  OrderItemModel({
-    required this.id,
-    required this.orderId,
-    required this.name,
-    this.quantity = 1,
-    this.price = 0.0,
-  });
+  const factory OrderItemModel({
+    required String id,
+    @JsonKey(name: 'order_id') required String orderId,
+    required String name,
+    @Default(1) int quantity,
+    @JsonKey(fromJson: _doubleFromJson) @Default(0.0) double price,
+  }) = _OrderItemModel;
 
-  factory OrderItemModel.fromJson(Map<String, dynamic> json) {
-    return OrderItemModel(
-      id: json['id'] as String,
-      orderId: json['order_id'] as String,
-      name: json['name'] as String,
-      quantity: json['quantity'] as int? ?? 1,
-      price: double.parse(json['price']?.toString() ?? '0'),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'order_id': orderId,
-      'name': name,
-      'quantity': quantity,
-      'price': price,
-    };
-  }
+  factory OrderItemModel.fromJson(Map<String, dynamic> json) =>
+      _$OrderItemModelFromJson(json);
 
   double get totalPrice => quantity * price;
-
-  @override
-  String toString() {
-    return 'OrderItemModel(id: $id, name: $name, quantity: $quantity, price: $price)';
-  }
 }

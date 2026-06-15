@@ -11,4 +11,13 @@ class Logger {
     if (error != null) debugPrint('  cause: $error');
     if (stackTrace != null) debugPrint('  $stackTrace');
   }
+
+  static Map<String, dynamic> redactPayload(Map<String, dynamic> payload) {
+    const sensitiveKeys = {
+      'access_token', 'refresh_token', 'password', 'code', 'otp', 'token'
+    };
+    return payload.map(
+      (k, v) => MapEntry(k, sensitiveKeys.contains(k) ? '[REDACTED]' : v),
+    );
+  }
 }

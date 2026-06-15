@@ -1215,6 +1215,14 @@ class AppLocalizations {
       'err_unknown_body': 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
       'err_retry': 'إعادة المحاولة',
       'err_dismiss': 'إغلاق',
+
+      // Auth error codes (L10n sweep)
+      'error_invalid_phone': 'رقم الهاتف غير صحيح',
+      'error_login_failed': 'فشل تسجيل الدخول',
+      'error_login_failed_retry': 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.',
+      'error_weak_password': 'كلمة المرور ضعيفة. استخدم 8 أحرف أو أرقام على الأقل',
+      'error_account_creation_failed': 'فشل إنشاء الحساب',
+      'error_invalid_credentials': 'بيانات الدخول غير صحيحة',
     },
     'en': {
       'app_title': 'Hur Delivery',
@@ -2197,6 +2205,14 @@ class AppLocalizations {
       'err_unknown_body': 'Something unexpected went wrong. Please try again.',
       'err_retry': 'Retry',
       'err_dismiss': 'Dismiss',
+
+      // Auth error codes (L10n sweep)
+      'error_invalid_phone': 'Invalid phone number',
+      'error_login_failed': 'Login failed',
+      'error_login_failed_retry': 'Login failed. Please try again.',
+      'error_weak_password': 'Weak password. Use at least 8 characters or digits',
+      'error_account_creation_failed': 'Account creation failed',
+      'error_invalid_credentials': 'Invalid login credentials',
     },
   };
 
@@ -3230,6 +3246,14 @@ class AppLocalizations {
   String get deliveryDurationNotAvailable => _get('delivery_duration_not_available');
   String get deliveryDurationOnTime => _get('delivery_duration_on_time');
   String get deliveryDurationLate => _get('delivery_duration_late');
+
+  // Auth error code getters (L10n sweep)
+  String get errorInvalidPhone => _get('error_invalid_phone');
+  String get errorLoginFailed => _get('error_login_failed');
+  String get errorLoginFailedRetry => _get('error_login_failed_retry');
+  String get errorWeakPassword => _get('error_weak_password');
+  String get errorAccountCreationFailed => _get('error_account_creation_failed');
+  String get errorInvalidCredentials => _get('error_invalid_credentials');
 }
 
 class _AppLocalizationsDelegate

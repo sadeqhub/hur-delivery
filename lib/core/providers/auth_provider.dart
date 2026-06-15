@@ -205,7 +205,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     try {
       // Validate phone number format
       if (!_isValidPhoneNumber(phone)) {
-        _error = 'رقم الهاتف غير صحيح';
+        _error = 'error_invalid_phone';
         return false;
       }
 
@@ -369,14 +369,14 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
 
         if (authResponse.session == null || authResponse.user == null) {
           Logger.d('❌ [DEBUG] Failed to set session - no user or session returned');
-          _error = 'فشل تسجيل الدخول';
+          _error = 'error_login_failed';
           return false;
         }
 
         final currentUser = Supabase.instance.client.auth.currentUser;
         if (currentUser == null) {
           Logger.d('❌ [DEBUG] Session was set but currentUser is still null!');
-          _error = 'فشل تسجيل الدخول';
+          _error = 'error_login_failed';
           return false;
         }
 
@@ -387,7 +387,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         return true;
       } catch (sessionError) {
         Logger.d('❌ [DEBUG] Failed to set session: $sessionError');
-        _error = 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+        _error = 'error_login_failed_retry';
         return false;
       }
     } catch (e) {
@@ -419,7 +419,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
     try {
       if (!isValidNewPassword(password)) {
-        _error = 'كلمة المرور ضعيفة. استخدم 8 أحرف أو أرقام على الأقل';
+        _error = 'error_weak_password';
         return false;
       }
       
@@ -440,7 +440,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         },
       );
       if (res.user == null) {
-        _error = 'فشل إنشاء الحساب';
+        _error = 'error_account_creation_failed';
         return false;
       }
       _verifiedPhone = phoneE164;
@@ -553,7 +553,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
           }
         }
       }
-      _error = 'بيانات الدخول غير صحيحة';
+      _error = 'error_invalid_credentials';
       return false;
     } catch (e) {
       _error = _getErrorMessage(e);
@@ -1172,9 +1172,9 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         
         // Force immediate session check after registration
         await Future.delayed(const Duration(milliseconds: 500));
-        await _checkSessionStatusDirectly();
+        SessionService.instance.checkStatusDirectly(userId: _user?.id ?? '', deviceId: _deviceId ?? '', onForceLogout: _handleForceLogout);
         await Future.delayed(const Duration(milliseconds: 1000));
-        await _checkSessionStatusDirectly();
+        SessionService.instance.checkStatusDirectly(userId: _user?.id ?? '', deviceId: _deviceId ?? '', onForceLogout: _handleForceLogout);
         
         // Initialize FCM with token generation after successful login
         try {

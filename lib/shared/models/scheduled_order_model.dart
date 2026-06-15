@@ -1,134 +1,101 @@
-class ScheduledOrderModel {
-  final String id;
-  final String merchantId;
-  final String customerName;
-  final String customerPhone;
-  final String pickupAddress;
-  final double pickupLatitude;
-  final double pickupLongitude;
-  final String deliveryAddress;
-  final double deliveryLatitude;
-  final double deliveryLongitude;
-  final double totalAmount;
-  final double deliveryFee;
-  final String? notes;
-  final String vehicleType;
-  final DateTime scheduledDate;
-  final Duration scheduledTime;
-  final String status; // scheduled, posted, failed, cancelled
-  final String? createdOrderId;
-  final DateTime createdAt;
-  final DateTime? updatedAt;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  ScheduledOrderModel({
-    required this.id,
-    required this.merchantId,
-    required this.customerName,
-    required this.customerPhone,
-    required this.pickupAddress,
-    required this.pickupLatitude,
-    required this.pickupLongitude,
-    required this.deliveryAddress,
-    required this.deliveryLatitude,
-    required this.deliveryLongitude,
-    required this.totalAmount,
-    required this.deliveryFee,
-    this.notes,
-    required this.vehicleType,
-    required this.scheduledDate,
-    required this.scheduledTime,
-    this.status = 'scheduled',
-    this.createdOrderId,
-    required this.createdAt,
-    this.updatedAt,
-  });
+part 'scheduled_order_model.freezed.dart';
+part 'scheduled_order_model.g.dart';
 
-  factory ScheduledOrderModel.fromJson(Map<String, dynamic> json) {
-    // Parse scheduled_time string (HH:MM:SS) to Duration
-    Duration parseTime(String timeStr) {
-      final parts = timeStr.split(':');
-      return Duration(
-        hours: int.parse(parts[0]),
-        minutes: int.parse(parts[1]),
-        seconds: parts.length > 2 ? int.parse(parts[2]) : 0,
-      );
-    }
+DateTime _dateTimeFromJson(dynamic v) => DateTime.parse(v as String);
+DateTime? _nullableDateTimeFromJson(dynamic v) =>
+    v == null ? null : DateTime.parse(v as String);
+String _dateTimeToJson(DateTime dt) => dt.toIso8601String();
+String? _nullableDateTimeToJson(DateTime? dt) => dt?.toIso8601String();
+double _doubleFromJson(dynamic v) =>
+    v == null ? 0.0 : double.parse(v.toString());
 
-    return ScheduledOrderModel(
-      id: json['id'] as String,
-      merchantId: json['merchant_id'] as String,
-      customerName: json['customer_name'] as String,
-      customerPhone: json['customer_phone'] as String,
-      pickupAddress: json['pickup_address'] as String,
-      pickupLatitude: double.parse(json['pickup_latitude'].toString()),
-      pickupLongitude: double.parse(json['pickup_longitude'].toString()),
-      deliveryAddress: json['delivery_address'] as String,
-      deliveryLatitude: double.parse(json['delivery_latitude'].toString()),
-      deliveryLongitude: double.parse(json['delivery_longitude'].toString()),
-      totalAmount: double.parse(json['total_amount']?.toString() ?? '0'),
-      deliveryFee: double.parse(json['delivery_fee']?.toString() ?? '0'),
-      notes: json['notes'] as String?,
-      vehicleType: json['vehicle_type'] as String? ?? 'motorcycle',
-      scheduledDate: DateTime.parse(json['scheduled_date'] as String),
-      scheduledTime: parseTime(json['scheduled_time'] as String),
-      status: json['status'] as String? ?? 'scheduled',
-      createdOrderId: json['created_order_id'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
-    );
-  }
+String _dateOnlyToJson(DateTime dt) => dt.toIso8601String().split('T')[0];
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'merchant_id': merchantId,
-      'customer_name': customerName,
-      'customer_phone': customerPhone,
-      'pickup_address': pickupAddress,
-      'pickup_latitude': pickupLatitude,
-      'pickup_longitude': pickupLongitude,
-      'delivery_address': deliveryAddress,
-      'delivery_latitude': deliveryLatitude,
-      'delivery_longitude': deliveryLongitude,
-      'total_amount': totalAmount,
-      'delivery_fee': deliveryFee,
-      'notes': notes,
-      'vehicle_type': vehicleType,
-      'scheduled_date': scheduledDate.toIso8601String().split('T')[0],
-      'scheduled_time': '${scheduledTime.inHours.toString().padLeft(2, '0')}:${(scheduledTime.inMinutes % 60).toString().padLeft(2, '0')}:${(scheduledTime.inSeconds % 60).toString().padLeft(2, '0')}',
-      'status': status,
-      'created_order_id': createdOrderId,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
-    };
-  }
+Duration _durationFromJson(dynamic v) {
+  final parts = (v as String).split(':');
+  return Duration(
+    hours: int.parse(parts[0]),
+    minutes: int.parse(parts[1]),
+    seconds: parts.length > 2 ? int.parse(parts[2]) : 0,
+  );
+}
 
-  // Get the DateTime when this order will be posted
-  DateTime get scheduledDateTime {
-    return scheduledDate.add(scheduledTime);
-  }
+String _durationToJson(Duration d) {
+  final h = d.inHours.toString().padLeft(2, '0');
+  final m = (d.inMinutes % 60).toString().padLeft(2, '0');
+  final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+  return '$h:$m:$s';
+}
 
-  // Get duration until order is posted
+@freezed
+class ScheduledOrderModel with _$ScheduledOrderModel {
+  const ScheduledOrderModel._();
+
+  const factory ScheduledOrderModel({
+    required String id,
+    @JsonKey(name: 'merchant_id') required String merchantId,
+    @JsonKey(name: 'customer_name') required String customerName,
+    @JsonKey(name: 'customer_phone') required String customerPhone,
+    @JsonKey(name: 'pickup_address') required String pickupAddress,
+    @JsonKey(name: 'pickup_latitude', fromJson: _doubleFromJson)
+    required double pickupLatitude,
+    @JsonKey(name: 'pickup_longitude', fromJson: _doubleFromJson)
+    required double pickupLongitude,
+    @JsonKey(name: 'delivery_address') required String deliveryAddress,
+    @JsonKey(name: 'delivery_latitude', fromJson: _doubleFromJson)
+    required double deliveryLatitude,
+    @JsonKey(name: 'delivery_longitude', fromJson: _doubleFromJson)
+    required double deliveryLongitude,
+    @JsonKey(name: 'total_amount', fromJson: _doubleFromJson)
+    required double totalAmount,
+    @JsonKey(name: 'delivery_fee', fromJson: _doubleFromJson)
+    required double deliveryFee,
+    String? notes,
+    @JsonKey(name: 'vehicle_type') @Default('motorcycle') String vehicleType,
+    @JsonKey(
+        name: 'scheduled_date',
+        fromJson: _dateTimeFromJson,
+        toJson: _dateOnlyToJson)
+    required DateTime scheduledDate,
+    @JsonKey(
+        name: 'scheduled_time',
+        fromJson: _durationFromJson,
+        toJson: _durationToJson)
+    required Duration scheduledTime,
+    @Default('scheduled') String status,
+    @JsonKey(name: 'created_order_id') String? createdOrderId,
+    @JsonKey(
+        name: 'created_at',
+        fromJson: _dateTimeFromJson,
+        toJson: _dateTimeToJson)
+    required DateTime createdAt,
+    @JsonKey(
+        name: 'updated_at',
+        fromJson: _nullableDateTimeFromJson,
+        toJson: _nullableDateTimeToJson)
+    DateTime? updatedAt,
+  }) = _ScheduledOrderModel;
+
+  factory ScheduledOrderModel.fromJson(Map<String, dynamic> json) =>
+      _$ScheduledOrderModelFromJson(json);
+
+  DateTime get scheduledDateTime => scheduledDate.add(scheduledTime);
+
   Duration get timeUntilPosted {
     final now = DateTime.now();
     final scheduled = scheduledDateTime;
     return scheduled.difference(now);
   }
 
-  // Check if order is due to be posted
-  bool get isDue {
-    return DateTime.now().isAfter(scheduledDateTime);
-  }
+  bool get isDue => DateTime.now().isAfter(scheduledDateTime);
 
-  // Get seconds remaining
-  int get secondsRemaining {
-    return timeUntilPosted.inSeconds.clamp(0, double.infinity).toInt();
-  }
+  int get secondsRemaining =>
+      timeUntilPosted.inSeconds.clamp(0, double.infinity).toInt();
 
-  // Total amount including delivery fee
   double get grandTotal => totalAmount + deliveryFee;
 
-  // Status display
   String get statusDisplay {
     switch (status) {
       case 'scheduled':
@@ -143,19 +110,4 @@ class ScheduledOrderModel {
         return 'غير معروف';
     }
   }
-
-  @override
-  bool operator ==(Object other) {
-    return other is ScheduledOrderModel && other.id == id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
-
-  @override
-  String toString() {
-    return 'ScheduledOrderModel(id: $id, customerName: $customerName, scheduledAt: $scheduledDateTime)';
-  }
 }
-
-

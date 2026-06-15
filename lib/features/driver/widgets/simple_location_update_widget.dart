@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/driver_location_service.dart';
 import '../data/driver_repository.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -24,7 +24,7 @@ class SimpleLocationUpdateWidget extends StatefulWidget {
 }
 
 class _SimpleLocationUpdateWidgetState extends State<SimpleLocationUpdateWidget> {
-  Timer? _timer;
+  RealtimeChannel? _locationUpdateChannel;
   final Set<String> _notifiedOrders = {};
 
   @override
@@ -117,7 +117,7 @@ class _SimpleLocationUpdateWidgetState extends State<SimpleLocationUpdateWidget>
   }
   @override
   void dispose() {
-    _timer?.cancel();
+    _locationUpdateChannel?.unsubscribe();
     super.dispose();
   }
 
@@ -128,10 +128,51 @@ class _SimpleLocationUpdateWidgetState extends State<SimpleLocationUpdateWidget>
   }
 
   void _startPolling() {
-    Logger.d('🔄 Starting simple location update polling every 3 seconds...');
-    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      _checkForLocationUpdates();
-    });
+    Logger.d('🔄 Starting realtime customer location update listener...');
+
+    // Initial check catches updates that arrived before the subscription opened.
+    _checkForLocationUpdates();
+
+    _locationUpdateChannel = Supabase.instance.client
+        .channel('driver_${widget.driverId}_order_location_updates')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'orders',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'driver_id',
+            value: widget.driverId,
+          ),
+          callback: (payload) {
+            if (!mounted) return;
+            final record = payload.newRecord;
+
+            final locationProvided =
+                record['customer_location_provided'] as bool? ?? false;
+            final alreadyNotified =
+                record['driver_notified_location'] as bool? ?? true;
+            if (!locationProvided || alreadyNotified) return;
+
+            final orderId = record['id'] as String?;
+            final lat = (record['delivery_latitude'] as num?)?.toDouble();
+            final lng = (record['delivery_longitude'] as num?)?.toDouble();
+            final customerName = record['customer_name'] as String?;
+            final address = record['delivery_address'] as String?;
+
+            if (orderId != null &&
+                lat != null &&
+                lng != null &&
+                !_notifiedOrders.contains(orderId)) {
+              Logger.d(
+                  '📍 Realtime: location update for order $orderId: $lat, $lng');
+              _notifiedOrders.add(orderId);
+              _showLocationUpdatePopup(orderId, lat, lng, customerName, address);
+              widget.onLocationUpdate(orderId, lat, lng);
+            }
+          },
+        )
+        .subscribe();
   }
 
   Future<void> _checkForLocationUpdates() async {

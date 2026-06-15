@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
@@ -44,7 +43,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
   final Map<String, PolylineAnnotation> _orderRoutes = {};
   
   // Driver location tracking
-  Timer? _driverLocationTimer;
+  RealtimeChannel? _driverLocationChannel;
   final Map<String, Map<String, dynamic>> _driverLocations = {};
   
   bool _customIconsLoaded = false;
@@ -58,7 +57,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
 
   @override
   void dispose() {
-    _driverLocationTimer?.cancel();
+    _driverLocationChannel?.unsubscribe();
     _navigationSystem.dispose();
     super.dispose();
   }
@@ -194,10 +193,45 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
   }
 
   void _startDriverLocationTracking() {
-    _driverLocationTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      _fetchDriverLocations();
-    });
+    // Initial fetch shows current state — realtime only delivers changes.
     _fetchDriverLocations();
+
+    _driverLocationChannel = Supabase.instance.client
+        .channel('merchant_map_driver_locs')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'driver_locations',
+          callback: _onDriverLocationChange,
+        )
+        .subscribe();
+  }
+
+  void _onDriverLocationChange(PostgresChangePayload payload) {
+    if (!mounted) return;
+    final record = payload.newRecord;
+    if (record.isEmpty) return;
+
+    final driverId = record['driver_id'] as String?;
+    if (driverId == null) return;
+
+    final isActive = widget.orders.any(
+      (o) => o.driverId == driverId && !o.isDelivered && !o.isCancelled,
+    );
+    if (!isActive) return;
+
+    final lat = (record['latitude'] as num?)?.toDouble();
+    final lng = (record['longitude'] as num?)?.toDouble();
+    final heading = (record['heading'] as num?)?.toDouble();
+
+    if (lat != null && lng != null) {
+      _driverLocations[driverId] = {
+        'latitude': lat,
+        'longitude': lng,
+        'heading': heading,
+      };
+      _updateDriverMarker(driverId, lat, lng, heading);
+    }
   }
 
   Future<void> _fetchDriverLocations() async {

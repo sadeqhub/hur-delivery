@@ -16,3 +16,5 @@ export '../providers/global_error_provider.dart'
     show globalErrorProvider, GlobalErrorNotifier, GlobalErrorEntry, ErrorSeverity;
 export '../providers/theme_provider.dart' show themeProvider, ThemeNotifier;
 export '../providers/locale_provider.dart' show localeProvider, LocaleNotifier;
+export 'auth_notifier.dart' show authNotifierProvider, AuthNotifier;
+export 'order_notifier.dart' show orderNotifierProvider, OrderNotifier;

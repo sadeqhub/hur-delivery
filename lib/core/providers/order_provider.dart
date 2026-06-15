@@ -24,8 +24,6 @@ class OrderProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   StreamSubscription? _ordersSubscription;
-  StreamSubscription? _timeoutStatesSubscription;
-  RealtimeChannel? _timeoutStatesChannel;
 
   // Cache user role to avoid repeated DB queries during order loading
   String? _cachedUserRole;
@@ -60,9 +58,16 @@ class OrderProvider extends ChangeNotifier {
     super.notifyListeners();
   }
 
-  // Get timeout remaining seconds for an order
-  int? getTimeoutRemaining(String orderId) =>
-      OrderTimeoutService.instance.getTimeoutRemaining(orderId);
+  /// Seconds remaining in the accept window for [orderId], based purely on
+  /// the server timestamp stored on the order. Returns 0 when no order found.
+  int getLiveAcceptCountdownSeconds(String orderId) {
+    final order = _orders.where((o) => o.id == orderId).firstOrNull;
+    return OrderTimeoutService.instance
+        .getLiveAcceptCountdownSeconds(orderId, order?.driverAssignedAt);
+  }
+
+  // Kept for call sites not yet updated — delegates to the new method.
+  int? getTimeoutRemaining(String orderId) => getLiveAcceptCountdownSeconds(orderId);
 
   // Filtered orders by status — cached, O(1) after first call
   List<OrderModel> get pendingOrders =>
@@ -93,48 +98,13 @@ class OrderProvider extends ChangeNotifier {
             return false;
           }
 
-          // Filter out pending orders with zero or negative countdown
-          if (order.status == 'pending' &&
-              order.driverId != null &&
-              order.driverAssignedAt != null) {
-            DateTime assignedAt;
-            try {
-              assignedAt = order.driverAssignedAt is DateTime
-                  ? order.driverAssignedAt as DateTime
-                  : DateTime.parse(order.driverAssignedAt!.toString());
-            } catch (_) {
-              return true; // Keep the order if we can't parse
-            }
-
-            final elapsed = DateTime.now().difference(assignedAt).inSeconds;
-            final isFreshAssignment = elapsed <= 5;
-
-            final svc = OrderTimeoutService.instance;
-            if (svc.isTimedOut(order.id)) {
-              if (isFreshAssignment) {
-                svc.clearTimedOut(order.id);
-              } else {
-                return false;
-              }
-            }
-
-            final remainingSeconds = svc.getTimeoutRemaining(order.id);
-
-            if (remainingSeconds != null && remainingSeconds <= 0) {
-              svc.markTimedOut(order.id);
-              return false;
-            }
-
-            if (elapsed >= 30) {
-              svc.markTimedOut(order.id);
-              return false;
-            }
-          }
-
-          // Clean up timed out marker if order progressed past pending
-          if (order.status != 'pending' &&
-              OrderTimeoutService.instance.isTimedOut(order.id)) {
-            OrderTimeoutService.instance.clearTimedOut(order.id);
+          // Hide pending orders whose accept window has expired client-side.
+          // The DB auto-reject function is the authoritative enforcer; this
+          // just keeps the UI clean while waiting for the next realtime event.
+          if (order.status == 'pending' && order.driverAssignedAt != null) {
+            final remaining = OrderTimeoutService.instance
+                .getLiveAcceptCountdownSeconds(order.id, order.driverAssignedAt);
+            if (remaining <= 0) return false;
           }
 
           return true;
@@ -165,13 +135,6 @@ class OrderProvider extends ChangeNotifier {
     try {
       await _loadOrders();
       await _subscribeToOrders();
-      OrderTimeoutService.instance.startAutoRejectTimer();
-      OrderTimeoutService.instance.startTimeoutStateUpdater(
-        onUpdate: (newStates) {
-          // Service already updated its internal map; just trigger a rebuild.
-          notifyListeners();
-        },
-      );
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -180,14 +143,10 @@ class OrderProvider extends ChangeNotifier {
     }
   }
   
-  // Thin delegates kept for any external callers
-  void stopAutoRejectTimer() => OrderTimeoutService.instance.stopAutoRejectTimer();
-
   @override
   void dispose() {
     OrderTimeoutService.instance.dispose();
     _ordersSubscription?.cancel();
-    _timeoutStatesSubscription?.cancel();
     super.dispose();
   }
 
@@ -436,11 +395,6 @@ class OrderProvider extends ChangeNotifier {
         }
       }
       
-      // Clean up timed out orders set - remove IDs that no longer exist in orders
-      final currentOrderIds = _orders.map((o) => o.id).toSet();
-      OrderTimeoutService.instance.removeStaleTimedOutOrders(currentOrderIds);
-      Logger.d('🧹 Cleaned up stale timed-out order markers');
-      
       // Invalidate cache when orders are updated
       final cacheKeyToInvalidate = 'orders_${currentUser.id}_${effectiveRole}_0';
       await _responseCache.invalidate(cacheKeyToInvalidate);
@@ -640,11 +594,6 @@ class OrderProvider extends ChangeNotifier {
             Logger.d('     - ${o.id}: status=${o.status}, assigned_at=${o.driverAssignedAt}');
           }
           
-          // Clean up timed out orders set - remove IDs that no longer exist
-          final currentOrderIds = _orders.map((o) => o.id).toSet();
-          OrderTimeoutService.instance.removeStaleTimedOutOrders(currentOrderIds);
-          Logger.d('🧹 Cleaned up stale timed-out order markers (driver subscription)');
-          
           notifyListeners();
         });
       } else {
@@ -787,11 +736,6 @@ class OrderProvider extends ChangeNotifier {
             byId[o.id] = o;
           }
           _orders = byId.values.toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          
-          // Clean up timed out orders set - remove IDs that no longer exist
-          final currentOrderIds = _orders.map((o) => o.id).toSet();
-          OrderTimeoutService.instance.removeStaleTimedOutOrders(currentOrderIds);
-          Logger.d('🧹 Cleaned up stale timed-out order markers (merchant subscription)');
           
           Logger.d('✅ Merchant orders updated: ${_orders.length} total');
           Logger.d('   Status breakdown:');

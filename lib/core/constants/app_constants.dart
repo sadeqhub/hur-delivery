@@ -23,6 +23,7 @@ class AppConstants {
   
   // Order Configuration
   static const int orderTimeoutMinutes = 2;
+  static const int driverAcceptTimeoutSeconds = 30;
   static const double defaultDeliveryFee = 5000.0; // IQD
   static const double commissionRate = 0.1; // 10%
   

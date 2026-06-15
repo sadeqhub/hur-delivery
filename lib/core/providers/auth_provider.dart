@@ -9,6 +9,7 @@ import 'dart:convert';
 
 import '../../shared/models/user_model.dart';
 import '../constants/app_constants.dart';
+import '../config/env.dart';
 import '../services/device_manager.dart';
 import '../services/device_session_service.dart';
 import '../services/flutterfire_notification_service.dart';
@@ -2009,6 +2010,17 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   // Enter demo mode with a demo user
   Future<void> enterDemoMode(String role) async {
+    if (Env.environment == 'production') {
+      Logger.d('⚠️ Demo mode is disabled in production builds');
+      return;
+    }
+
+    // Prevent demo mode from being active simultaneously with a real session.
+    if (_user != null && !_isDemoMode) {
+      Logger.d('⚠️ Cannot enter demo mode while a real session is active');
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
 

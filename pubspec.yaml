@@ -40,6 +40,11 @@ dependencies:
   audioplayers: ^6.0.0
   audio_waveforms: ^1.0.5
   
+  # Local Database (offline-first)
+  drift: ^2.20.3
+  drift_flutter: ^0.2.2
+  sqlite3_flutter_libs: ^0.5.0
+
   # Storage & Preferences
   shared_preferences: ^2.2.2
   
@@ -81,6 +86,8 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
   flutter_launcher_icons: ^0.13.1
+  drift_dev: ^2.20.3
+  build_runner: ^2.4.13
 
 flutter:
   uses-material-design: true

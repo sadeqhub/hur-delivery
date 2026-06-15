@@ -2546,9 +2546,8 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
   }
 
   Widget _buildCountdownTimer(String orderId) {
-    // Get timeout from OrderProvider (from order_timeout_state table)
     final orderProvider = context.watch<OrderProvider>();
-    final remainingSeconds = orderProvider.getTimeoutRemaining(orderId) ?? 0;
+    final remainingSeconds = orderProvider.getLiveAcceptCountdownSeconds(orderId);
 
     final progress = remainingSeconds / 30.0;
     final Color timerColor = remainingSeconds <= 10
@@ -7164,8 +7163,7 @@ class _AcceptButtonWithLongPressState extends State<_AcceptButtonWithLongPress>
 
   void _updateTimeout() {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-    final newRemaining =
-        orderProvider.getTimeoutRemaining(widget.orderId) ?? 30;
+    final newRemaining = orderProvider.getLiveAcceptCountdownSeconds(widget.orderId);
 
     if (newRemaining != _remainingSeconds) {
       if (mounted) {
@@ -7386,9 +7384,7 @@ class _TimeoutCountdownPillState extends State<_TimeoutCountdownPill> {
 
   void _updateRemainingSeconds() {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-    final newRemaining = orderProvider.getTimeoutRemaining(widget.order.id) ??
-        widget.order.timeoutRemainingSeconds ??
-        0;
+    final newRemaining = orderProvider.getLiveAcceptCountdownSeconds(widget.order.id);
 
     if (mounted && newRemaining != _remainingSeconds) {
       setState(() {

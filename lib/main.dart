@@ -30,8 +30,10 @@ import 'core/services/global_order_notification_service.dart';
 // NotificationWatcher removed - database trigger handles FCM notifications now
 // import 'core/services/notification_watcher.dart';
 import 'shared/widgets/no_internet_screen.dart';
+import 'shared/widgets/connectivity_banner.dart';
 import 'core/services/precache_service.dart';
 import 'core/services/performance_optimizer.dart';
+import 'core/services/mutation_queue_service.dart';
 import 'core/utils/system_ui.dart';
 import 'core/utils/logger.dart';
 
@@ -147,6 +149,9 @@ class HurDeliveryApp extends ConsumerStatefulWidget {
 }
 
 class _HurDeliveryAppState extends ConsumerState<HurDeliveryApp> {
+  bool _wasOnline = true;
+
+
   @override
   void initState() {
     super.initState();
@@ -203,6 +208,15 @@ class _HurDeliveryAppState extends ConsumerState<HurDeliveryApp> {
     final isArabic = appLocale.languageCode == 'ar';
     final authProvider = context.read<AuthProvider>();
 
+    // Replay queued offline mutations when connectivity is restored.
+    if (isOnline && !_wasOnline) {
+      MutationQueueService.instance.replayAll().catchError((e) {
+        Logger.d('⚠️ MutationQueue replay error: $e');
+        return null;
+      });
+    }
+    _wasOnline = isOnline;
+
     // Wrap with foreground task handler
     return WithForegroundTask(
       child: MultiProvider(
@@ -237,17 +251,29 @@ class _HurDeliveryAppState extends ConsumerState<HurDeliveryApp> {
             final textDirection =
                 isArabic ? TextDirection.rtl : TextDirection.ltr;
 
-            // Show no internet screen if offline
-            if (!isOnline) {
+            // Read screen width only — never viewInsets — so keyboard
+            // animation frames don't trigger a full tree rebuild.
+            final scale = _getTextScaleFactor(mq.size.width);
+
+            // When offline with no cache, show the full no-internet screen.
+            // Otherwise keep the app visible with a slim connectivity banner.
+            final hasCache = context.read<OrderProvider>().orders.isNotEmpty;
+            final showFullNoInternet = !isOnline && !hasCache;
+
+            Widget appChild;
+            if (showFullNoInternet) {
               return Directionality(
                 textDirection: textDirection,
                 child: const NoInternetScreen(),
               );
+            } else if (!isOnline) {
+              appChild = Stack(
+                children: [child, const ConnectivityBanner()],
+              );
+            } else {
+              appChild = child;
             }
 
-            // Read screen width only — never viewInsets — so keyboard
-            // animation frames don't trigger a full tree rebuild.
-            final scale = _getTextScaleFactor(mq.size.width);
             return MediaQuery(
               data: mq.copyWith(
                 textScaler: TextScaler.linear(scale),
@@ -261,7 +287,7 @@ class _HurDeliveryAppState extends ConsumerState<HurDeliveryApp> {
                     behavior: HitTestBehavior.translucent,
                     onTap: () =>
                         FocusManager.instance.primaryFocus?.unfocus(),
-                    child: child,
+                    child: appChild,
                   ),
                 ),
               ),

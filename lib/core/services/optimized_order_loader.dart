@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/models/order_model.dart';
+import '../../shared/models/order_status.dart';
 import 'network_quality_service.dart';
 import 'request_priority_manager.dart';
 import '../utils/logger.dart';
@@ -138,7 +139,7 @@ class OptimizedOrderLoader {
         }
 
         // Calculate timeout for pending orders
-        if (order['status'] == 'pending' &&
+        if (OrderStatus.fromDb(order['status'] as String?) == OrderStatus.pending &&
             order['driver_id'] != null &&
             order['driver_assigned_at'] != null) {
           try {

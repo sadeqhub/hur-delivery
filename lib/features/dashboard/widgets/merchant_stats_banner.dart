@@ -161,14 +161,13 @@ class _MerchantAnalyticsBannerState extends State<MerchantAnalyticsBanner> {
   Map<String, dynamic> _calculateStatistics(List orders) {
     final totalOrders = orders.length;
     final deliveredOrders =
-        orders.where((o) => o.status == 'delivered').toList();
+        orders.where((o) => o.isDelivered).toList();
     final cancelledOrders =
-        orders.where((o) => o.status == 'cancelled').toList();
+        orders.where((o) => o.isCancelled).toList();
     final rejectedOrders =
-        orders.where((o) => o.status == 'rejected').toList();
+        orders.where((o) => o.isRejected).toList();
     final activeOrders = orders
-        .where(
-            (o) => o.status != 'delivered' && o.status != 'cancelled')
+        .where((o) => !o.isDelivered && !o.isCancelled)
         .toList();
 
     double avgDeliveryMinutes = 0;

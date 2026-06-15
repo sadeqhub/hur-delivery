@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../shared/models/order_model.dart';
+import '../../../shared/models/order_status.dart';
 import '../../../shared/widgets/delivery_timer_widget.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/logger.dart';
@@ -123,7 +124,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
   
   void _initializeFlashAnimation() {
     // Flash animation for rejected orders
-    if (_currentOrder.status == 'rejected') {
+    if (_currentOrder.isRejected) {
       _flashAnimationController = AnimationController(
         duration: const Duration(milliseconds: 1200),
         vsync: this,
@@ -195,7 +196,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
                 );
 
                 if (newStatus != null && newStatus != oldStatus) {
-                  if (newStatus == 'rejected' || oldStatus == 'rejected') {
+                  if (OrderStatus.fromDb(newStatus) == OrderStatus.rejected || OrderStatus.fromDb(oldStatus) == OrderStatus.rejected) {
                     _flashAnimationController.dispose();
                     _initializeFlashAnimation();
                   }
@@ -765,7 +766,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
   }
 
   Color _getBackgroundColor(String status) {
-    final isRejected = status == 'rejected';
+    final isRejected = OrderStatus.fromDb(status) == OrderStatus.rejected;
     
     // Use flash animation for rejected orders
     if (isRejected && _flashAnimation.value != null) {

@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'order_status.dart';
 
 part 'order_model.freezed.dart';
 part 'order_model.g.dart';
@@ -73,6 +74,8 @@ class OrderModel with _$OrderModel {
 
   factory OrderModel.fromJson(Map<String, dynamic> json) =>
       _$OrderModelFromJson(json);
+
+  OrderStatus get statusEnum => OrderStatus.fromDb(status);
 
   bool get isPending => status == 'pending';
   bool get isAssigned => status == 'assigned';

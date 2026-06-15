@@ -32,6 +32,10 @@ jobs:
       - name: Run code generation
         run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Run convention checks
+        run: bash scripts/check_conventions.sh
+        continue-on-error: true
+
       - name: Analyze
         run: flutter analyze
 

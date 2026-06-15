@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
+import '../../../shared/models/order_status.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
@@ -891,17 +892,14 @@ class _WalletScreenState extends State<WalletScreen> {
 
     final statusText = orderStatus == null
         ? null
-        : (orderStatus == 'pending'
-            ? loc.pendingStatus
-            : orderStatus == 'assigned'
-                ? loc.assignedStatus
-                : orderStatus == 'accepted'
-                    ? loc.acceptedStatus
-                    : orderStatus == 'on_the_way'
-                        ? loc.onTheWayStatus
-                        : orderStatus == 'delivered'
-                            ? loc.deliveredStatus
-                            : loc.unknownStatus);
+        : switch (OrderStatus.fromDb(orderStatus)) {
+            OrderStatus.pending => loc.pendingStatus,
+            OrderStatus.assigned => loc.assignedStatus,
+            OrderStatus.accepted => loc.acceptedStatus,
+            OrderStatus.onTheWay => loc.onTheWayStatus,
+            OrderStatus.delivered => loc.deliveredStatus,
+            _ => loc.unknownStatus,
+          };
 
     final metaParts = <_TxMetaPart>[
       _TxMetaPart(icon: Icons.schedule, text: dateFormat.format(baghdadTime)),

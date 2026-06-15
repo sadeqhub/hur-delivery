@@ -60,8 +60,6 @@ class AppConstants {
   static const String statusOnTheWay = 'on_the_way'; // Being delivered
   static const String statusDelivered = 'delivered'; // Completed
   static const String statusCancelled = 'cancelled'; // Cancelled
-  static const String statusUnassigned = 'unassigned'; // No driver assigned
-  static const String statusRejected = 'rejected'; // All drivers rejected
   
   // Notification Types
   static const String notificationOrderAssigned = 'order_assigned';

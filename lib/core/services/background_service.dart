@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../shared/models/order_status.dart';
 import 'foreground_service.dart';
 import '../utils/logger.dart';
 
@@ -223,8 +224,8 @@ class BackgroundService {
             final order = payload.newRecord;
             
             // Check if order was just assigned
-            if (order['driver_id'] == driverId && 
-                order['status'] == 'pending' &&
+            if (order['driver_id'] == driverId &&
+                OrderStatus.fromDb(order['status'] as String?) == OrderStatus.pending &&
                 order['driver_assigned_at'] != null) {
               Logger.d('🚨 Order assigned to driver!');
               // TODO: Fix notification - disabled for now

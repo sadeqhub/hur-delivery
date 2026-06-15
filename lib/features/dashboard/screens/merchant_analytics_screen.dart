@@ -305,12 +305,12 @@ class _MerchantAnalyticsScreenState extends State<MerchantAnalyticsScreen> {
   }
 
   Map<String, dynamic> _calculateStatistics(List<OrderModel> orders) {
-    final deliveredOrders = orders.where((o) => o.status == 'delivered').toList();
-    final cancelledOrders = orders.where((o) => o.status == 'cancelled').toList();
-    final rejectedOrders = orders.where((o) => o.status == 'rejected').toList();
-    final activeOrders = orders.where((o) => 
-        o.status != 'delivered' && 
-        o.status != 'cancelled'
+    final deliveredOrders = orders.where((o) => o.isDelivered).toList();
+    final cancelledOrders = orders.where((o) => o.isCancelled).toList();
+    final rejectedOrders = orders.where((o) => o.isRejected).toList();
+    final activeOrders = orders.where((o) =>
+        !o.isDelivered &&
+        !o.isCancelled
     ).toList();
 
     // Calculate average delivery time

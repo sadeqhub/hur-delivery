@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../shared/models/order_status.dart';
 import 'flutterfire_notification_service.dart';
 import '../utils/logger.dart';
 
@@ -127,29 +128,31 @@ class GlobalOrderNotificationService {
     Color? color;
     IconData? icon;
 
-    if (status == 'assigned' && oldStatus != 'assigned') {
+    final statusEnum = OrderStatus.fromDb(status);
+    final oldStatusEnum = OrderStatus.fromDb(oldStatus);
+    if (statusEnum == OrderStatus.assigned && oldStatusEnum != OrderStatus.assigned) {
       title = '🎯 طلب جديد';
       message = 'تم تعيين طلب جديد لك';
       color = Colors.blue;
       icon = Icons.assignment;
       // Play custom assignment sound even if app is in foreground
       FlutterFireNotificationService.playAssignmentSound();
-    } else if (status == 'accepted') {
+    } else if (statusEnum == OrderStatus.accepted) {
       title = '✅ تم القبول';
       message = 'تم قبول الطلب بنجاح';
       color = Colors.green;
       icon = Icons.check_circle;
-    } else if (status == 'on_the_way') {
+    } else if (statusEnum == OrderStatus.onTheWay) {
       title = '🚗 في الطريق';
       message = 'الطلب في طريقه للتسليم';
       color = Colors.orange;
       icon = Icons.local_shipping;
-    } else if (status == 'delivered') {
+    } else if (statusEnum == OrderStatus.delivered) {
       title = '🎉 تم التسليم';
       message = 'تم تسليم الطلب بنجاح';
       color = Colors.green;
       icon = Icons.done_all;
-    } else if (status == 'rejected' || status == 'cancelled') {
+    } else if (statusEnum == OrderStatus.rejected || statusEnum == OrderStatus.cancelled) {
       title = '❌ ملغي';
       message = 'تم إلغاء الطلب';
       color = Colors.red;
@@ -195,27 +198,28 @@ class GlobalOrderNotificationService {
     Color? color;
     IconData? icon;
 
-    if (status == 'assigned') {
+    final merchantStatusEnum = OrderStatus.fromDb(status);
+    if (merchantStatusEnum == OrderStatus.assigned) {
       title = '👨‍✈️ تم تعيين سائق';
       message = 'تم تعيين سائق لطلبك';
       color = Colors.blue;
       icon = Icons.person;
-    } else if (status == 'accepted') {
+    } else if (merchantStatusEnum == OrderStatus.accepted) {
       title = '✅ قبل السائق';
       message = 'السائق قبل الطلب';
       color = Colors.green;
       icon = Icons.check_circle;
-    } else if (status == 'on_the_way') {
+    } else if (merchantStatusEnum == OrderStatus.onTheWay) {
       title = '🚗 في الطريق';
       message = 'السائق في طريقه للتسليم';
       color = Colors.orange;
       icon = Icons.local_shipping;
-    } else if (status == 'delivered') {
+    } else if (merchantStatusEnum == OrderStatus.delivered) {
       title = '🎉 تم التسليم';
       message = 'تم تسليم الطلب بنجاح';
       color = Colors.green;
       icon = Icons.done_all;
-    } else if (status == 'rejected') {
+    } else if (merchantStatusEnum == OrderStatus.rejected) {
       title = '❌ رفض السائق';
       message = 'السائق رفض الطلب - جاري البحث عن سائق آخر';
       color = Colors.red;

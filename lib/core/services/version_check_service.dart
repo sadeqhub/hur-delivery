@@ -34,7 +34,8 @@ class VersionCheckService {
       if (e is PostgrestException && e.code == '401') {
         Logger.d('🔐 Session expired while fetching app version - using fallback');
         return '1.0.0'; // Fallback version
-      } else if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
+      } else if (e is AuthException &&
+          (e.statusCode == '401' || e.message.contains('Unauthorized'))) {
         Logger.d('🔐 Unauthorized access while fetching app version - using fallback');
         return '1.0.0'; // Fallback version
       }
@@ -85,7 +86,8 @@ class VersionCheckService {
       if (e is PostgrestException && e.code == '401') {
         Logger.d('🔐 No session for version check - skipping update requirement');
         return false;
-      } else if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
+      } else if (e is AuthException &&
+          (e.statusCode == '401' || e.message.contains('Unauthorized'))) {
         Logger.d('🔐 Unauthorized access for version check - skipping update requirement');
         return false;
       }

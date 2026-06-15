@@ -25,6 +25,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../widgets/state_of_the_art_map_widget.dart';
 import '../../../core/providers/location_provider.dart';
 import '../../../shared/models/order_model.dart';
+import '../../../shared/models/order_status.dart';
 import '../../../core/widgets/header_notification.dart';
 import '../../../core/services/order_redirect_service.dart';
 import '../../../core/riverpod/app_providers.dart';
@@ -88,6 +89,7 @@ class DriverDashboard extends StatelessWidget {
 abstract class _OrderItem {
   String get id;
   String get status;
+  bool get isPending => OrderStatus.fromDb(status) == OrderStatus.pending;
 }
 
 class _RegularOrderItem extends _OrderItem {
@@ -851,7 +853,7 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
       // Find index of first pending order (if only one exists)
       // Find pending items (both regular orders and bulk orders)
       final pendingItems =
-          allItemsToShow.where((item) => item.status == 'pending').toList();
+          allItemsToShow.where((item) => item.isPending).toList();
       int initialPage = 0;
 
       if (pendingItems.length == 1) {
@@ -905,7 +907,7 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
         final currentItem = _currentOrderIndex < allItemsToShow.length
             ? allItemsToShow[_currentOrderIndex]
             : null;
-        final isPendingOrder = currentItem?.status == 'pending';
+        final isPendingOrder = currentItem?.isPending ?? false;
         final baseExpandedHeight =
             screenHeight * 0.54; // Base height for order cards
         // Reduced pending order card height by 5% (removed the extra 5% that was added)
@@ -1051,10 +1053,10 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
   }
 
   Widget _buildOrderCard(dynamic order) {
-    final isPending = order.status == 'pending';
-    final isAssigned = order.status == 'assigned';
-    final isAccepted = order.status == 'accepted';
-    final isOnTheWay = order.status == 'on_the_way';
+    final isPending = order.isPending;
+    final isAssigned = order.isAssigned;
+    final isAccepted = order.isAccepted;
+    final isOnTheWay = order.isOnTheWay;
 
     // Get vehicle type icon
     final loc = AppLocalizations.of(context);
@@ -1136,10 +1138,10 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
   // Expanded card - Modern design inspired by provided template (Compact version)
   Widget _buildExpandedCard(
       dynamic order, IconData vehicleIcon, String vehicleText) {
-    final isPending = order.status == 'pending';
-    final isAssigned = order.status == 'assigned';
-    final isAccepted = order.status == 'accepted';
-    final isOnTheWay = order.status == 'on_the_way';
+    final isPending = order.isPending;
+    final isAssigned = order.isAssigned;
+    final isAccepted = order.isAccepted;
+    final isOnTheWay = order.isOnTheWay;
     final double routeDistanceMeters = LocationService.calculateDistance(
       order.pickupLatitude,
       order.pickupLongitude,
@@ -1261,8 +1263,8 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
                     bottom:
                         0, // No bottom padding - NavigationBarAwareFooterWrapper handles all safe area spacing
                   ),
-                  child: (order.status == 'pending' ||
-                              order.status == 'assigned') &&
+                  child: (order.isPending ||
+                              order.isAssigned) &&
                           !isAccepted
                       ? _buildPendingOrderButtons(order)
                       : _buildMainActionButton(order),
@@ -2231,8 +2233,8 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
   }
 
   Widget _buildMainActionButton(dynamic order) {
-    final isAccepted = order.status == 'accepted';
-    final isOnTheWay = order.status == 'on_the_way';
+    final isAccepted = order.isAccepted;
+    final isOnTheWay = order.isOnTheWay;
 
     String buttonText;
     VoidCallback? onPressed;
@@ -2637,10 +2639,10 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
   }
 
   Widget _buildActionButtons(dynamic order) {
-    final isPending = order.status == 'pending';
-    final isAssigned = order.status == 'assigned';
-    final isAccepted = order.status == 'accepted';
-    final isOnTheWay = order.status == 'on_the_way';
+    final isPending = order.isPending;
+    final isAssigned = order.isAssigned;
+    final isAccepted = order.isAccepted;
+    final isOnTheWay = order.isOnTheWay;
 
     if (isPending || isAssigned) {
       // Show Accept/Reject buttons for pending/assigned orders
@@ -2784,10 +2786,10 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
   }
 
   Widget _buildCompactActionButtons(dynamic order) {
-    final isPending = order.status == 'pending';
-    final isAssigned = order.status == 'assigned';
-    final isAccepted = order.status == 'accepted';
-    final isOnTheWay = order.status == 'on_the_way';
+    final isPending = order.isPending;
+    final isAssigned = order.isAssigned;
+    final isAccepted = order.isAccepted;
+    final isOnTheWay = order.isOnTheWay;
 
     if (isPending || isAssigned) {
       // Bigger Accept/Reject buttons
@@ -3944,9 +3946,9 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
         longitude = order.deliveryLongitude;
         cardId = '${order.id}_dropoff';
       }
-    } else if (order.status == 'pending' ||
-        order.status == 'assigned' ||
-        order.status == 'accepted') {
+    } else if (order.isPending ||
+        order.isAssigned ||
+        order.isAccepted) {
       // Go to pickup location (store)
       latitude = order.pickupLatitude;
       longitude = order.pickupLongitude;

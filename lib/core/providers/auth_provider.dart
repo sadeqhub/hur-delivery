@@ -446,13 +446,12 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       _verifiedPhone = phoneE164;
       await _loadUserProfile();
       return true;
-    } catch (e) {
-      final message = e.toString();
+    } on AuthException catch (e) {
       Logger.d('❌ signUpWithPassword error: $e');
       // Handle user already exists (422)
-      if (message.contains('user_already_exists') ||
-          message.contains('already registered') ||
-          message.contains('422')) {
+      if (e.message.contains('user_already_exists') ||
+          e.message.contains('already registered') ||
+          e.statusCode == '422') {
         Logger.d('⚠️ User already exists, checking if we can sign in...');
         // If OTP was already verified (consumed), try login with deterministic password
         // Don't try to reset password again - OTP is already consumed
@@ -485,6 +484,10 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         // Navigation will be handled by the caller based on user role
         return true;
       }
+      _error = _getErrorMessage(e);
+      return false;
+    } catch (e) {
+      Logger.d('❌ signUpWithPassword non-auth error: $e');
       _error = _getErrorMessage(e);
       return false;
     } finally {
@@ -543,9 +546,10 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
                 '❌ [DEBUG] Password format: ${password.substring(0, 5)}...${password.substring(password.length - 3)}');
           }
           // Check if it's an invalid credentials error
-          if (e.toString().contains('Invalid login credentials') || 
-              e.toString().contains('400') ||
-              e.toString().contains('invalid_credentials')) {
+          if (e is AuthException &&
+              (e.message.contains('Invalid login credentials') ||
+                  e.message.contains('invalid_credentials') ||
+                  e.statusCode == '400')) {
             Logger.d(
                 '⚠️ [DEBUG] Invalid credentials - email format or password mismatch');
             Logger.d('⚠️ [DEBUG] Tried email: $em');
@@ -843,22 +847,23 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         } else {
           throw Exception('فشل إنشاء الحساب');
         }
-      } catch (signUpError) {
+      } on AuthException catch (signUpError) {
         Logger.d('❌ Sign up failed: $signUpError');
         Logger.d('❌ Sign up error type: ${signUpError.runtimeType}');
-        
-        // Check for specific errors
-        if (signUpError.toString().contains('400') || 
-            signUpError.toString().contains('Bad Request')) {
+
+        if (signUpError.statusCode == '400') {
           throw Exception('خطأ في تنسيق البيانات. يرجى المحاولة مرة أخرى.');
         }
-        
-        if (signUpError.toString().contains('already registered') || 
-            signUpError.toString().contains('User already registered')) {
+
+        if (signUpError.message.contains('already registered') ||
+            signUpError.message.contains('User already registered')) {
           throw Exception(
               'حسابك موجود بالفعل. يرجى تسجيل الدخول بدلاً من التسجيل.');
         }
-        
+
+        throw Exception('فشل في إنشاء الحساب. يرجى المحاولة مرة أخرى.');
+      } catch (signUpError) {
+        Logger.d('❌ Sign up failed (non-auth): $signUpError');
         throw Exception('فشل في إنشاء الحساب. يرجى المحاولة مرة أخرى.');
       }
     } catch (e) {
@@ -1259,8 +1264,8 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
             return;
           }
         }
-      } else if (e.toString().contains('401') ||
-          e.toString().contains('Unauthorized')) {
+      } else if (e is AuthException &&
+          (e.statusCode == '401' || e.message.contains('Unauthorized'))) {
         Logger.d(
             '🔐 Unauthorized access during profile load - attempting refresh...');
         final refreshed = await _attemptSessionRefresh();
@@ -1632,9 +1637,12 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       Logger.d('❌ Stack trace: $stackTrace');
       
       // Check for specific error types
-      if (e.toString().contains('duplicate key') ||
-          e.toString().contains('unique constraint')) {
-        if (e.toString().contains('id_number')) {
+      if (e is PostgrestException &&
+          (e.message.contains('duplicate key') ||
+              e.message.contains('unique constraint') ||
+              e.code == '23505')) {
+        if (e.message.contains('id_number') ||
+            (e.details?.toString().contains('id_number') ?? false)) {
           _error =
               'رقم الهوية الوطني مسجل بالفعل في النظام. لا يمكن استخدام نفس الهوية لأكثر من حساب.';
         } else {

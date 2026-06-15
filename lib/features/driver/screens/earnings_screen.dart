@@ -118,7 +118,7 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
           
           // Filter by status
           Logger.d('🔄 Starting status filter...');
-          final filteredOrders = _selectedStatus == 'all' 
+          final filteredOrders = _selectedStatus == 'all'
               ? filteredByTime
               : filteredByTime.where((o) => o.status == _selectedStatus).toList();
           Logger.d('🏷️  After status filter: ${filteredOrders.length}');
@@ -256,13 +256,13 @@ class _DriverEarningsScreenState extends State<DriverEarningsScreen> {
 
   Map<String, dynamic> _calculateStatistics(List orders, String? driverId) {
     final totalOrders = orders.length;
-    final deliveredOrders = orders.where((o) => o.status == 'delivered').toList();
-    final cancelledOrders = orders.where((o) => o.status == 'cancelled').toList();
-    final rejectedOrders = orders.where((o) => o.status == 'rejected').toList();
-    final activeOrders = orders.where((o) => 
-        o.status != 'delivered' && 
-        o.status != 'cancelled' &&
-        o.status != 'rejected'
+    final deliveredOrders = orders.where((o) => o.isDelivered).toList();
+    final cancelledOrders = orders.where((o) => o.isCancelled).toList();
+    final rejectedOrders = orders.where((o) => o.isRejected).toList();
+    final activeOrders = orders.where((o) =>
+        !o.isDelivered &&
+        !o.isCancelled &&
+        !o.isRejected
     ).toList();
 
     // Calculate average delivery time

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../shared/models/order_status.dart';
 import 'event_notification_service.dart';
 import '../utils/logger.dart';
 
@@ -174,7 +175,7 @@ class PersistentTaskHandler extends TaskHandler {
         // Check if order newly assigned to this driver
         if (driverId != null &&
             driverId == _userId && 
-            status == 'pending' && 
+            OrderStatus.fromDb(status) == OrderStatus.pending &&
             !_notifiedOrders.contains(orderId)) {
           
           Logger.d('🔔 NEW ORDER DETECTED: $orderId');

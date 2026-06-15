@@ -861,8 +861,7 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
 
         // Get all active orders (including rejected and those with ready countdown)
         final allActiveOrders = orderProvider.orders
-            .where((order) => order.status != 'delivered' && 
-                             order.status != 'cancelled')
+            .where((order) => !order.isDelivered && !order.isCancelled)
             .toList()
           ..sort((a, b) {
             // Sort by ready_at first (orders not ready yet come first)
@@ -980,7 +979,7 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
               final order = activeOrders[index];
                 
                 // Add action buttons for rejected orders
-                if (order.status == 'rejected') {
+                if (order.isRejected) {
                   return MerchantOrderCard(
                     key: ValueKey('${order.id}_${order.status}_rejected'),
                     order: order,
@@ -1412,8 +1411,7 @@ class _CompletedOrdersListState extends State<_CompletedOrdersList> {
 
         // Get completed orders and sort by newest first
         final completedOrders = orderProvider.orders
-            .where((order) => order.status == 'delivered' || 
-                             order.status == 'cancelled')
+            .where((order) => order.isDelivered || order.isCancelled)
             .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -1435,7 +1433,7 @@ class _CompletedOrdersListState extends State<_CompletedOrdersList> {
               final order = completedOrders[index];
                 
                 // Add repost button for rejected orders in completed tab too
-                if (order.status == 'rejected') {
+                if (order.isRejected) {
                   return MerchantOrderCard(
                     key: ValueKey('${order.id}_${order.status}_rejected_completed'),
                     order: order,
@@ -1660,12 +1658,12 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
 
   Map<String, dynamic> _calculateStatistics(List orders) {
     final totalOrders = orders.length;
-    final deliveredOrders = orders.where((o) => o.status == 'delivered').toList();
-    final cancelledOrders = orders.where((o) => o.status == 'cancelled').toList();
-    final rejectedOrders = orders.where((o) => o.status == 'rejected').toList();
-    final activeOrders = orders.where((o) => 
-        o.status != 'delivered' && 
-        o.status != 'cancelled'
+    final deliveredOrders = orders.where((o) => o.isDelivered).toList();
+    final cancelledOrders = orders.where((o) => o.isCancelled).toList();
+    final rejectedOrders = orders.where((o) => o.isRejected).toList();
+    final activeOrders = orders.where((o) =>
+        !o.isDelivered &&
+        !o.isCancelled
     ).toList();
 
     // Calculate average delivery time

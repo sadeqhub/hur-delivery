@@ -47,7 +47,8 @@ class SystemSettingsService {
         Logger.d('🔐 Session expired while fetching system setting - clearing cache');
         _settingsCache.clear();
         _lastFetchTime = null;
-      } else if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
+      } else if (e is AuthException &&
+          (e.statusCode == '401' || e.message.contains('Unauthorized'))) {
         Logger.d('🔐 Unauthorized access while fetching system setting - clearing cache');
         _settingsCache.clear();
         _lastFetchTime = null;

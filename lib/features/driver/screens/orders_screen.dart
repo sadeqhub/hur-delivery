@@ -192,8 +192,8 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
     }
     
     final isAssignedToMe = order.driverId == driverId;
-    final canAccept = order.status == 'pending' && !isAssignedToMe;
-    final canComplete = order.status == 'accepted' && isAssignedToMe;
+    final canAccept = order.isPending && !isAssignedToMe;
+    final canComplete = order.isAccepted && isAssignedToMe;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -509,13 +509,13 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
     // Then filter by status
     switch (filter) {
       case 'pending':
-        return driverOrders.where((order) => order.status == 'pending').toList();
+        return driverOrders.where((order) => order.isPending).toList();
       case 'accepted':
-        return driverOrders.where((order) => order.status == 'accepted' || order.status == 'on_the_way').toList();
+        return driverOrders.where((order) => order.isAccepted || order.isOnTheWay).toList();
       case 'delivered':
-        return driverOrders.where((order) => order.status == 'delivered').toList();
+        return driverOrders.where((order) => order.isDelivered).toList();
       case 'cancelled':
-        return driverOrders.where((order) => order.status == 'cancelled').toList();
+        return driverOrders.where((order) => order.isCancelled).toList();
       default:
         return driverOrders;
     }

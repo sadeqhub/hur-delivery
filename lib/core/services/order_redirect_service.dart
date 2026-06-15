@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import '../../shared/models/order_status.dart';
 import '../utils/logger.dart';
 
 /// Global Order Redirect Service
@@ -94,7 +95,7 @@ class OrderRedirectService {
         Logger.d('Last seen: $_lastSeenOrderId');
         
         // Only redirect for newly ASSIGNED orders (not accepted/on_the_way)
-        if (orderStatus == 'assigned') {
+        if (OrderStatus.fromDb(orderStatus) == OrderStatus.assigned) {
           Logger.d('🎯 Redirecting driver to dashboard...');
           
           // Mark as seen BEFORE redirecting to prevent loops

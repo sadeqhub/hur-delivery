@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../shared/models/order_model.dart';
+import '../../shared/models/order_status.dart';
 import '../constants/app_constants.dart';
 import '../services/notification_manager.dart';
 import '../services/error_manager.dart';
@@ -93,16 +94,14 @@ class OrderProvider extends ChangeNotifier {
     final activeOrders = _orders
         .where((order) {
           if (order.driverId != driverId) return false;
-          if (order.status == 'delivered' ||
-              order.status == 'cancelled' ||
-              order.status == 'rejected') {
+          if (order.isDelivered || order.isCancelled || order.isRejected) {
             return false;
           }
 
           // Hide pending orders whose accept window has expired client-side.
           // The DB auto-reject function is the authoritative enforcer; this
           // just keeps the UI clean while waiting for the next realtime event.
-          if (order.status == 'pending' && order.driverAssignedAt != null) {
+          if (order.isPending && order.driverAssignedAt != null) {
             final remaining = OrderTimeoutService.instance
                 .getLiveAcceptCountdownSeconds(order.id, order.driverAssignedAt);
             if (remaining <= 0) return false;
@@ -112,8 +111,8 @@ class OrderProvider extends ChangeNotifier {
         })
         .toList()
       ..sort((a, b) {
-        if (a.status == 'pending' && b.status != 'pending') return -1;
-        if (a.status != 'pending' && b.status == 'pending') return 1;
+        if (a.isPending && !b.isPending) return -1;
+        if (!a.isPending && b.isPending) return 1;
         return b.createdAt.compareTo(a.createdAt);
       });
 
@@ -124,7 +123,7 @@ class OrderProvider extends ChangeNotifier {
   // Get pending orders available for drivers
   List<OrderModel> getPendingOrdersForDrivers() {
     return _orders
-        .where((order) => order.status == 'pending' && order.driverId == null)
+        .where((order) => order.isPending && order.driverId == null)
         .toList();
   }
 
@@ -491,7 +490,7 @@ class OrderProvider extends ChangeNotifier {
             }
             
             // 🔔 TRIGGER NOTIFICATION: Order newly assigned to this driver
-            if (driverId != null && driverId == currentUser.id && status == 'pending') {
+            if (driverId != null && driverId == currentUser.id && OrderStatus.fromDb(status) == OrderStatus.pending) {
               // Check if this is a NEW assignment (not already in our list with this driver)
               final isNewAssignment = existingOrder == null || existingOrder.driverId != currentUser.id;
               
@@ -506,7 +505,7 @@ class OrderProvider extends ChangeNotifier {
             
           // IMPORTANT: Include ONLY orders assigned to this driver with allowed statuses
           if (driverId == currentUser.id &&
-              (status == 'pending' || status == 'accepted' || status == 'on_the_way')) {
+              ({OrderStatus.pending, OrderStatus.accepted, OrderStatus.onTheWay}.contains(OrderStatus.fromDb(status)))) {
               
               
               // Fetch order items if not included
@@ -525,8 +524,8 @@ class OrderProvider extends ChangeNotifier {
               
               // Calculate timeout_remaining_seconds if order is pending with driver assigned
               // Formula: 30 - (NOW() - driver_assigned_at)
-              if (orderData['status'] == 'pending' && 
-                  orderData['driver_id'] != null && 
+              if (OrderStatus.fromDb(orderData['status'] as String?) == OrderStatus.pending &&
+                  orderData['driver_id'] != null &&
                   orderData['driver_assigned_at'] != null) {
                 try {
                   final assignedAtStr = orderData['driver_assigned_at'] as String;
@@ -679,8 +678,8 @@ class OrderProvider extends ChangeNotifier {
               }
               
               // Calculate timeout for pending orders with driver assigned
-              if (orderData['status'] == 'pending' && 
-                  orderData['driver_id'] != null && 
+              if (OrderStatus.fromDb(orderData['status'] as String?) == OrderStatus.pending &&
+                  orderData['driver_id'] != null &&
                   orderData['driver_assigned_at'] != null) {
                 try {
                   final assignedAtStr = orderData['driver_assigned_at'] as String;
@@ -690,7 +689,7 @@ class OrderProvider extends ChangeNotifier {
                   final elapsed = now.difference(assignedAtUtc).inSeconds;
                   final remaining = 30 - elapsed;
                   final remainingClamped = remaining.clamp(0, 30);
-                  
+
                   orderData['timeout_remaining_seconds'] = remainingClamped;
                 } catch (e) {
                   orderData['timeout_remaining_seconds'] = null;
@@ -723,7 +722,7 @@ class OrderProvider extends ChangeNotifier {
                Logger.d('ℹ️  Order on the way - database trigger will send notification');
              } else if (newOrder.status == AppConstants.statusDelivered) {
                Logger.d('ℹ️  Order delivered - database trigger will send notification');
-             } else if (newOrder.status == AppConstants.statusRejected) {
+             } else if (newOrder.isRejected) {
                Logger.d('ℹ️  Order rejected - database trigger will send notification');
              }
             } else if (existingOrder == null) {
@@ -893,13 +892,10 @@ class OrderProvider extends ChangeNotifier {
       } else {
         // Extract more detailed error message
         String detailedError = errorString;
-        if (e.toString().contains('PostgrestException')) {
+        if (e is PostgrestException) {
           // Try to extract the actual error message from Supabase
           try {
-            final match = RegExp(r'message: (.+?)(?:,|$)').firstMatch(errorString);
-            if (match != null) {
-              detailedError = match.group(1) ?? errorString;
-            }
+            detailedError = e.message;
           } catch (_) {
             // If parsing fails, use original error
           }
@@ -991,9 +987,9 @@ class OrderProvider extends ChangeNotifier {
                 'status': status,
                 'updated_at': DateTime.now().toIso8601String(),
                 // Set picked_up_at when status changes to on_the_way
-                if (status == 'on_the_way') 'picked_up_at': DateTime.now().toIso8601String(),
+                if (OrderStatus.fromDb(status) == OrderStatus.onTheWay) 'picked_up_at': DateTime.now().toIso8601String(),
                 // Set delivered_at when status changes to delivered
-                if (status == 'delivered') 'delivered_at': DateTime.now().toIso8601String(),
+                if (OrderStatus.fromDb(status) == OrderStatus.delivered) 'delivered_at': DateTime.now().toIso8601String(),
               })
               .eq('id', orderId)
               .select();

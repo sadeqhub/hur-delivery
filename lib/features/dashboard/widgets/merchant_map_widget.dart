@@ -205,9 +205,9 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
     
     // Get all driver IDs from active orders
     final driverIds = widget.orders
-        .where((o) => o.driverId != null && 
-                     o.status != 'delivered' && 
-                     o.status != 'cancelled')
+        .where((o) => o.driverId != null &&
+                     !o.isDelivered &&
+                     !o.isCancelled)
         .map((o) => o.driverId!)
         .toSet();
     
@@ -306,7 +306,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
       
       // Add markers and routes for each order
       for (final order in widget.orders) {
-        if (order.status == 'delivered' || order.status == 'cancelled') {
+        if (order.isDelivered || order.isCancelled) {
           continue;
         }
         

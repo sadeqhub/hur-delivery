@@ -163,8 +163,7 @@ class _MerchantActiveOrdersListState extends State<MerchantActiveOrdersList> {
 
         // Get all active orders (including rejected and those with ready countdown)
         final allActiveOrders = orderProvider.orders
-            .where((order) =>
-                order.status != 'delivered' && order.status != 'cancelled')
+            .where((order) => !order.isDelivered && !order.isCancelled)
             .toList()
           ..sort((a, b) {
             if (a.readyAt != null && b.readyAt == null) return -1;
@@ -271,7 +270,7 @@ class _MerchantActiveOrdersListState extends State<MerchantActiveOrdersList> {
             itemBuilder: (context, index) {
               final order = activeOrders[index];
 
-              if (order.status == 'rejected') {
+              if (order.isRejected) {
                 return MerchantOrderCard(
                   key: ValueKey('${order.id}_${order.status}_rejected'),
                   order: order,
@@ -714,8 +713,7 @@ class _MerchantCompletedOrdersListState
         }
 
         final completedOrders = orderProvider.orders
-            .where((order) =>
-                order.status == 'delivered' || order.status == 'cancelled')
+            .where((order) => order.isDelivered || order.isCancelled)
             .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -736,7 +734,7 @@ class _MerchantCompletedOrdersListState
             itemBuilder: (context, index) {
               final order = completedOrders[index];
 
-              if (order.status == 'rejected') {
+              if (order.isRejected) {
                 return MerchantOrderCard(
                   key: ValueKey(
                       '${order.id}_${order.status}_rejected_completed'),

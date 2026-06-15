@@ -41,8 +41,8 @@ class DeviceSessionService {
         } else {
           onForceLogout('انتهت صلاحية الجلسة');
         }
-      } else if (e.toString().contains('401') ||
-          e.toString().contains('Unauthorized')) {
+      } else if (e is AuthException &&
+          (e.statusCode == '401' || e.message.contains('Unauthorized'))) {
         Logger.d(
             '🔐 Unauthorized access during device registration - attempting refresh...');
         final refreshed = await SessionService.instance.attemptRefresh();

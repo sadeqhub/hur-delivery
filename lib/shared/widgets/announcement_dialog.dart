@@ -7,6 +7,7 @@ import 'responsive_container.dart';
 import '../../shared/models/announcement_model.dart';
 import '../../core/services/announcement_service.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/utils/logger.dart';
 
 /// Dialog to display system-wide announcements
 class AnnouncementDialog extends StatefulWidget {
@@ -68,7 +69,7 @@ class _AnnouncementDialogState extends State<AnnouncementDialog> {
 
   /// Periodically check if the announcement still exists and is active
   void _startExistenceCheck() {
-    print('🔍 Starting existence check for announcement: ${widget.announcement.id}');
+    Logger.d('🔍 Starting existence check for announcement: ${widget.announcement.id}');
     
     // Check every 3 seconds
     _existenceCheckTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
@@ -84,14 +85,14 @@ class _AnnouncementDialogState extends State<AnnouncementDialog> {
       );
       
       if (!stillExists && mounted) {
-        print('✅ Announcement ${widget.announcement.id} was removed or deactivated - auto-closing dialog');
+        Logger.d('✅ Announcement ${widget.announcement.id} was removed or deactivated - auto-closing dialog');
         _existenceCheckTimer?.cancel();
         _countdownTimer?.cancel();
         Navigator.of(context).pop();
         widget.onDismiss?.call();
       }
     } catch (e) {
-      print('⚠️ Error checking announcement existence: $e');
+      Logger.d('⚠️ Error checking announcement existence: $e');
       // Don't close on error - better to keep showing than to close unexpectedly
     }
   }
@@ -110,15 +111,15 @@ class _AnnouncementDialogState extends State<AnnouncementDialog> {
     required String userId,
   }) async {
     try {
-      print('🔔 Checking announcements for user: $userId, role: $userRole');
+      Logger.d('🔔 Checking announcements for user: $userId, role: $userRole');
       
       final announcements = await AnnouncementService()
           .getUndismissedAnnouncements(userRole, userId);
 
-      print('📢 Found ${announcements.length} undismissed announcements');
+      Logger.d('📢 Found ${announcements.length} undismissed announcements');
 
       if (announcements.isEmpty || !context.mounted) {
-        print('⏭️ No announcements to show or context not mounted');
+        Logger.d('⏭️ No announcements to show or context not mounted');
         return;
       }
 
@@ -126,7 +127,7 @@ class _AnnouncementDialogState extends State<AnnouncementDialog> {
       for (final announcement in announcements) {
         if (!context.mounted) break;
 
-        print('🎯 Showing announcement: ${announcement.title}');
+        Logger.d('🎯 Showing announcement: ${announcement.title}');
         
         await showDialog(
           context: context,
@@ -138,7 +139,7 @@ class _AnnouncementDialogState extends State<AnnouncementDialog> {
         );
       }
     } catch (e) {
-      print('❌ Error showing announcements: $e');
+      Logger.d('❌ Error showing announcements: $e');
     }
   }
 

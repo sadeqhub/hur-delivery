@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 
 /// 🔔 CUTTING-EDGE NOTIFICATION MANAGER
 /// 
@@ -27,38 +28,38 @@ class NotificationManager {
     bool skipDatabase = false,
   }) async {
     final startTime = DateTime.now();
-    print('\n═══════════════════════════════════════════════════════');
-    print('🔔 NOTIFICATION MANAGER: Sending notification');
-    print('═══════════════════════════════════════════════════════');
-    print('📍 Target User: $targetUserId');
-    print('📍 Title: $title');
-    print('📍 Body: $body');
-    print('📍 Type: $type');
-    print('📍 Data: $data');
-    print('📍 Skip Database: $skipDatabase');
-    print('═══════════════════════════════════════════════════════\n');
+    Logger.d('\n═══════════════════════════════════════════════════════');
+    Logger.d('🔔 NOTIFICATION MANAGER: Sending notification');
+    Logger.d('═══════════════════════════════════════════════════════');
+    Logger.d('📍 Target User: $targetUserId');
+    Logger.d('📍 Title: $title');
+    Logger.d('📍 Body: $body');
+    Logger.d('📍 Type: $type');
+    Logger.d('📍 Data: $data');
+    Logger.d('📍 Skip Database: $skipDatabase');
+    Logger.d('═══════════════════════════════════════════════════════\n');
 
     String? notificationId;
 
     try {
       // NEW APPROACH: Insert to database ONLY
       // Database trigger (trigger_fcm_push) will automatically call Edge Function
-      print('💾 Inserting notification to database...');
-      print('📌 Database trigger will handle FCM push automatically');
+      Logger.d('💾 Inserting notification to database...');
+      Logger.d('📌 Database trigger will handle FCM push automatically');
       
       bool success = false;
       int retries = 0;
 
       while (!success && retries < _maxRetries) {
         if (retries > 0) {
-          print('🔄 Retry attempt $retries of $_maxRetries...');
+          Logger.d('🔄 Retry attempt $retries of $_maxRetries...');
           await Future.delayed(_retryDelay);
         }
 
         try {
           // Check if notification already exists (if skipDatabase, it means it's already in DB)
           if (skipDatabase) {
-            print('⏭️  Notification already in database, skipping insert');
+            Logger.d('⏭️  Notification already in database, skipping insert');
             success = true;
             break;
           }
@@ -87,32 +88,32 @@ class NotificationManager {
               .from('notifications')
               .insert(notificationData);
           
-          print('✅ Notification inserted to database');
-          print('⚡ Database trigger will now call Edge Function automatically');
+          Logger.d('✅ Notification inserted to database');
+          Logger.d('⚡ Database trigger will now call Edge Function automatically');
           success = true;
           break;
           
         } catch (e) {
-          print('❌ Failed to insert notification (attempt ${retries + 1}): $e');
+          Logger.d('❌ Failed to insert notification (attempt ${retries + 1}): $e');
           retries++;
         }
       }
 
       final duration = DateTime.now().difference(startTime);
-      print('\n═══════════════════════════════════════════════════════');
-      print('🏁 NOTIFICATION MANAGER: Completed');
-      print('═══════════════════════════════════════════════════════');
-      print('📊 Result: ${success ? "✅ SUCCESS" : "❌ FAILED"}');
-      print('📊 Duration: ${duration.inMilliseconds}ms');
-      print('📊 Retries: $retries');
-      print('📊 Note: Notification logged by Edge Function');
-      print('═══════════════════════════════════════════════════════\n');
+      Logger.d('\n═══════════════════════════════════════════════════════');
+      Logger.d('🏁 NOTIFICATION MANAGER: Completed');
+      Logger.d('═══════════════════════════════════════════════════════');
+      Logger.d('📊 Result: ${success ? "✅ SUCCESS" : "❌ FAILED"}');
+      Logger.d('📊 Duration: ${duration.inMilliseconds}ms');
+      Logger.d('📊 Retries: $retries');
+      Logger.d('📊 Note: Notification logged by Edge Function');
+      Logger.d('═══════════════════════════════════════════════════════\n');
 
       return success;
 
     } catch (e) {
-      print('\n❌ CRITICAL ERROR in NotificationManager: $e');
-      print('═══════════════════════════════════════════════════════\n');
+      Logger.d('\n❌ CRITICAL ERROR in NotificationManager: $e');
+      Logger.d('═══════════════════════════════════════════════════════\n');
       return false;
     }
   }

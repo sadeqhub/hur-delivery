@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_extensions.dart';
@@ -15,6 +16,7 @@ import '../../core/config/env.dart';
 import '../../shared/widgets/primary_button.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../features/auth/screens/id_verification_review_screen.dart';
+import '../../core/utils/logger.dart';
 
 /// Guard widget that checks user verification status and blocks access
 /// if verification is pending or rejected
@@ -35,51 +37,34 @@ class _VerificationGuardState extends State<VerificationGuard> {
   File? _idCardBack;
   File? _selfieWithId;
   bool _isResubmitting = false;
-  Timer? _statusCheckTimer;
+  StreamSubscription? _userSubscription;
 
   @override
   void initState() {
     super.initState();
-    _startStatusPolling();
+    _startRealtimeSubscription();
   }
 
   @override
   void dispose() {
-    _statusCheckTimer?.cancel();
+    _userSubscription?.cancel();
     super.dispose();
   }
 
-  void _startStatusPolling() {
-    // Check status every 5 seconds
-    _statusCheckTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-
-      final authProvider = context.read<AuthProvider>();
-      final user = authProvider.user;
-
-      // Only poll if status is pending
-      if (user != null && user.verificationStatus == 'pending') {
-        authProvider.refreshUser().then((_) {
+  void _startRealtimeSubscription() {
+    final authProvider = context.read<AuthProvider>();
+    final userId = authProvider.user?.id;
+    if (userId == null) return;
+    _userSubscription = Supabase.instance.client
+        .from('users')
+        .stream(primaryKey: ['id'])
+        .eq('id', userId)
+        .listen((data) {
           if (!mounted) return;
-          
-          final updatedUser = authProvider.user;
-          // If status changed to approved, cancel the timer
-          if (updatedUser?.verificationStatus == 'approved') {
-            timer.cancel();
-            _statusCheckTimer = null;
+          if (data.isNotEmpty) {
+            authProvider.refreshUser();
           }
-        }).catchError((error) {
-          print('Error checking verification status: $error');
         });
-      } else {
-        // Status is not pending, cancel the timer
-        timer.cancel();
-        _statusCheckTimer = null;
-      }
-    });
   }
 
   @override
@@ -90,32 +75,20 @@ class _VerificationGuardState extends State<VerificationGuard> {
 
         // If no user or user is approved, show child
         if (user == null || user.verificationStatus == 'approved') {
-          // Stop polling if status is approved
-          _statusCheckTimer?.cancel();
-          _statusCheckTimer = null;
           return widget.child;
         }
 
-        // If pending, show reupload UI and ensure polling is active
+        // If pending, show reupload UI
         if (user.verificationStatus == 'pending') {
-          // Ensure polling is active
-          if (_statusCheckTimer == null || !_statusCheckTimer!.isActive) {
-            _startStatusPolling();
-          }
           return _buildPendingScreen(user);
         }
 
         // If rejected, show blocked screen
         if (user.verificationStatus == 'rejected') {
-          // Stop polling if rejected
-          _statusCheckTimer?.cancel();
-          _statusCheckTimer = null;
           return _buildRejectedScreen();
         }
 
         // Default: show child (shouldn't reach here)
-        _statusCheckTimer?.cancel();
-        _statusCheckTimer = null;
         return widget.child;
       },
     );
@@ -166,30 +139,6 @@ class _VerificationGuardState extends State<VerificationGuard> {
                     color: context.themeTextSecondary,
                   ),
                   textAlign: TextAlign.center,
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Status checking indicator
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.warning),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'جاري التحقق من الحالة...',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                  ],
                 ),
                 
                 const SizedBox(height: 48),
@@ -539,7 +488,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
     });
 
     try {
-      print('🆔 Resubmitting ID verification...');
+      Logger.d('🆔 Resubmitting ID verification...');
       final verificationResult = await _verifyIdWithAI(user.role, user.id);
       
       if (verificationResult == null || !verificationResult['success']) {
@@ -555,12 +504,11 @@ class _VerificationGuardState extends State<VerificationGuard> {
         return;
       }
       
-      print('✅ ID verification passed by AI');
-      
-      // Restart polling after resubmission
-      _statusCheckTimer?.cancel();
-      _statusCheckTimer = null;
-      _startStatusPolling();
+      Logger.d('✅ ID verification passed by AI');
+
+      // Restart subscription after resubmission
+      _userSubscription?.cancel();
+      _startRealtimeSubscription();
       
       if (mounted) {
         // Navigate to review screen to confirm extracted data
@@ -578,7 +526,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
         );
       }
     } catch (e) {
-      print('❌ Resubmission error: $e');
+      Logger.d('❌ Resubmission error: $e');
       if (mounted) {
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -599,7 +547,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
 
   Future<Map<String, dynamic>?> _verifyIdWithAI(String role, String userId) async {
     try {
-      print('📤 Sending images to ID verification edge function...');
+      Logger.d('📤 Sending images to ID verification edge function...');
       
       var request = http.MultipartRequest(
         'POST',
@@ -632,7 +580,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
       request.fields['role'] = role;
       request.fields['user_id'] = userId;
       
-      print('⏳ Waiting for verification response...');
+      Logger.d('⏳ Waiting for verification response...');
       
       var response = await request.send().timeout(
         const Duration(seconds: 60),
@@ -644,11 +592,11 @@ class _VerificationGuardState extends State<VerificationGuard> {
       final responseData = await response.stream.bytesToString();
       final jsonData = json.decode(responseData);
       
-      print('📥 Verification response: ${jsonData.toString()}');
+      Logger.d('📥 Verification response: ${jsonData.toString()}');
       
       return jsonData;
     } catch (e) {
-      print('❌ ID verification error: $e');
+      Logger.d('❌ ID verification error: $e');
       final loc = AppLocalizations.of(context);
       return {
         'success': false,

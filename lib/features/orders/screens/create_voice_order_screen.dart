@@ -1,3 +1,4 @@
+// TODO: extract Supabase.instance calls to a feature repository
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -11,25 +12,27 @@ import 'dart:convert';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/config/app_config.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/env.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/providers/voice_recording_provider.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../core/services/delivery_fee_calculator.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../screens/voice_library_screen.dart';
 import '../screens/create_order_screen.dart';
+import '../../../core/utils/logger.dart';
 
-class CreateVoiceOrderScreen extends StatefulWidget {
+class CreateVoiceOrderScreen extends ConsumerStatefulWidget {
   final bool embedded;
 
   const CreateVoiceOrderScreen({super.key, this.embedded = false});
 
   @override
-  State<CreateVoiceOrderScreen> createState() => _CreateVoiceOrderScreenState();
+  ConsumerState<CreateVoiceOrderScreen> createState() => _CreateVoiceOrderScreenState();
 }
 
-class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
+class _CreateVoiceOrderScreenState extends ConsumerState<CreateVoiceOrderScreen>
     with SingleTickerProviderStateMixin {
   bool _isRecording = false;
   bool _isProcessing = false;
@@ -144,7 +147,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
         });
       }
     } catch (e) {
-      print('❌ Error checking available drivers: $e');
+      Logger.d('❌ Error checking available drivers: $e');
       if (mounted) {
         setState(() {
           _checkingDrivers = false;
@@ -645,7 +648,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
           _audioPath = path;
         });
 
-        print('🎤 Recording started: $path');
+        Logger.d('🎤 Recording started: $path');
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -657,7 +660,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
         }
       }
     } catch (e) {
-      print('❌ Error starting recording: $e');
+      Logger.d('❌ Error starting recording: $e');
       if (mounted) {
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -679,13 +682,13 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
       });
 
       if (path != null) {
-        print('🎤 Recording stopped: $path');
+        Logger.d('🎤 Recording stopped: $path');
 
         // Send to backend for transcription and extraction
         await _processVoiceOrder(path);
       }
     } catch (e) {
-      print('❌ Error stopping recording: $e');
+      Logger.d('❌ Error stopping recording: $e');
       if (mounted) {
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -716,9 +719,11 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
     setState(() => _isProcessing = true);
 
     try {
-      final provider = context.read<VoiceRecordingProvider>();
+      final notifier = ref.read(voiceRecordingProvider.notifier);
+      final recordings = ref.read(voiceRecordingProvider).valueOrNull?.recordings ?? [];
       final recording =
-          provider.recordings.firstWhere((r) => r.id == recordingId);
+          recordings.firstWhere((r) => r.id == recordingId);
+      final provider = notifier;
 
       // If cached data exists, use it
       if (recording.hasExtractedData && recording.hasTranscription) {
@@ -746,7 +751,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
         }
       }
     } catch (e) {
-      print('❌ Error reusing recording: $e');
+      Logger.d('❌ Error reusing recording: $e');
       if (mounted) {
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -771,7 +776,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
       final digits = phone.replaceAll(RegExp(r'\D'), '');
       if (digits.length == 11 && digits.startsWith('0')) {
         phone = digits.substring(1);
-        print('📞 Normalized phone number: removed leading zero');
+        Logger.d('📞 Normalized phone number: removed leading zero');
       }
     }
     
@@ -803,15 +808,14 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
     try {
       final audioFile = File(audioPath);
       if (!await audioFile.exists()) {
-        print('⚠️ Audio file not found, skipping save');
+        Logger.d('⚠️ Audio file not found, skipping save');
         return;
       }
 
       final filename = audioPath.split('/').last;
       final fileStats = await audioFile.stat();
 
-      final provider = context.read<VoiceRecordingProvider>();
-      final recording = await provider.uploadRecording(
+      final recording = await ref.read(voiceRecordingProvider.notifier).uploadRecording(
         audioFile: audioFile,
         filename: filename,
         durationSeconds: _duration?.inSeconds,
@@ -820,10 +824,10 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
       );
 
       if (recording != null) {
-        print('✅ Recording saved to storage: ${recording.id}');
+        Logger.d('✅ Recording saved to storage: ${recording.id}');
       }
     } catch (e) {
-      print('⚠️ Failed to save recording to storage: $e');
+      Logger.d('⚠️ Failed to save recording to storage: $e');
       // Don't show error to user - this is a background operation
     }
   }
@@ -834,7 +838,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
     });
 
     try {
-      print('📤 Sending audio to backend: $audioPath');
+      Logger.d('📤 Sending audio to backend: $audioPath');
 
       // Create multipart request
       var request = http.MultipartRequest(
@@ -863,7 +867,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
         final responseData = await response.stream.bytesToString();
         final jsonData = json.decode(responseData);
 
-        print('✅ Response received: ${jsonData.toString()}');
+        Logger.d('✅ Response received: ${jsonData.toString()}');
 
         // Normalize phone number: if 11 digits starting with 0, remove the leading zero
         String? phone = jsonData['customer_phone'] as String?;
@@ -871,7 +875,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
           final digits = phone.replaceAll(RegExp(r'\D'), '');
           if (digits.length == 11 && digits.startsWith('0')) {
             phone = digits.substring(1);
-            print('📞 Normalized phone number: removed leading zero');
+            Logger.d('📞 Normalized phone number: removed leading zero');
           }
         }
         
@@ -891,7 +895,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
           'items': jsonData['items'],
         };
 
-        print('✅ Extracted data: $extractedData');
+        Logger.d('✅ Extracted data: $extractedData');
 
         // Save recording to storage for future reuse
         await _saveRecordingToStorage(
@@ -913,12 +917,12 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
         }
       } else {
         final errorData = await response.stream.bytesToString();
-        print('❌ Error response: $errorData');
+        Logger.d('❌ Error response: $errorData');
         final loc = AppLocalizations.of(context);
         throw Exception(loc.audioProcessingFailed(response.statusCode));
       }
     } catch (e) {
-      print('❌ Error processing voice order: $e');
+      Logger.d('❌ Error processing voice order: $e');
       if (mounted) {
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -941,10 +945,10 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
         final file = File(audioPath);
         if (await file.exists()) {
           await file.delete();
-          print('🗑️ Cleaned up audio file');
+          Logger.d('🗑️ Cleaned up audio file');
         }
       } catch (e) {
-        print('⚠️ Could not delete audio file: $e');
+        Logger.d('⚠️ Could not delete audio file: $e');
       }
     }
   }
@@ -1050,7 +1054,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
         deliveryLng,
       );
       }
-      print('💰 Calculated delivery fee from coordinates: $finalDeliveryFee IQD');
+      Logger.d('💰 Calculated delivery fee from coordinates: $finalDeliveryFee IQD');
     
 
       // If items exist, calculate from items
@@ -1112,7 +1116,7 @@ class _CreateVoiceOrderScreenState extends State<CreateVoiceOrderScreen>
         context.pop();
       }
     } catch (e) {
-      print('❌ Error submitting order: $e');
+      Logger.d('❌ Error submitting order: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

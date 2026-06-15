@@ -1,9 +1,10 @@
+// TODO: extract Supabase.instance calls to a feature repository
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/providers/notification_provider.dart';
+import '../../../core/providers/notification_provider.dart' show NotificationNotifier;
 
 /// Single source of truth for the driver's online/offline status.
 ///
@@ -66,7 +67,7 @@ class DriverStatusProvider extends ChangeNotifier {
   Future<bool> setOnline(
     bool value, {
     required AuthProvider authProvider,
-    NotificationProvider? notificationProvider,
+    NotificationNotifier? notificationProvider,
   }) async {
     final previous = _isOnline;
 

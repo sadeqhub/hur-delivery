@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
+import '../utils/logger.dart';
 
 class LocationProvider extends ChangeNotifier {
   Position? _currentPosition;
@@ -158,7 +159,7 @@ class LocationProvider extends ChangeNotifier {
         }
       });
     } catch (e) {
-      print('❌ LocationProvider: Error starting location tracking: $e');
+      Logger.d('❌ LocationProvider: Error starting location tracking: $e');
       _error = _getErrorMessage(e);
       _isTracking = false;
       notifyListeners();

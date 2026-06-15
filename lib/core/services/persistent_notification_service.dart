@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../shared/models/order_status.dart';
 import 'event_notification_service.dart';
+import '../utils/logger.dart';
 
 /// Persistent Notification Service using Foreground Task
 /// 
@@ -19,15 +21,15 @@ class PersistentNotificationService {
     String? userName,
   }) async {
     if (_isRunning) {
-      print('⚠️ Persistent service already running');
+      Logger.d('⚠️ Persistent service already running');
       return true;
     }
 
-    print('\n═══════════════════════════════════════');
-    print('🚀 STARTING PERSISTENT SERVICE');
-    print('═══════════════════════════════════════');
-    print('User: ${userName ?? userId}');
-    print('Role: $userRole');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('🚀 STARTING PERSISTENT SERVICE');
+    Logger.d('═══════════════════════════════════════');
+    Logger.d('User: ${userName ?? userId}');
+    Logger.d('Role: $userRole');
 
     _currentUserId = userId;
     _userRole = userRole;
@@ -63,26 +65,26 @@ class PersistentNotificationService {
     );
 
     _isRunning = true;
-    print('✅ Persistent service started');
-    print('═══════════════════════════════════════\n');
+    Logger.d('✅ Persistent service started');
+    Logger.d('═══════════════════════════════════════\n');
     return true;
   }
 
   /// Stop persistent service
   static Future<bool> stop() async {
     if (!_isRunning) {
-      print('⚠️ Persistent service not running');
+      Logger.d('⚠️ Persistent service not running');
       return true;
     }
 
-    print('🛑 Stopping persistent service...');
+    Logger.d('🛑 Stopping persistent service...');
     
     await FlutterForegroundTask.stopService();
     
     _isRunning = false;
     _currentUserId = null;
     _userRole = null;
-    print('✅ Persistent service stopped\n');
+    Logger.d('✅ Persistent service stopped\n');
     return true;
   }
 
@@ -118,19 +120,19 @@ class PersistentTaskHandler extends TaskHandler {
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    print('\n🔄 Task handler started at $timestamp');
+    Logger.d('\n🔄 Task handler started at $timestamp');
     
     // Get user info from preferences or state
     await _initializeSubscription();
   }
 
   Future<void> _initializeSubscription() async {
-    print('🔧 Initializing order subscription in background...');
+    Logger.d('🔧 Initializing order subscription in background...');
 
     try {
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser == null) {
-        print('❌ No current user');
+        Logger.d('❌ No current user');
         return;
       }
 
@@ -145,25 +147,25 @@ class PersistentTaskHandler extends TaskHandler {
       
       _userRole = userResponse['role'] as String;
       
-      print('✅ User: $_userId, Role: $_userRole');
+      Logger.d('✅ User: $_userId, Role: $_userRole');
 
       // Subscribe to orders
       if (_userRole == 'driver') {
         _subscribeToDriverOrders();
       }
     } catch (e) {
-      print('❌ Error initializing subscription: $e');
+      Logger.d('❌ Error initializing subscription: $e');
     }
   }
 
   void _subscribeToDriverOrders() {
-    print('📡 Subscribing to orders for driver...');
+    Logger.d('📡 Subscribing to orders for driver...');
 
     _orderSubscription = Supabase.instance.client
         .from('orders')
         .stream(primaryKey: ['id'])
         .listen((orders) {
-      print('📦 Orders stream update: ${orders.length} orders');
+      Logger.d('📦 Orders stream update: ${orders.length} orders');
 
       for (var order in orders) {
         final orderId = order['id'] as String;
@@ -173,10 +175,10 @@ class PersistentTaskHandler extends TaskHandler {
         // Check if order newly assigned to this driver
         if (driverId != null &&
             driverId == _userId && 
-            status == 'pending' && 
+            OrderStatus.fromDb(status) == OrderStatus.pending &&
             !_notifiedOrders.contains(orderId)) {
           
-          print('🔔 NEW ORDER DETECTED: $orderId');
+          Logger.d('🔔 NEW ORDER DETECTED: $orderId');
           _notifiedOrders.add(orderId);
           
           // Trigger notification
@@ -195,25 +197,25 @@ class PersistentTaskHandler extends TaskHandler {
       }
     });
 
-    print('✅ Orders subscription active');
+    Logger.d('✅ Orders subscription active');
   }
 
   @override
   void onRepeatEvent(DateTime timestamp) {
     // This runs every 5 seconds
     // Keep connection alive
-    print('💓 Background task heartbeat: ${timestamp.toString().substring(11, 19)}');
+    Logger.d('💓 Background task heartbeat: ${timestamp.toString().substring(11, 19)}');
   }
 
   @override
   Future<void> onDestroy(DateTime timestamp) async {
-    print('🛑 Task handler destroyed at $timestamp');
+    Logger.d('🛑 Task handler destroyed at $timestamp');
     await _orderSubscription?.cancel();
   }
 
   @override
   void onNotificationButtonPressed(String id) {
-    print('🔘 Button pressed: $id');
+    Logger.d('🔘 Button pressed: $id');
     
     if (id == 'test') {
       EventNotificationService.sendTest();
@@ -225,7 +227,7 @@ class PersistentTaskHandler extends TaskHandler {
 
   @override
   void onNotificationPressed() {
-    print('👆 Persistent notification tapped');
+    Logger.d('👆 Persistent notification tapped');
     FlutterForegroundTask.launchApp('/');
   }
 }

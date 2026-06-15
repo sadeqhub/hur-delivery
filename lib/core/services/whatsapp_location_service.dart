@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../utils/logger.dart';
 
 class WhatsAppLocationService {
   static final SupabaseClient _supabase = Supabase.instance.client;
@@ -14,7 +15,7 @@ class WhatsAppLocationService {
     String? address,
   }) async {
     try {
-      print('📍 Sending customer location for order: $orderId');
+      Logger.d('📍 Sending customer location for order: $orderId');
       
       // If coordinates not provided, get current location
       if (latitude == null || longitude == null) {
@@ -23,7 +24,7 @@ class WhatsAppLocationService {
         longitude = position.longitude;
       }
 
-      print('📍 Coordinates: $latitude, $longitude');
+      Logger.d('📍 Coordinates: $latitude, $longitude');
 
       // Call the edge function to update customer location
       final response = await _supabase.functions.invoke(
@@ -38,14 +39,14 @@ class WhatsAppLocationService {
       );
 
       if (response.status == 200) {
-        print('✅ Customer location sent successfully');
+        Logger.d('✅ Customer location sent successfully');
         return true;
       } else {
-        print('❌ Failed to send location: ${response.data}');
+        Logger.d('❌ Failed to send location: ${response.data}');
         return false;
       }
     } catch (e) {
-      print('❌ Error sending customer location: $e');
+      Logger.d('❌ Error sending customer location: $e');
       return false;
     }
   }
@@ -86,7 +87,7 @@ class WhatsAppLocationService {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       return serviceEnabled;
     } catch (e) {
-      print('❌ Error checking location availability: $e');
+      Logger.d('❌ Error checking location availability: $e');
       return false;
     }
   }
@@ -97,7 +98,7 @@ class WhatsAppLocationService {
       final permission = await Permission.location.request();
       return permission == PermissionStatus.granted;
     } catch (e) {
-      print('❌ Error requesting location permissions: $e');
+      Logger.d('❌ Error requesting location permissions: $e');
       return false;
     }
   }
@@ -112,7 +113,7 @@ class WhatsAppLocationService {
       // For now, return coordinates as string
       return 'Lat: $latitude, Lng: $longitude';
     } catch (e) {
-      print('❌ Error getting address: $e');
+      Logger.d('❌ Error getting address: $e');
       return null;
     }
   }

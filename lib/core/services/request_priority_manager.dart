@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../utils/logger.dart';
 
 /// Priority levels for network requests
 enum RequestPriority {
@@ -105,7 +106,7 @@ class RequestPriorityManager {
     });
 
     if (kDebugMode) {
-      print('📋 Queued request: $description (priority: $priority, queue size: ${_queue.length})');
+      Logger.d('📋 Queued request: $description (priority: $priority, queue size: ${_queue.length})');
     }
 
     // Start processing if not already
@@ -136,7 +137,7 @@ class RequestPriorityManager {
     
     try {
       if (kDebugMode) {
-        print('🚀 Executing: $description');
+        Logger.d('🚀 Executing: $description');
       }
       
       final result = await operation();
@@ -144,14 +145,14 @@ class RequestPriorityManager {
       _lastProcessTime = DateTime.now();
       
       if (kDebugMode) {
-        print('✅ Completed: $description');
+        Logger.d('✅ Completed: $description');
       }
       
       return result;
     } catch (e) {
       _totalFailed++;
       if (kDebugMode) {
-        print('❌ Failed: $description - $e');
+        Logger.d('❌ Failed: $description - $e');
       }
       rethrow;
     } finally {
@@ -197,7 +198,7 @@ class RequestPriorityManager {
             return a.queuedAt.compareTo(b.queuedAt);
           });
           if (kDebugMode) {
-            print('🔄 Retrying: ${request.description} (attempt ${request.retryCount})');
+            Logger.d('🔄 Retrying: ${request.description} (attempt ${request.retryCount})');
           }
         } else {
           if (!request.completer.isCompleted) {
@@ -214,7 +215,7 @@ class RequestPriorityManager {
   void setMaxConcurrentRequests(int max) {
     _maxConcurrentRequests = max.clamp(1, 5);
     if (kDebugMode) {
-      print('⚙️ Max concurrent requests set to: $_maxConcurrentRequests');
+      Logger.d('⚙️ Max concurrent requests set to: $_maxConcurrentRequests');
     }
   }
 

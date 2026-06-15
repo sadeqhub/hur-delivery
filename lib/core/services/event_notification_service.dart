@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../utils/logger.dart';
 
 /// Event-Driven Notification Service
 /// 
@@ -18,17 +19,17 @@ class EventNotificationService {
   /// Initialize the notification service
   static Future<void> initialize() async {
     if (_isInitialized) {
-      print('⚠️ EventNotificationService already initialized');
+      Logger.d('⚠️ EventNotificationService already initialized');
       return;
     }
 
-    print('\n═══════════════════════════════════════');
-    print('🔔 EVENT NOTIFICATION SERVICE');
-    print('═══════════════════════════════════════');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('🔔 EVENT NOTIFICATION SERVICE');
+    Logger.d('═══════════════════════════════════════');
 
     // Request permissions
     final status = await Permission.notification.request();
-    print('📋 Notification permission: ${status.isGranted ? "✅" : "❌"}');
+    Logger.d('📋 Notification permission: ${status.isGranted ? "✅" : "❌"}');
 
     // Battery optimization exemption not requested for Play policy compliance
 
@@ -46,7 +47,7 @@ class EventNotificationService {
         iOS: iosSettings,
       ),
       onDidReceiveNotificationResponse: (response) {
-        print('👆 Notification tapped: ${response.payload}');
+        Logger.d('👆 Notification tapped: ${response.payload}');
       },
     );
 
@@ -67,12 +68,12 @@ class EventNotificationService {
       );
 
       await androidPlugin.createNotificationChannel(channel);
-      print('📢 Notification channel created');
+      Logger.d('📢 Notification channel created');
     }
 
     _isInitialized = true;
-    print('✅ Event Notification Service ready');
-    print('═══════════════════════════════════════\n');
+    Logger.d('✅ Event Notification Service ready');
+    Logger.d('═══════════════════════════════════════\n');
   }
 
   /// Show a notification immediately
@@ -83,14 +84,14 @@ class EventNotificationService {
     bool isCritical = false,
   }) async {
     if (!_isInitialized) {
-      print('❌ Not initialized, cannot show notification');
+      Logger.d('❌ Not initialized, cannot show notification');
       return;
     }
 
-    print('\n📱 SHOWING NOTIFICATION');
-    print('Title: $title');
-    print('Body: $body');
-    print('Critical: $isCritical');
+    Logger.d('\n📱 SHOWING NOTIFICATION');
+    Logger.d('Title: $title');
+    Logger.d('Body: $body');
+    Logger.d('Critical: $isCritical');
 
     final androidDetails = AndroidNotificationDetails(
       'events_channel',
@@ -138,7 +139,7 @@ class EventNotificationService {
       payload: payload,
     );
 
-    print('✅ Notification shown (ID: $notificationId)\n');
+    Logger.d('✅ Notification shown (ID: $notificationId)\n');
   }
 
   // ==================== EVENT HANDLERS ====================
@@ -152,11 +153,11 @@ class EventNotificationService {
   }) async {
     // Only show if this user is the assigned driver
     if (currentUserId != assignedDriverId) {
-      print('⏭️ Skipping: Not the assigned driver');
+      Logger.d('⏭️ Skipping: Not the assigned driver');
       return;
     }
     
-    print('\n🎯 EVENT: Order assigned to driver (YOU)');
+    Logger.d('\n🎯 EVENT: Order assigned to driver (YOU)');
     await _showNotification(
       title: '📦 طلب توصيل جديد',
       body: 'لديك طلب جديد - اضغط قبول خلال 30 ثانية',
@@ -174,11 +175,11 @@ class EventNotificationService {
   }) async {
     // Only show if this user is the merchant
     if (currentUserId != merchantId) {
-      print('⏭️ Skipping: Not the merchant');
+      Logger.d('⏭️ Skipping: Not the merchant');
       return;
     }
     
-    print('\n🎯 EVENT: Order accepted (for MERCHANT)');
+    Logger.d('\n🎯 EVENT: Order accepted (for MERCHANT)');
     await _showNotification(
       title: '✅ تم قبول الطلب',
       body: 'السائق قبل الطلب وهو في طريقه للاستلام',
@@ -196,11 +197,11 @@ class EventNotificationService {
   }) async {
     // Only show if this user is the merchant
     if (currentUserId != merchantId) {
-      print('⏭️ Skipping: Not the merchant');
+      Logger.d('⏭️ Skipping: Not the merchant');
       return;
     }
     
-    print('\n🎯 EVENT: Order rejected (for MERCHANT)');
+    Logger.d('\n🎯 EVENT: Order rejected (for MERCHANT)');
     await _showNotification(
       title: '⚠️ تم رفض الطلب',
       body: 'جاري البحث عن سائق آخر...',
@@ -218,11 +219,11 @@ class EventNotificationService {
   }) async {
     // Only show if this user is the merchant
     if (currentUserId != merchantId) {
-      print('⏭️ Skipping: Not the merchant');
+      Logger.d('⏭️ Skipping: Not the merchant');
       return;
     }
     
-    print('\n🎯 EVENT: Driver on the way (for MERCHANT)');
+    Logger.d('\n🎯 EVENT: Driver on the way (for MERCHANT)');
     await _showNotification(
       title: '🚗 السائق في الطريق',
       body: 'السائق في طريقه للتوصيل',
@@ -240,11 +241,11 @@ class EventNotificationService {
   }) async {
     // Only show if this user is the merchant
     if (currentUserId != merchantId) {
-      print('⏭️ Skipping: Not the merchant');
+      Logger.d('⏭️ Skipping: Not the merchant');
       return;
     }
     
-    print('\n🎯 EVENT: Order delivered (for MERCHANT)');
+    Logger.d('\n🎯 EVENT: Order delivered (for MERCHANT)');
     await _showNotification(
       title: '🎉 تم التسليم',
       body: 'تم تسليم الطلب بنجاح',
@@ -262,11 +263,11 @@ class EventNotificationService {
   }) async {
     // Only show if this user is the merchant
     if (currentUserId != merchantId) {
-      print('⏭️ Skipping: Not the merchant');
+      Logger.d('⏭️ Skipping: Not the merchant');
       return;
     }
     
-    print('\n🎯 EVENT: All drivers rejected (for MERCHANT)');
+    Logger.d('\n🎯 EVENT: All drivers rejected (for MERCHANT)');
     await _showNotification(
       title: '❌ لم يتم العثور على سائق',
       body: 'يمكنك إعادة نشر الطلب بزيادة الأجرة (+500 د.ع)',
@@ -284,11 +285,11 @@ class EventNotificationService {
   }) async {
     // Only show if this user is the driver who timed out
     if (currentUserId != driverId) {
-      print('⏭️ Skipping: Not the timed-out driver');
+      Logger.d('⏭️ Skipping: Not the timed-out driver');
       return;
     }
     
-    print('\n🎯 EVENT: Driver timeout (for DRIVER)');
+    Logger.d('\n🎯 EVENT: Driver timeout (for DRIVER)');
     await _showNotification(
       title: '⚠️ تم وضعك في وضع غير متصل',
       body: 'لم تقم بالرد على الطلب خلال الوقت المحدد',
@@ -299,7 +300,7 @@ class EventNotificationService {
 
   /// Test notification
   static Future<void> sendTest() async {
-    print('\n🧪 Sending test notification...');
+    Logger.d('\n🧪 Sending test notification...');
     await _showNotification(
       title: '🧪 Test Notification',
       body: 'If you see this, notifications work!',

@@ -13,6 +13,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'id_verification_review_screen.dart';
+import '../../../core/utils/logger.dart';
 
 class VerificationPendingScreen extends StatefulWidget {
   const VerificationPendingScreen({super.key});
@@ -159,7 +160,7 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
     });
 
     try {
-      print('🆔 Resubmitting ID verification...');
+      Logger.d('🆔 Resubmitting ID verification...');
       final verificationResult = await _verifyIdWithAI(user.role, user.id);
       
       if (verificationResult == null || !verificationResult['success']) {
@@ -175,12 +176,12 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
         return;
       }
       
-      print('✅ ID verification passed by AI');
-      print('📊 Verification result: ${verificationResult.toString()}');
+      Logger.d('✅ ID verification passed by AI');
+      Logger.d('📊 Verification result: ${verificationResult.toString()}');
       
       if (mounted) {
         // Navigate to review screen to confirm extracted data
-        print('📝 Navigating to review screen...');
+        Logger.d('📝 Navigating to review screen...');
         
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -196,7 +197,7 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
         );
       }
     } catch (e) {
-      print('❌ Resubmission error: $e');
+      Logger.d('❌ Resubmission error: $e');
       if (mounted) {
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -218,7 +219,7 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
 
   Future<Map<String, dynamic>?> _verifyIdWithAI(String role, String userId) async {
     try {
-      print('📤 Sending images to ID verification edge function...');
+      Logger.d('📤 Sending images to ID verification edge function...');
       
       var request = http.MultipartRequest(
         'POST',
@@ -251,7 +252,7 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
       request.fields['role'] = role;
       request.fields['user_id'] = userId;
       
-      print('⏳ Waiting for verification response...');
+      Logger.d('⏳ Waiting for verification response...');
       
       var response = await request.send().timeout(
         const Duration(seconds: 60),
@@ -263,11 +264,11 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
       final responseData = await response.stream.bytesToString();
       final jsonData = json.decode(responseData);
       
-      print('📥 Verification response: ${jsonData.toString()}');
+      Logger.d('📥 Verification response: ${jsonData.toString()}');
       
       return jsonData;
     } catch (e) {
-      print('❌ ID verification error: $e');
+      Logger.d('❌ ID verification error: $e');
       return {
         'success': false,
         'reason': AppLocalizations.of(context).connectionFailed(e.toString()),

@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../core/providers/city_settings_provider.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../core/services/version_check_service.dart';
 import '../../../shared/widgets/update_required_dialog.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
@@ -49,14 +50,13 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       final authProvider = context.read<AuthProvider>();
-      final citySettingsProvider = context.read<CitySettingsProvider>();
 
       await authProvider.initialize();
 
       if (!mounted) return;
 
       try {
-        await citySettingsProvider.loadCitySettings();
+        await ref.read(citySettingsProvider.notifier).loadCitySettings();
       } catch (e) {
         debugPrint('Warning: Failed to load city settings: $e');
       }

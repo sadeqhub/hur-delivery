@@ -1,26 +1,49 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/models/voice_recording_model.dart';
+import '../utils/logger.dart';
 
-class VoiceRecordingProvider extends ChangeNotifier {
+class VoiceRecordingState {
+  final List<VoiceRecording> recordings;
+  final bool isLoading;
+  final String? error;
+
+  const VoiceRecordingState({
+    this.recordings = const [],
+    this.isLoading = false,
+    this.error,
+  });
+
+  List<VoiceRecording> get activeRecordings =>
+      recordings.where((r) => !r.isArchived).toList();
+
+  VoiceRecordingState copyWith({
+    List<VoiceRecording>? recordings,
+    bool? isLoading,
+    String? error,
+    bool clearError = false,
+  }) {
+    return VoiceRecordingState(
+      recordings: recordings ?? this.recordings,
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+    );
+  }
+}
+
+class VoiceRecordingNotifier extends AsyncNotifier<VoiceRecordingState> {
   final _supabase = Supabase.instance.client;
-  
-  List<VoiceRecording> _recordings = [];
-  bool _isLoading = false;
-  String? _error;
 
-  List<VoiceRecording> get recordings => _recordings;
-  List<VoiceRecording> get activeRecordings => 
-      _recordings.where((r) => !r.isArchived).toList();
-  bool get isLoading => _isLoading;
-  String? get error => _error;
+  @override
+  Future<VoiceRecordingState> build() async {
+    return const VoiceRecordingState();
+  }
 
   /// Load all recordings for the current merchant
   Future<void> loadRecordings() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    final current = state.valueOrNull ?? const VoiceRecordingState();
+    state = AsyncData(current.copyWith(isLoading: true, clearError: true));
 
     try {
       final userId = _supabase.auth.currentUser?.id;
@@ -35,17 +58,16 @@ class VoiceRecordingProvider extends ChangeNotifier {
           .eq('is_archived', false)
           .order('created_at', ascending: false);
 
-      _recordings = (response as List)
+      final recordings = (response as List)
           .map((json) => VoiceRecording.fromJson(json))
           .toList();
 
-      print('✅ Loaded ${_recordings.length} voice recordings');
+      Logger.d('Loaded ${recordings.length} voice recordings');
+
+      state = AsyncData(VoiceRecordingState(recordings: recordings));
     } catch (e) {
-      _error = e.toString();
-      print('❌ Error loading recordings: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      Logger.d('Error loading recordings: $e');
+      state = AsyncData(current.copyWith(isLoading: false, error: e.toString()));
     }
   }
 
@@ -64,14 +86,11 @@ class VoiceRecordingProvider extends ChangeNotifier {
         throw Exception('User not authenticated');
       }
 
-      print('📤 Uploading voice recording: $filename');
+      Logger.d('Uploading voice recording: $filename');
 
-      // Get file size
       final fileSizeBytes = await audioFile.length();
-
-      // Upload to storage (organized by user ID)
       final storagePath = '$userId/${DateTime.now().millisecondsSinceEpoch}_$filename';
-      
+
       final storageResponse = await _supabase.storage
           .from('voice-orders')
           .upload(
@@ -83,9 +102,8 @@ class VoiceRecordingProvider extends ChangeNotifier {
             ),
           );
 
-      print('✅ Uploaded to storage: $storageResponse');
+      Logger.d('Uploaded to storage: $storageResponse');
 
-      // Save metadata to database
       final metadata = {
         'merchant_id': userId,
         'storage_path': storagePath,
@@ -104,17 +122,17 @@ class VoiceRecordingProvider extends ChangeNotifier {
           .single();
 
       final recording = VoiceRecording.fromJson(response);
-      
-      // Add to local list
-      _recordings.insert(0, recording);
-      notifyListeners();
 
-      print('✅ Saved recording metadata: ${recording.id}');
+      final current = state.valueOrNull ?? const VoiceRecordingState();
+      final updated = [recording, ...current.recordings];
+      state = AsyncData(current.copyWith(recordings: updated));
+
+      Logger.d('Saved recording metadata: ${recording.id}');
       return recording;
     } catch (e) {
-      print('❌ Error uploading recording: $e');
-      _error = e.toString();
-      notifyListeners();
+      Logger.d('Error uploading recording: $e');
+      final current = state.valueOrNull ?? const VoiceRecordingState();
+      state = AsyncData(current.copyWith(error: e.toString()));
       return null;
     }
   }
@@ -129,7 +147,7 @@ class VoiceRecordingProvider extends ChangeNotifier {
   }) async {
     try {
       final updates = <String, dynamic>{};
-      
+
       if (transcription != null) updates['transcription'] = transcription;
       if (extractedData != null) updates['extracted_data'] = extractedData;
       if (notes != null) updates['notes'] = notes;
@@ -142,23 +160,24 @@ class VoiceRecordingProvider extends ChangeNotifier {
           .update(updates)
           .eq('id', recordingId);
 
-      // Update local copy
-      final index = _recordings.indexWhere((r) => r.id == recordingId);
+      final current = state.valueOrNull ?? const VoiceRecordingState();
+      final index = current.recordings.indexWhere((r) => r.id == recordingId);
       if (index != -1) {
-        _recordings[index] = _recordings[index].copyWith(
-          transcription: transcription ?? _recordings[index].transcription,
-          extractedData: extractedData ?? _recordings[index].extractedData,
-          notes: notes ?? _recordings[index].notes,
-          lastUsedAt: markAsUsed == true ? DateTime.now() : _recordings[index].lastUsedAt,
+        final updated = List<VoiceRecording>.from(current.recordings);
+        updated[index] = updated[index].copyWith(
+          transcription: transcription ?? updated[index].transcription,
+          extractedData: extractedData ?? updated[index].extractedData,
+          notes: notes ?? updated[index].notes,
+          lastUsedAt: markAsUsed == true ? DateTime.now() : updated[index].lastUsedAt,
         );
-        notifyListeners();
+        state = AsyncData(current.copyWith(recordings: updated));
       }
 
       return true;
     } catch (e) {
-      print('❌ Error updating recording: $e');
-      _error = e.toString();
-      notifyListeners();
+      Logger.d('Error updating recording: $e');
+      final current = state.valueOrNull ?? const VoiceRecordingState();
+      state = AsyncData(current.copyWith(error: e.toString()));
       return false;
     }
   }
@@ -171,15 +190,16 @@ class VoiceRecordingProvider extends ChangeNotifier {
           .update({'is_archived': true})
           .eq('id', recordingId);
 
-      _recordings.removeWhere((r) => r.id == recordingId);
-      notifyListeners();
+      final current = state.valueOrNull ?? const VoiceRecordingState();
+      final updated = current.recordings.where((r) => r.id != recordingId).toList();
+      state = AsyncData(current.copyWith(recordings: updated));
 
-      print('✅ Archived recording: $recordingId');
+      Logger.d('Archived recording: $recordingId');
       return true;
     } catch (e) {
-      print('❌ Error archiving recording: $e');
-      _error = e.toString();
-      notifyListeners();
+      Logger.d('Error archiving recording: $e');
+      final current = state.valueOrNull ?? const VoiceRecordingState();
+      state = AsyncData(current.copyWith(error: e.toString()));
       return false;
     }
   }
@@ -187,28 +207,22 @@ class VoiceRecordingProvider extends ChangeNotifier {
   /// Permanently delete a recording
   Future<bool> deleteRecording(String recordingId) async {
     try {
-      final recording = _recordings.firstWhere((r) => r.id == recordingId);
+      final current = state.valueOrNull ?? const VoiceRecordingState();
+      final recording = current.recordings.firstWhere((r) => r.id == recordingId);
 
-      // Delete from storage
-      await _supabase.storage
-          .from('voice-orders')
-          .remove([recording.storagePath]);
+      await _supabase.storage.from('voice-orders').remove([recording.storagePath]);
 
-      // Delete from database
-      await _supabase
-          .from('voice_recordings')
-          .delete()
-          .eq('id', recordingId);
+      await _supabase.from('voice_recordings').delete().eq('id', recordingId);
 
-      _recordings.removeWhere((r) => r.id == recordingId);
-      notifyListeners();
+      final updated = current.recordings.where((r) => r.id != recordingId).toList();
+      state = AsyncData(current.copyWith(recordings: updated));
 
-      print('✅ Deleted recording: $recordingId');
+      Logger.d('Deleted recording: $recordingId');
       return true;
     } catch (e) {
-      print('❌ Error deleting recording: $e');
-      _error = e.toString();
-      notifyListeners();
+      Logger.d('Error deleting recording: $e');
+      final current = state.valueOrNull ?? const VoiceRecordingState();
+      state = AsyncData(current.copyWith(error: e.toString()));
       return false;
     }
   }
@@ -222,7 +236,7 @@ class VoiceRecordingProvider extends ChangeNotifier {
 
       return response;
     } catch (e) {
-      print('❌ Error getting audio URL: $e');
+      Logger.d('Error getting audio URL: $e');
       return null;
     }
   }
@@ -234,22 +248,24 @@ class VoiceRecordingProvider extends ChangeNotifier {
           .from('voice-orders')
           .download(recording.storagePath);
 
-      // Save to temporary directory
       final tempDir = Directory.systemTemp;
       final tempFile = File('${tempDir.path}/${recording.filename}');
       await tempFile.writeAsBytes(bytes);
 
-      print('✅ Downloaded audio: ${tempFile.path}');
+      Logger.d('Downloaded audio: ${tempFile.path}');
       return tempFile;
     } catch (e) {
-      print('❌ Error downloading audio: $e');
+      Logger.d('Error downloading audio: $e');
       return null;
     }
   }
 
   void clearError() {
-    _error = null;
-    notifyListeners();
+    final current = state.valueOrNull ?? const VoiceRecordingState();
+    state = AsyncData(current.copyWith(clearError: true));
   }
 }
 
+final voiceRecordingProvider =
+    AsyncNotifierProvider<VoiceRecordingNotifier, VoiceRecordingState>(
+        VoiceRecordingNotifier.new);

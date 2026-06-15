@@ -1,4 +1,6 @@
+// TODO: extract Supabase.instance calls to a feature repository
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Consumer;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,23 +21,24 @@ import '../../wallet/widgets/credit_limit_guard.dart';
 import '../../wallet/screens/wallet_screen.dart';
 import 'merchant_analytics_screen.dart';
 import 'dart:async';
-import '../../../core/providers/announcement_provider.dart';
-import '../../../core/providers/system_status_provider.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../shared/widgets/maintenance_mode_dialog.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/screen_visibility_tracker.dart';
 import '../../../shared/models/order_model.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../core/utils/logger.dart';
+import '../data/dashboard_repository.dart';
 // Removed legacy stable_order_card_manager import
 
-class MerchantDashboard extends StatefulWidget {
+class MerchantDashboard extends ConsumerStatefulWidget {
   const MerchantDashboard({super.key});
 
   @override
-  State<MerchantDashboard> createState() => _MerchantDashboardState();
+  ConsumerState<MerchantDashboard> createState() => _MerchantDashboardState();
 }
 
-class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibilityMixin {
+class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with ScreenVisibilityMixin {
   @override
   String get screenName => 'merchant_dashboard';
   
@@ -50,14 +53,14 @@ class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibi
         
         // Skip initialization in demo mode
         if (authProvider.isDemoMode) {
-          print('ℹ️ Demo mode: Skipping dashboard initialization');
+          Logger.d('ℹ️ Demo mode: Skipping dashboard initialization');
           return;
         }
         
         await context.read<OrderProvider>().initialize();
         
         // Initialize system status checking
-        await context.read<SystemStatusProvider>().initialize();
+        await ref.read(systemStatusProvider.notifier).initialize();
         
         // Initialize wallet
         if (authProvider.user != null) {
@@ -65,7 +68,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibi
           
           // Initialize announcement checker (checks every 5 seconds)
           if (mounted) {
-            await context.read<AnnouncementProvider>().initialize(
+            await ref.read(announcementProvider.notifier).initialize(
               userRole: 'merchant',
               userId: authProvider.user!.id,
               context: context,
@@ -85,14 +88,14 @@ class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibi
 
           // Check system status and show dialog if disabled
           if (mounted) {
-            final systemStatus = context.read<SystemStatusProvider>();
+            final systemStatus = ref.read(systemStatusProvider);
             if (!systemStatus.isSystemEnabled) {
               MaintenanceModeDialog.show(context, 'merchant');
             }
           }
         }
       } catch (e) {
-        print('Error initializing merchant dashboard: $e');
+        Logger.d('Error initializing merchant dashboard: $e');
         // Don't crash - just log error
       }
     });
@@ -101,7 +104,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> with ScreenVisibi
   @override
   void dispose() {
     // Stop announcement checking when leaving dashboard
-    context.read<AnnouncementProvider>().stopChecking();
+    ref.read(announcementProvider.notifier).stopChecking();
     super.dispose();
   }
 
@@ -858,8 +861,7 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
 
         // Get all active orders (including rejected and those with ready countdown)
         final allActiveOrders = orderProvider.orders
-            .where((order) => order.status != 'delivered' && 
-                             order.status != 'cancelled')
+            .where((order) => !order.isDelivered && !order.isCancelled)
             .toList()
           ..sort((a, b) {
             // Sort by ready_at first (orders not ready yet come first)
@@ -977,7 +979,7 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
               final order = activeOrders[index];
                 
                 // Add action buttons for rejected orders
-                if (order.status == 'rejected') {
+                if (order.isRejected) {
                   return MerchantOrderCard(
                     key: ValueKey('${order.id}_${order.status}_rejected'),
                     order: order,
@@ -1074,52 +1076,30 @@ class _ActiveOrdersListState extends State<_ActiveOrdersList> {
       // Get merchant's city
       final merchantId = Supabase.instance.client.auth.currentUser?.id;
       if (merchantId == null) return 0;
-      
-      final merchantCityRow = await Supabase.instance.client
-          .from('users')
-          .select('city')
-          .eq('id', merchantId)
-          .maybeSingle();
-      
-      final merchantCity = (merchantCityRow?['city'] ?? '').toString();
+
+      final merchantCity =
+          await DashboardRepository.instance.getMerchantCity(merchantId);
       if (merchantCity.isEmpty) return 0;
-      
+
       // Get online drivers in the same city (case-insensitive to handle
       // mixed-case city values stored by different clients).
-      final onlineDrivers = await Supabase.instance.client
-          .from('users')
-          .select('id')
-          .eq('role', 'driver')
-          .eq('is_online', true)
-          .ilike('city', merchantCity);
-      
-      if (onlineDrivers.isEmpty) return 0;
-      
-      // Get driver IDs
-      final driverIds = (onlineDrivers as List<dynamic>)
-          .map((driver) => driver['id'] as String?)
-          .whereType<String>()
-          .toList();
-      
+      final driverIds = await DashboardRepository.instance
+          .getOnlineDriversInCity(merchantCity);
+
+      if (driverIds.isEmpty) return 0;
+
       // Check for active orders
-      final activeOrders = await Supabase.instance.client
-          .from('orders')
-          .select('driver_id')
-          .inFilter('driver_id', driverIds)
-          .inFilter('status', ['pending', 'assigned', 'accepted', 'on_the_way']);
-      
-      // Get drivers with active orders
-      final busyDriverIds = (activeOrders as List<dynamic>)
-          .map((order) => order['driver_id'] as String?)
-          .whereType<String>()
+      final busyDriverIds = (await DashboardRepository.instance
+              .getActiveOrderDriverIds(driverIds))
           .toSet();
-      
+
       // Calculate free drivers (online without active orders)
-      final freeDriverCount = driverIds.where((id) => !busyDriverIds.contains(id)).length;
-      
+      final freeDriverCount =
+          driverIds.where((id) => !busyDriverIds.contains(id)).length;
+
       return freeDriverCount;
     } catch (e) {
-      print('Error checking online drivers: $e');
+      Logger.d('Error checking online drivers: $e');
       return 0;
     }
   }
@@ -1431,8 +1411,7 @@ class _CompletedOrdersListState extends State<_CompletedOrdersList> {
 
         // Get completed orders and sort by newest first
         final completedOrders = orderProvider.orders
-            .where((order) => order.status == 'delivered' || 
-                             order.status == 'cancelled')
+            .where((order) => order.isDelivered || order.isCancelled)
             .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -1454,7 +1433,7 @@ class _CompletedOrdersListState extends State<_CompletedOrdersList> {
               final order = completedOrders[index];
                 
                 // Add repost button for rejected orders in completed tab too
-                if (order.status == 'rejected') {
+                if (order.isRejected) {
                   return MerchantOrderCard(
                     key: ValueKey('${order.id}_${order.status}_rejected_completed'),
                     order: order,
@@ -1525,28 +1504,28 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
   Widget build(BuildContext context) {
     return Consumer<OrderProvider>(
       builder: (context, orderProvider, _) {
-        print('📊 Merchant Analytics - Building...');
-        print('📦 Total orders: ${orderProvider.orders.length}');
+        Logger.d('📊 Merchant Analytics - Building...');
+        Logger.d('📦 Total orders: ${orderProvider.orders.length}');
         
         try {
           // Filter orders by time period
-          print('🔄 Starting time filter...');
+          Logger.d('🔄 Starting time filter...');
           final filteredByTime = _filterOrdersByTimePeriod(orderProvider.orders);
-          print('📅 After time filter: ${filteredByTime.length}');
+          Logger.d('📅 After time filter: ${filteredByTime.length}');
           
           // Filter by status
-          print('🔄 Starting status filter...');
+          Logger.d('🔄 Starting status filter...');
           final filteredOrders = _selectedStatus == 'all' 
               ? filteredByTime
               : filteredByTime.where((o) => o.status == _selectedStatus).toList();
-          print('🏷️  After status filter: ${filteredOrders.length}');
+          Logger.d('🏷️  After status filter: ${filteredOrders.length}');
 
           // Calculate statistics
-          print('🧮 Calculating statistics...');
+          Logger.d('🧮 Calculating statistics...');
           final stats = _calculateStatistics(filteredByTime);
-          print('✅ Stats calculated: $stats');
+          Logger.d('✅ Stats calculated: $stats');
 
-          print('🎨 Building UI...');
+          Logger.d('🎨 Building UI...');
           return Container(
             color: AppColors.surfaceVariant,
             child: SingleChildScrollView(
@@ -1619,8 +1598,8 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
           ),
         );
         } catch (e, stackTrace) {
-          print('❌ ERROR building merchant analytics UI: $e');
-          print('📍 Stack trace: $stackTrace');
+          Logger.d('❌ ERROR building merchant analytics UI: $e');
+          Logger.d('📍 Stack trace: $stackTrace');
           return Container(
             color: AppColors.surfaceVariant,
             child: Center(
@@ -1679,12 +1658,12 @@ class _AnalyticsTabState extends State<_AnalyticsTab> {
 
   Map<String, dynamic> _calculateStatistics(List orders) {
     final totalOrders = orders.length;
-    final deliveredOrders = orders.where((o) => o.status == 'delivered').toList();
-    final cancelledOrders = orders.where((o) => o.status == 'cancelled').toList();
-    final rejectedOrders = orders.where((o) => o.status == 'rejected').toList();
-    final activeOrders = orders.where((o) => 
-        o.status != 'delivered' && 
-        o.status != 'cancelled'
+    final deliveredOrders = orders.where((o) => o.isDelivered).toList();
+    final cancelledOrders = orders.where((o) => o.isCancelled).toList();
+    final rejectedOrders = orders.where((o) => o.isRejected).toList();
+    final activeOrders = orders.where((o) =>
+        !o.isDelivered &&
+        !o.isCancelled
     ).toList();
 
     // Calculate average delivery time

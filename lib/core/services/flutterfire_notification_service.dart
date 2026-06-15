@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../constants/app_constants.dart';
+import '../utils/logger.dart';
 
 /// FlutterFire Notification Service
 /// 
@@ -34,9 +35,9 @@ class FlutterFireNotificationService {
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
-    print('\n═══════════════════════════════════════');
-    print('🔥 INITIALIZING FLUTTERFIRE NOTIFICATIONS');
-    print('═══════════════════════════════════════');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('🔥 INITIALIZING FLUTTERFIRE NOTIFICATIONS');
+    Logger.d('═══════════════════════════════════════');
 
     try {
       // Initialize Firebase Messaging
@@ -56,64 +57,64 @@ class FlutterFireNotificationService {
       
       _isInitialized = true;
       
-      print('✅ FlutterFire notification service initialized successfully');
-      print('✅ Ready for token generation after authentication');
-      print('═══════════════════════════════════════\n');
+      Logger.d('✅ FlutterFire notification service initialized successfully');
+      Logger.d('✅ Ready for token generation after authentication');
+      Logger.d('═══════════════════════════════════════\n');
       
     } catch (e) {
-      print('❌ FlutterFire notification initialization failed: $e');
+      Logger.d('❌ FlutterFire notification initialization failed: $e');
       rethrow;
     }
   }
 
   /// Initialize with token generation (call after user authentication)
   static Future<void> initializeWithToken() async {
-    print('\n═══════════════════════════════════════');
-    print('🔥 INITIALIZING WITH TOKEN GENERATION');
-    print('═══════════════════════════════════════');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('🔥 INITIALIZING WITH TOKEN GENERATION');
+    Logger.d('═══════════════════════════════════════');
 
     try {
       // Ensure service is initialized first
       if (!_isInitialized) {
-        print('⚠️ Service not initialized, initializing first...');
+        Logger.d('⚠️ Service not initialized, initializing first...');
         await initialize();
       }
       
       // Force refresh FCM token to ensure it's current
       await _refreshFCMToken();
       
-      print('✅ FCM token generated and saved');
-      print('✅ Token: ${_fcmToken?.substring(0, 20)}...');
-      print('═══════════════════════════════════════\n');
+      Logger.d('✅ FCM token generated and saved');
+      Logger.d('✅ Token: ${_fcmToken?.substring(0, 20)}...');
+      Logger.d('═══════════════════════════════════════\n');
       
     } catch (e) {
-      print('❌ FCM token generation failed: $e');
+      Logger.d('❌ FCM token generation failed: $e');
       rethrow;
     }
   }
 
   /// Force refresh FCM token and save to database
   static Future<void> _refreshFCMToken() async {
-    print('🔄 Force refreshing FCM token...');
-    print('   _messaging is null: ${_messaging == null}');
+    Logger.d('🔄 Force refreshing FCM token...');
+    Logger.d('   _messaging is null: ${_messaging == null}');
     
     if (_messaging == null) {
-      print('❌ Firebase messaging not initialized');
+      Logger.d('❌ Firebase messaging not initialized');
       return;
     }
     
     try {
       // Delete old token to force refresh
       await _messaging!.deleteToken();
-      print('✅ Old FCM token deleted');
+      Logger.d('✅ Old FCM token deleted');
       
       // Get new token
       await _getFCMToken();
       
-      print('✅ FCM token refreshed successfully');
+      Logger.d('✅ FCM token refreshed successfully');
     } catch (e) {
-      print('❌ Failed to refresh FCM token: $e');
-      print('❌ Error type: ${e.runtimeType}');
+      Logger.d('❌ Failed to refresh FCM token: $e');
+      Logger.d('❌ Error type: ${e.runtimeType}');
       // Fallback to regular token generation
       await _getFCMToken();
     }
@@ -121,7 +122,7 @@ class FlutterFireNotificationService {
 
   /// Request notification permissions
   static Future<void> _requestPermissions() async {
-    print('🔐 Requesting notification permissions...');
+    Logger.d('🔐 Requesting notification permissions...');
     
     // Request FCM permissions
     final settings = await _messaging!.requestPermission(
@@ -134,7 +135,7 @@ class FlutterFireNotificationService {
       sound: true,
     );
     
-    print('FCM Permission status: ${settings.authorizationStatus}');
+    Logger.d('FCM Permission status: ${settings.authorizationStatus}');
     
     // Request Android permissions
     if (Platform.isAndroid) {
@@ -144,7 +145,7 @@ class FlutterFireNotificationService {
 
   /// Configure local notifications
   static Future<void> _configureLocalNotifications() async {
-    print('🔧 Configuring local notifications...');
+    Logger.d('🔧 Configuring local notifications...');
     
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
@@ -238,7 +239,7 @@ class FlutterFireNotificationService {
     await androidPlugin.createNotificationChannel(highChannel);
     await androidPlugin.createNotificationChannel(fcmChannel);
     
-    print('✅ Notification channels created');
+    Logger.d('✅ Notification channels created');
   }
 
   /// Play custom assignment sound via a lightweight local notification
@@ -274,58 +275,58 @@ class FlutterFireNotificationService {
       );
     } catch (e) {
       // Fallback: no-op
-      print('⚠️ Failed to play assignment sound: $e');
+      Logger.d('⚠️ Failed to play assignment sound: $e');
     }
   }
 
   /// Get FCM token
   static Future<void> _getFCMToken() async {
-    print('🎫 Getting FCM token...');
-    print('   _messaging is null: ${_messaging == null}');
+    Logger.d('🎫 Getting FCM token...');
+    Logger.d('   _messaging is null: ${_messaging == null}');
     
     if (_messaging == null) {
-      print('❌ Firebase messaging not initialized');
+      Logger.d('❌ Firebase messaging not initialized');
       return;
     }
     
     try {
-      print('   Calling _messaging.getToken()...');
+      Logger.d('   Calling _messaging.getToken()...');
       _fcmToken = await _messaging!.getToken();
-      print('   getToken() returned: ${_fcmToken != null ? "non-null" : "null"}');
+      Logger.d('   getToken() returned: ${_fcmToken != null ? "non-null" : "null"}');
       
       if (_fcmToken != null) {
-        print('✅ FCM Token obtained: ${_fcmToken!.substring(0, 20)}...');
-        print('   Full token length: ${_fcmToken!.length}');
+        Logger.d('✅ FCM Token obtained: ${_fcmToken!.substring(0, 20)}...');
+        Logger.d('   Full token length: ${_fcmToken!.length}');
         
         // Save to SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('fcm_token', _fcmToken!);
-        print('✅ FCM token saved to SharedPreferences');
+        Logger.d('✅ FCM token saved to SharedPreferences');
         
         // Listen for token refresh
         _messaging!.onTokenRefresh.listen((newToken) async {
-          print('🔄 FCM token refreshed: ${newToken.substring(0, 20)}...');
+          Logger.d('🔄 FCM token refreshed: ${newToken.substring(0, 20)}...');
           _fcmToken = newToken;
           await _saveTokenToDatabase();
-          print('✅ New FCM token saved to database');
+          Logger.d('✅ New FCM token saved to database');
         });
         
         // Save to database immediately
         await _saveTokenToDatabase();
       } else {
-        print('❌ FCM token is null - this usually means permissions not granted');
+        Logger.d('❌ FCM token is null - this usually means permissions not granted');
         throw Exception('Failed to get FCM token - likely permission issue');
       }
     } catch (e) {
-      print('❌ Failed to get FCM token: $e');
-      print('❌ Error type: ${e.runtimeType}');
+      Logger.d('❌ Failed to get FCM token: $e');
+      Logger.d('❌ Error type: ${e.runtimeType}');
       rethrow;
     }
   }
 
   /// Configure message handlers
   static Future<void> _configureMessageHandlers() async {
-    print('📡 Configuring message handlers...');
+    Logger.d('📡 Configuring message handlers...');
     
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
@@ -342,34 +343,34 @@ class FlutterFireNotificationService {
 
   /// Save FCM token to database
   static Future<void> _saveTokenToDatabase() async {
-    print('\n💾 ATTEMPTING TO SAVE FCM TOKEN TO DATABASE');
-    print('═══════════════════════════════════════');
+    Logger.d('\n💾 ATTEMPTING TO SAVE FCM TOKEN TO DATABASE');
+    Logger.d('═══════════════════════════════════════');
     
     if (_fcmToken == null) {
-      print('❌ Cannot save FCM token: token is null');
+      Logger.d('❌ Cannot save FCM token: token is null');
       return;
     }
     
-    print('✅ FCM token is available: ${_fcmToken!.substring(0, 20)}...');
+    Logger.d('✅ FCM token is available: ${_fcmToken!.substring(0, 20)}...');
     
     try {
       final user = Supabase.instance.client.auth.currentUser;
-      print('🔍 Checking authentication status...');
-      print('   User object: $user');
-      print('   User ID: ${user?.id}');
-      print('   User email: ${user?.email}');
+      Logger.d('🔍 Checking authentication status...');
+      Logger.d('   User object: $user');
+      Logger.d('   User ID: ${user?.id}');
+      Logger.d('   User email: ${user?.email}');
       
       if (user == null) {
-        print('❌ Cannot save FCM token: user not authenticated');
+        Logger.d('❌ Cannot save FCM token: user not authenticated');
         return;
       }
       
-      print('✅ User is authenticated, proceeding with database save...');
+      Logger.d('✅ User is authenticated, proceeding with database save...');
       
-      print('💾 Saving FCM token to database...');
-      print('   User ID: ${user.id}');
-      print('   FCM Token: ${_fcmToken!.substring(0, 20)}...');
-      print('   Platform: ${Platform.isAndroid ? 'android' : 'ios'}');
+      Logger.d('💾 Saving FCM token to database...');
+      Logger.d('   User ID: ${user.id}');
+      Logger.d('   FCM Token: ${_fcmToken!.substring(0, 20)}...');
+      Logger.d('   Platform: ${Platform.isAndroid ? 'android' : 'ios'}');
       
       // Use upsert to handle conflicts gracefully (same as fcm_service.dart)
       final now = DateTime.now().toIso8601String();
@@ -383,10 +384,10 @@ class FlutterFireNotificationService {
               'updated_at': now,
             }, onConflict: 'user_id,fcm_token');
         
-        print('✅ FCM token saved to database successfully (upsert)');
-        print('   Timestamp: $now');
+        Logger.d('✅ FCM token saved to database successfully (upsert)');
+        Logger.d('   Timestamp: $now');
       } catch (e) {
-        print('❌ Failed to save FCM token: $e');
+        Logger.d('❌ Failed to save FCM token: $e');
         // Re-throw to be caught by outer catch block
         rethrow;
       }
@@ -398,11 +399,11 @@ class FlutterFireNotificationService {
           .eq('user_id', user.id)
           .single();
       
-      print('✅ Token verification complete');
+      Logger.d('✅ Token verification complete');
       
     } catch (e) {
-      print('❌ Failed to save FCM token: $e');
-      print('❌ Error details: ${e.toString()}');
+      Logger.d('❌ Failed to save FCM token: $e');
+      Logger.d('❌ Error details: ${e.toString()}');
     }
   }
 
@@ -423,55 +424,55 @@ class FlutterFireNotificationService {
 
   /// Handle foreground messages - ALWAYS SHOW NOTIFICATIONS
   static Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    print('\n═══════════════════════════════════════');
-    print('📨 FOREGROUND MESSAGE RECEIVED (APP ACTIVE)');
-    print('═══════════════════════════════════════');
-    print('Title: ${message.notification?.title}');
-    print('Body: ${message.notification?.body}');
-    print('Data: ${message.data}');
-    print('Message ID: ${message.messageId}');
-    print('From: ${message.from}');
-    print('Sent Time: ${message.sentTime}');
-    print('TTL: ${message.ttl}');
-    print('═══════════════════════════════════════\n');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('📨 FOREGROUND MESSAGE RECEIVED (APP ACTIVE)');
+    Logger.d('═══════════════════════════════════════');
+    Logger.d('Title: ${message.notification?.title}');
+    Logger.d('Body: ${message.notification?.body}');
+    Logger.d('Data: ${message.data}');
+    Logger.d('Message ID: ${message.messageId}');
+    Logger.d('From: ${message.from}');
+    Logger.d('Sent Time: ${message.sentTime}');
+    Logger.d('TTL: ${message.ttl}');
+    Logger.d('═══════════════════════════════════════\n');
     
     // CRITICAL: Always show local notification even when app is in foreground
     try {
       await _showLocalNotification(message);
-      print('✅ Foreground notification displayed successfully');
+      Logger.d('✅ Foreground notification displayed successfully');
     } catch (e) {
-      print('❌ Failed to show foreground notification: $e');
+      Logger.d('❌ Failed to show foreground notification: $e');
       // Retry once more
       try {
         await Future.delayed(const Duration(milliseconds: 100));
         await _showLocalNotification(message);
-        print('✅ Foreground notification displayed on retry');
+        Logger.d('✅ Foreground notification displayed on retry');
       } catch (retryError) {
-        print('❌ Retry also failed: $retryError');
+        Logger.d('❌ Retry also failed: $retryError');
       }
     }
   }
 
   /// Handle background messages
   static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
-    print('\n═══════════════════════════════════════');
-    print('📨 BACKGROUND MESSAGE RECEIVED');
-    print('═══════════════════════════════════════');
-    print('Title: ${message.notification?.title}');
-    print('Body: ${message.notification?.body}');
-    print('Data: ${message.data}');
-    print('Message ID: ${message.messageId}');
-    print('From: ${message.from}');
-    print('Sent Time: ${message.sentTime}');
-    print('TTL: ${message.ttl}');
-    print('═══════════════════════════════════════\n');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('📨 BACKGROUND MESSAGE RECEIVED');
+    Logger.d('═══════════════════════════════════════');
+    Logger.d('Title: ${message.notification?.title}');
+    Logger.d('Body: ${message.notification?.body}');
+    Logger.d('Data: ${message.data}');
+    Logger.d('Message ID: ${message.messageId}');
+    Logger.d('From: ${message.from}');
+    Logger.d('Sent Time: ${message.sentTime}');
+    Logger.d('TTL: ${message.ttl}');
+    Logger.d('═══════════════════════════════════════\n');
     
     // Handle based on message type
     try {
       await _processMessageData(message.data);
-      print('✅ Background message processed successfully');
+      Logger.d('✅ Background message processed successfully');
     } catch (e) {
-      print('❌ Failed to process background message: $e');
+      Logger.d('❌ Failed to process background message: $e');
     }
   }
 
@@ -545,7 +546,7 @@ class FlutterFireNotificationService {
       payload: jsonEncode(message.data),
     );
     
-    print('📢 Local notification shown: ${notification.title} (Critical: $isCritical)');
+    Logger.d('📢 Local notification shown: ${notification.title} (Critical: $isCritical)');
   }
 
   /// Process message data
@@ -554,36 +555,36 @@ class FlutterFireNotificationService {
     
     switch (messageType) {
       case 'order_assigned':
-        print('📦 Processing order assignment...');
+        Logger.d('📦 Processing order assignment...');
         // Handle order assignment - navigate to order details
         break;
       case 'order_accepted':
-        print('✅ Processing order acceptance...');
+        Logger.d('✅ Processing order acceptance...');
         // Handle order acceptance
         break;
       case 'order_delivered':
-        print('🎉 Processing order delivery...');
+        Logger.d('🎉 Processing order delivery...');
         // Handle order delivery
         break;
       case 'order_rejected':
-        print('❌ Processing order rejection...');
+        Logger.d('❌ Processing order rejection...');
         // Handle order rejection
         break;
       default:
-        print('❓ Unknown message type: $messageType');
+        Logger.d('❓ Unknown message type: $messageType');
     }
   }
 
   /// Handle notification tap
   static void _onNotificationTapped(NotificationResponse response) {
-    print('👆 Notification tapped: ${response.payload}');
+    Logger.d('👆 Notification tapped: ${response.payload}');
     
     if (response.payload != null) {
       try {
         final data = jsonDecode(response.payload!);
         _processMessageData(data);
       } catch (e) {
-        print('❌ Failed to parse notification payload: $e');
+        Logger.d('❌ Failed to parse notification payload: $e');
       }
     }
   }
@@ -620,11 +621,11 @@ class FlutterFireNotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      print('📤 Sending FCM notification directly...');
-      print('   Target User: $targetUserId');
-      print('   Title: $title');
-      print('   Body: $body');
-      print('   Data: $data');
+      Logger.d('📤 Sending FCM notification directly...');
+      Logger.d('   Target User: $targetUserId');
+      Logger.d('   Title: $title');
+      Logger.d('   Body: $body');
+      Logger.d('   Data: $data');
 
       // Get the FCM token for the target user
       final tokenResponse = await Supabase.instance.client
@@ -636,15 +637,15 @@ class FlutterFireNotificationService {
           .maybeSingle();
 
       if (tokenResponse == null || tokenResponse['fcm_token'] == null) {
-        print('❌ No FCM token found for user: $targetUserId');
+        Logger.d('❌ No FCM token found for user: $targetUserId');
         return false;
       }
 
       final fcmToken = tokenResponse['fcm_token'] as String;
       final platform = tokenResponse['platform'] as String;
       
-      print('   FCM Token: ${fcmToken.substring(0, 20)}...');
-      print('   Platform: $platform');
+      Logger.d('   FCM Token: ${fcmToken.substring(0, 20)}...');
+      Logger.d('   Platform: $platform');
 
       // Send notification using Firebase Cloud Messaging
       await _messaging!.sendMessage(
@@ -652,48 +653,48 @@ class FlutterFireNotificationService {
         data: (data ?? {}).map((key, value) => MapEntry(key, value.toString())),
       );
 
-      print('✅ FCM notification sent successfully');
+      Logger.d('✅ FCM notification sent successfully');
       return true;
 
     } catch (e) {
-      print('❌ Failed to send FCM notification: $e');
+      Logger.d('❌ Failed to send FCM notification: $e');
       return false;
     }
   }
 
   /// Manually refresh FCM token and save to database
   static Future<bool> refreshFCMToken() async {
-    print('\n🔄 MANUAL FCM TOKEN REFRESH');
-    print('═══════════════════════════════════════');
+    Logger.d('\n🔄 MANUAL FCM TOKEN REFRESH');
+    Logger.d('═══════════════════════════════════════');
     
     try {
       await _refreshFCMToken();
-      print('✅ FCM token manually refreshed successfully');
+      Logger.d('✅ FCM token manually refreshed successfully');
       return true;
     } catch (e) {
-      print('❌ Failed to manually refresh FCM token: $e');
+      Logger.d('❌ Failed to manually refresh FCM token: $e');
       return false;
     }
   }
 
   /// Check if current FCM token is valid by sending a test notification
   static Future<bool> validateFCMToken() async {
-    print('\n🧪 VALIDATING FCM TOKEN');
-    print('═══════════════════════════════════════');
+    Logger.d('\n🧪 VALIDATING FCM TOKEN');
+    Logger.d('═══════════════════════════════════════');
     
     if (_fcmToken == null) {
-      print('❌ No FCM token available');
+      Logger.d('❌ No FCM token available');
       return false;
     }
     
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
-        print('❌ User not authenticated');
+        Logger.d('❌ User not authenticated');
         return false;
       }
       
-      print('📤 Sending test notification to validate token...');
+      Logger.d('📤 Sending test notification to validate token...');
       
       // Send a test notification to ourselves
       final success = await sendNotificationViaEdgeFunction(
@@ -707,22 +708,22 @@ class FlutterFireNotificationService {
       );
       
       if (success) {
-        print('✅ FCM token validation successful');
+        Logger.d('✅ FCM token validation successful');
         return true;
       } else {
-        print('❌ FCM token validation failed');
+        Logger.d('❌ FCM token validation failed');
         return false;
       }
     } catch (e) {
-      print('❌ FCM token validation error: $e');
+      Logger.d('❌ FCM token validation error: $e');
       return false;
     }
   }
 
   /// Show a local test notification to verify notification system works
   static Future<void> showTestLocalNotification() async {
-    print('\n🧪 SHOWING TEST LOCAL NOTIFICATION');
-    print('═══════════════════════════════════════');
+    Logger.d('\n🧪 SHOWING TEST LOCAL NOTIFICATION');
+    Logger.d('═══════════════════════════════════════');
     
     try {
       await _showLocalNotification(
@@ -738,21 +739,21 @@ class FlutterFireNotificationService {
           messageId: 'test-${DateTime.now().millisecondsSinceEpoch}',
         ),
       );
-      print('✅ Local test notification shown');
+      Logger.d('✅ Local test notification shown');
     } catch (e) {
-      print('❌ Failed to show local test notification: $e');
+      Logger.d('❌ Failed to show local test notification: $e');
     }
   }
 
   /// Check current FCM token status in database
   static Future<Map<String, dynamic>?> getCurrentTokenStatus() async {
-    print('\n🔍 CHECKING FCM TOKEN STATUS');
-    print('═══════════════════════════════════════');
+    Logger.d('\n🔍 CHECKING FCM TOKEN STATUS');
+    Logger.d('═══════════════════════════════════════');
     
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
-        print('❌ User not authenticated');
+        Logger.d('❌ User not authenticated');
         return null;
       }
       
@@ -765,26 +766,26 @@ class FlutterFireNotificationService {
           .maybeSingle();
       
       if (result != null) {
-        print('✅ Found FCM token in database:');
-        print('   User ID: ${result['user_id']}');
-        print('   Token: ${result['fcm_token']?.toString().substring(0, 20)}...');
-        print('   Platform: ${result['platform']}');
-        print('   Created: ${result['created_at']}');
-        print('   Updated: ${result['updated_at']}');
+        Logger.d('✅ Found FCM token in database:');
+        Logger.d('   User ID: ${result['user_id']}');
+        Logger.d('   Token: ${result['fcm_token']?.toString().substring(0, 20)}...');
+        Logger.d('   Platform: ${result['platform']}');
+        Logger.d('   Created: ${result['created_at']}');
+        Logger.d('   Updated: ${result['updated_at']}');
         
         final updatedAt = DateTime.parse(result['updated_at']);
         final now = DateTime.now();
         final diff = now.difference(updatedAt);
         
-        print('   Age: ${diff.inMinutes} minutes ago');
+        Logger.d('   Age: ${diff.inMinutes} minutes ago');
         
         return result;
       } else {
-        print('❌ No FCM token found in database');
+        Logger.d('❌ No FCM token found in database');
         return null;
       }
     } catch (e) {
-      print('❌ Failed to check FCM token status: $e');
+      Logger.d('❌ Failed to check FCM token status: $e');
       return null;
     }
   }
@@ -797,14 +798,14 @@ class FlutterFireNotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      print('📤 Sending notification via Supabase Edge Function...');
-      print('   Target User: $targetUserId');
-      print('   Title: $title');
-      print('   Body: $body');
-      print('   Data: $data');
+      Logger.d('📤 Sending notification via Supabase Edge Function...');
+      Logger.d('   Target User: $targetUserId');
+      Logger.d('   Title: $title');
+      Logger.d('   Body: $body');
+      Logger.d('   Data: $data');
 
       // Fetch FCM token and platform from database
-      print('🔍 Fetching FCM token for user: $targetUserId');
+      Logger.d('🔍 Fetching FCM token for user: $targetUserId');
       final fcmTokenResult = await Supabase.instance.client
           .from('user_fcm_tokens')
           .select('fcm_token, platform')
@@ -814,15 +815,15 @@ class FlutterFireNotificationService {
           .maybeSingle();
 
       if (fcmTokenResult == null || fcmTokenResult['fcm_token'] == null) {
-        print('❌ No FCM token found for user: $targetUserId');
+        Logger.d('❌ No FCM token found for user: $targetUserId');
         return false;
       }
 
       final fcmToken = fcmTokenResult['fcm_token'] as String;
       final platform = fcmTokenResult['platform'] as String? ?? 'android';
 
-      print('✅ Found FCM token: ${fcmToken.substring(0, 20)}...');
-      print('✅ Platform: $platform');
+      Logger.d('✅ Found FCM token: ${fcmToken.substring(0, 20)}...');
+      Logger.d('✅ Platform: $platform');
 
       // Convert all data values to strings for FCM compatibility
       final stringData = data != null 
@@ -830,7 +831,7 @@ class FlutterFireNotificationService {
           : <String, String>{};
 
       // Call Supabase Edge Function with FCM token and platform
-      print('🚀 Calling Edge Function...');
+      Logger.d('🚀 Calling Edge Function...');
       final response = await Supabase.instance.client.functions.invoke(
         'send-push-notification',
         body: {
@@ -843,24 +844,24 @@ class FlutterFireNotificationService {
         },
       );
 
-      print('📨 Edge Function response status: ${response.status}');
-      print('📨 Edge Function response data: ${response.data}');
+      Logger.d('📨 Edge Function response status: ${response.status}');
+      Logger.d('📨 Edge Function response data: ${response.data}');
 
       // Check for success (status 200 or data contains success)
       if (response.status == 200 || 
           (response.data != null && response.data['success'] == true)) {
-        print('✅ Edge Function notification sent successfully!');
+        Logger.d('✅ Edge Function notification sent successfully!');
         return true;
       } else {
-        print('❌ Edge Function notification failed!');
-        print('   Status: ${response.status}');
-        print('   Data: ${response.data}');
+        Logger.d('❌ Edge Function notification failed!');
+        Logger.d('   Status: ${response.status}');
+        Logger.d('   Data: ${response.data}');
         return false;
       }
 
     } catch (e, stackTrace) {
-      print('❌ Failed to send Edge Function notification: $e');
-      print('   Stack trace: $stackTrace');
+      Logger.d('❌ Failed to send Edge Function notification: $e');
+      Logger.d('   Stack trace: $stackTrace');
       return false;
     }
   }
@@ -870,14 +871,14 @@ class FlutterFireNotificationService {
     await _messageSubscription?.cancel();
     _messageSubscription = null;
     _isInitialized = false;
-    print('✅ FlutterFire notification service disposed');
+    Logger.d('✅ FlutterFire notification service disposed');
   }
 }
 
 /// Background message handler (must be top-level function)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('📨 Background message received: ${message.messageId}');
+  Logger.d('📨 Background message received: ${message.messageId}');
   
   // Initialize Supabase in background isolate
   await Supabase.initialize(

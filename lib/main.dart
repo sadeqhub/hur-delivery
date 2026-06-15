@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider, Provider;
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -17,17 +18,9 @@ import 'core/theme/app_theme.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/order_provider.dart';
 import 'core/providers/location_provider.dart';
-import 'core/providers/connectivity_provider.dart';
-import 'core/providers/notification_provider.dart';
 import 'core/providers/wallet_provider.dart';
 import 'core/providers/driver_wallet_provider.dart';
-import 'core/providers/city_settings_provider.dart';
-import 'core/providers/voice_recording_provider.dart';
-import 'core/providers/announcement_provider.dart';
-import 'core/providers/system_status_provider.dart';
-import 'core/providers/locale_provider.dart';
-import 'core/providers/theme_provider.dart';
-import 'core/providers/global_error_provider.dart';
+import 'core/riverpod/app_providers.dart';
 import 'shared/widgets/global_error_overlay.dart';
 import 'core/router/app_router.dart';
 import 'core/localization/app_localizations.dart';
@@ -37,9 +30,12 @@ import 'core/services/global_order_notification_service.dart';
 // NotificationWatcher removed - database trigger handles FCM notifications now
 // import 'core/services/notification_watcher.dart';
 import 'shared/widgets/no_internet_screen.dart';
+import 'shared/widgets/connectivity_banner.dart';
 import 'core/services/precache_service.dart';
 import 'core/services/performance_optimizer.dart';
+import 'core/services/mutation_queue_service.dart';
 import 'core/utils/system_ui.dart';
+import 'core/utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +51,7 @@ void main() async {
     debugPrint('🚀 HUR DELIVERY APP STARTING');
     debugPrint('═══════════════════════════════════════\n');
   }
-  
+
   // Initialize Mapbox only if a token is provided (avoid bundling token in app)
   try {
     if (AppConstants.mapboxAccessToken.isNotEmpty) {
@@ -67,7 +63,7 @@ void main() async {
   } catch (e) {
     if (!kReleaseMode) debugPrint('❌ Mapbox initialization error: $e');
   }
-  
+
   // Initialize Supabase with persistence
   if (!kReleaseMode) debugPrint('🔧 Initializing Supabase...');
   await Supabase.initialize(
@@ -81,16 +77,16 @@ void main() async {
   );
   // Note: Session persistence is enabled by default in Supabase Flutter
   if (!kReleaseMode) debugPrint('✅ Supabase initialized with session persistence (auto-refresh enabled)\n');
-  
+
   // Initialize Firebase
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    
+
     // Set up background message handler
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    
+
     // Initialize Crashlytics and register global error handlers
     await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(kReleaseMode);
     FlutterError.onError = (FlutterErrorDetails details) {
@@ -129,30 +125,33 @@ void main() async {
       return null;
     });
   });
-  
+
   // Enable Edge-to-Edge mode for modern Android navigation
   SystemUiUtils.enableEdgeToEdge(
     statusBarColor: Colors.transparent,
     navBarColor: Colors.transparent,
   );
-  
+
   if (!kReleaseMode) {
     debugPrint('═══════════════════════════════════════');
     debugPrint('✅ APP INITIALIZATION COMPLETE');
     debugPrint('═══════════════════════════════════════\n');
   }
-  
-  runApp(const HurDeliveryApp());
+
+  runApp(const ProviderScope(child: HurDeliveryApp()));
 }
 
-class HurDeliveryApp extends StatefulWidget {
+class HurDeliveryApp extends ConsumerStatefulWidget {
   const HurDeliveryApp({super.key});
 
   @override
-  State<HurDeliveryApp> createState() => _HurDeliveryAppState();
+  ConsumerState<HurDeliveryApp> createState() => _HurDeliveryAppState();
 }
 
-class _HurDeliveryAppState extends State<HurDeliveryApp> {
+class _HurDeliveryAppState extends ConsumerState<HurDeliveryApp> {
+  bool _wasOnline = true;
+
+
   @override
   void initState() {
     super.initState();
@@ -162,7 +161,7 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       PrecacheService.preloadCoreAssets(context);
-      
+
       // Pre-warm the keyboard engine safely.
       // This eliminates the ~200ms lag on the first tap of any input field.
       try {
@@ -175,14 +174,20 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
 
   void _setupGlobalNotificationListener() {
     // Listen to auth state changes
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       final session = data.session;
       if (session != null) {
         final userId = session.user.id;
-        final userRole = session.user.userMetadata?['role'] as String?;
-        
+        var userRole = session.user.appMetadata['role'] as String?;
+        if (userRole == null) {
+          try {
+            final refreshed = await Supabase.instance.client.auth.refreshSession();
+            userRole = refreshed.session?.user.appMetadata['role'] as String?;
+          } catch (_) {}
+        }
+
         if (userRole != null && (userRole == 'driver' || userRole == 'merchant')) {
-          print('🔔 Starting global notifications for $userRole: $userId');
+          Logger.d('🔔 Starting global notifications for $userRole: $userId');
           GlobalOrderNotificationService.initialize(
             userId: userId,
             userRole: userRole,
@@ -197,90 +202,99 @@ class _HurDeliveryAppState extends State<HurDeliveryApp> {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeProvider).valueOrNull ?? ThemeMode.light;
+    final appLocale = ref.watch(localeProvider).valueOrNull ?? const Locale('ar', 'IQ');
+    final isOnline = ref.watch(connectivityProvider).valueOrNull ?? true;
+    final isArabic = appLocale.languageCode == 'ar';
+    final authProvider = context.read<AuthProvider>();
+
+    // Replay queued offline mutations when connectivity is restored.
+    if (isOnline && !_wasOnline) {
+      MutationQueueService.instance.replayAll().catchError((e) {
+        Logger.d('⚠️ MutationQueue replay error: $e');
+        return null;
+      });
+    }
+    _wasOnline = isOnline;
+
     // Wrap with foreground task handler
     return WithForegroundTask(
       child: MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => GlobalErrorProvider()),
-          ChangeNotifierProvider(create: (_) => ThemeProvider()),
-          ChangeNotifierProvider(create: (_) => LocaleProvider()),
-          ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
           ChangeNotifierProvider(create: (_) => AuthProvider()),
           ChangeNotifierProvider(create: (_) => OrderProvider()),
           ChangeNotifierProvider(create: (_) => LocationProvider()),
-          ChangeNotifierProvider(create: (_) => NotificationProvider()),
           ChangeNotifierProvider(create: (_) => WalletProvider()),
           ChangeNotifierProvider(create: (_) => DriverWalletProvider()),
-          ChangeNotifierProvider(create: (_) => CitySettingsProvider()),
-          ChangeNotifierProvider(create: (_) => VoiceRecordingProvider()),
-          ChangeNotifierProvider(create: (_) => AnnouncementProvider()),
-          ChangeNotifierProvider(create: (_) => SystemStatusProvider()),
         ],
-        child: Consumer4<ThemeProvider, LocaleProvider, ConnectivityProvider, AuthProvider>(
-          builder: (context, themeProvider, localeProvider, connectivityProvider, authProvider, _) {
-            final appLocale = localeProvider.isLoading
-                ? const Locale('ar', 'IQ')
-                : localeProvider.locale;
-            final isArabic = appLocale.languageCode == 'ar';
+        child: MaterialApp.router(
+          title: AppLocalizations(appLocale).appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeMode,
 
-            return MaterialApp.router(
-              title: AppLocalizations(appLocale).appTitle,
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: themeProvider.themeMode,
+          // Arabic + English localization
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: appLocale,
 
-              // Arabic + English localization
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: AppLocalizations.supportedLocales,
-              locale: appLocale,
+          builder: (context, child) {
+            if (child == null) return const SizedBox.shrink();
 
-              builder: (context, child) {
-                if (child == null) return const SizedBox.shrink();
+            final mq = MediaQuery.of(context);
+            final textDirection =
+                isArabic ? TextDirection.rtl : TextDirection.ltr;
 
-                final mq = MediaQuery.of(context);
-                final textDirection =
-                    isArabic ? TextDirection.rtl : TextDirection.ltr;
+            // Read screen width only — never viewInsets — so keyboard
+            // animation frames don't trigger a full tree rebuild.
+            final scale = _getTextScaleFactor(mq.size.width);
 
-                // Show no internet screen if offline
-                if (!connectivityProvider.isOnline) {
-                  return Directionality(
-                    textDirection: textDirection,
-                    child: const NoInternetScreen(),
-                  );
-                }
+            // When offline with no cache, show the full no-internet screen.
+            // Otherwise keep the app visible with a slim connectivity banner.
+            final hasCache = context.read<OrderProvider>().orders.isNotEmpty;
+            final showFullNoInternet = !isOnline && !hasCache;
 
-                // Read screen width only — never viewInsets — so keyboard
-                // animation frames don't trigger a full tree rebuild.
-                final scale = _getTextScaleFactor(mq.size.width);
-                return MediaQuery(
-                  data: mq.copyWith(
-                    textScaler: TextScaler.linear(scale),
+            Widget appChild;
+            if (showFullNoInternet) {
+              return Directionality(
+                textDirection: textDirection,
+                child: const NoInternetScreen(),
+              );
+            } else if (!isOnline) {
+              appChild = Stack(
+                children: [child, const ConnectivityBanner()],
+              );
+            } else {
+              appChild = child;
+            }
+
+            return MediaQuery(
+              data: mq.copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Directionality(
+                textDirection: textDirection,
+                child: GlobalErrorOverlay(
+                  child: GestureDetector(
+                    // Dismiss the keyboard when the user taps anywhere
+                    // outside a focused input field.
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () =>
+                        FocusManager.instance.primaryFocus?.unfocus(),
+                    child: appChild,
                   ),
-                  child: Directionality(
-                    textDirection: textDirection,
-                    child: GlobalErrorOverlay(
-                      child: GestureDetector(
-                        // Dismiss the keyboard when the user taps anywhere
-                        // outside a focused input field.
-                        behavior: HitTestBehavior.translucent,
-                        onTap: () =>
-                            FocusManager.instance.primaryFocus?.unfocus(),
-                        child: child,
-                      ),
-                    ),
-                  ),
-                );
-              },
-
-              routerConfig: AppRouter.router,
+                ),
+              ),
             );
           },
+
+          routerConfig: AppRouter.createRouter(authProvider),
         ),
       ),
     );

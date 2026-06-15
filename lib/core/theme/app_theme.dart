@@ -3,32 +3,57 @@ import '../utils/responsive_helper.dart';
 
 class AppColors {
   // Primary Hur Colors
-  static const Color primary = Color(0xFF008C95); // New teal color
-  static const Color secondary = Color(0xFF1E40AF); // Blue
-  static const Color success = Color(0xFF10B981); // Green
-  static const Color warning = Color(0xFFF59E0B); // Orange
-  static const Color error = Color(0xFFEF4444); // Red
-  
-  // Background Colors
-  static const Color background = Color(0xFFF9FAFB); // Light gray
-  static const Color surface = Color(0xFFFFFFFF); // White
-  static const Color surfaceVariant = Color(0xFFF3F4F6); // Light gray
-  
-  // Text Colors
-  static const Color textPrimary = Color(0xFF111827); // Dark gray
-  static const Color textSecondary = Color(0xFF6B7280); // Medium gray
-  static const Color textTertiary = Color(0xFF9CA3AF); // Light gray
-  
-  // Border Colors
-  static const Color border = Color(0xFFE5E7EB); // Light border
-  static const Color borderFocus = Color(0xFF008C95); // Primary border
-  
+  static const Color primary = Color(0xFF008C95);
+  static const Color primaryDark = Color(0xFF0EA5B0);
+  static const Color primaryDeep = Color(0xFF005F65);
+  static const Color primaryTint = Color(0xFFE0F7F8);
+  static const Color secondary = Color(0xFF1E40AF);
+  static const Color secondaryDark = Color(0xFF3B82F6);
+  static const Color accent = Color(0xFFD97706);
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color error = Color(0xFFEF4444);
+  static const Color info = Color(0xFF3B82F6);
+
+  // Background Colors — light
+  static const Color background = Color(0xFFF9FAFB);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceVariant = Color(0xFFF3F4F6);
+
+  // Background Colors — dark
+  static const Color backgroundDark = Color(0xFF111827);
+  static const Color surfaceDark = Color(0xFF1F2937);
+  static const Color surfaceVariantDark = Color(0xFF374151);
+
+  // Text Colors — light
+  static const Color textPrimary = Color(0xFF111827);
+  static const Color textSecondary = Color(0xFF6B7280);
+  static const Color textTertiary = Color(0xFF9CA3AF);
+
+  // Text Colors — dark
+  static const Color textPrimaryDark = Color(0xFFF9FAFB);
+  static const Color textSecondaryDark = Color(0xFF9CA3AF);
+  static const Color textTertiaryDark = Color(0xFF6B7280);
+
+  // Border Colors — light
+  static const Color border = Color(0xFFE5E7EB);
+  static const Color borderFocus = Color(0xFF008C95);
+
+  // Border Colors — dark
+  static const Color borderDark = Color(0xFF374151);
+  static const Color borderFocusDark = Color(0xFF0EA5B0);
+
   // Status Colors
   static const Color statusPending = Color(0xFFF59E0B);
   static const Color statusAccepted = Color(0xFF10B981);
   static const Color statusInProgress = Color(0xFF3B82F6);
   static const Color statusCompleted = Color(0xFF10B981);
   static const Color statusCancelled = Color(0xFFEF4444);
+
+  // Map Colors
+  static const Color mapActiveRoute = Color(0xFF008C95);
+  static const Color mapCompletedDelivery = Color(0xFF10B981);
+  static const Color mapDriverNearby = Color(0xFFF59E0B);
 }
 
 class AppTextStyles {
@@ -195,7 +220,7 @@ class AppTheme {
       ),
       
       // Card Theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.1),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
@@ -9,6 +8,7 @@ import '../../../shared/widgets/primary_button.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../orders/screens/location_picker_screen.dart';
 import '../../../core/constants/app_constants.dart';
+import '../data/merchant_repository.dart';
 
 class MerchantEditProfileScreen extends StatefulWidget {
   const MerchantEditProfileScreen({super.key});
@@ -57,13 +57,13 @@ class _MerchantEditProfileScreenState extends State<MerchantEditProfileScreen> {
       final user = context.read<AuthProvider>().user;
       if (user == null) throw Exception('User not found');
 
-      await Supabase.instance.client.from('users').update({
+      await MerchantRepository.instance.updateProfile(user.id, {
         'name': _nameController.text.trim(),
         'store_name': _storeNameController.text.trim(),
         'address': _addressController.text.trim(),
         'latitude': _latitude,
         'longitude': _longitude,
-      }).eq('id', user.id);
+      });
 
       // Refresh user data
       await context.read<AuthProvider>().refreshUser();

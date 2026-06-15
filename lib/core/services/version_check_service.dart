@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../utils/logger.dart';
 
 /// Service to check app version against minimum required version
 class VersionCheckService {
@@ -19,22 +20,23 @@ class VersionCheckService {
           .maybeSingle();
 
       if (response == null) {
-        print('⚠️ min_app_version not found in database');
+        Logger.d('⚠️ min_app_version not found in database');
         return null;
       }
 
       final version = response['value'] as String?;
-      print('📱 Minimum required version from DB: $version');
+      Logger.d('📱 Minimum required version from DB: $version');
       return version;
     } catch (e) {
-      print('❌ Error fetching minimum app version: $e');
+      Logger.d('❌ Error fetching minimum app version: $e');
       
       // Check for 401 errors (session expired)
       if (e is PostgrestException && e.code == '401') {
-        print('🔐 Session expired while fetching app version - using fallback');
+        Logger.d('🔐 Session expired while fetching app version - using fallback');
         return '1.0.0'; // Fallback version
-      } else if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
-        print('🔐 Unauthorized access while fetching app version - using fallback');
+      } else if (e is AuthException &&
+          (e.statusCode == '401' || e.message.contains('Unauthorized'))) {
+        Logger.d('🔐 Unauthorized access while fetching app version - using fallback');
         return '1.0.0'; // Fallback version
       }
       
@@ -47,10 +49,10 @@ class VersionCheckService {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final version = packageInfo.version;
-      print('📱 Current app version: $version');
+      Logger.d('📱 Current app version: $version');
       return version;
     } catch (e) {
-      print('❌ Error getting current app version: $e');
+      Logger.d('❌ Error getting current app version: $e');
       return '0.0.0'; // Default fallback
     }
   }
@@ -64,28 +66,29 @@ class VersionCheckService {
 
       // If no minimum version is set, no update required
       if (minVersion == null || minVersion.isEmpty) {
-        print('✅ No minimum version set - update not required');
+        Logger.d('✅ No minimum version set - update not required');
         return false;
       }
 
       final needsUpdate = _compareVersions(currentVersion, minVersion) < 0;
       
       if (needsUpdate) {
-        print('🔴 UPDATE REQUIRED: Current ($currentVersion) < Required ($minVersion)');
+        Logger.d('🔴 UPDATE REQUIRED: Current ($currentVersion) < Required ($minVersion)');
       } else {
-        print('✅ Version OK: Current ($currentVersion) >= Required ($minVersion)');
+        Logger.d('✅ Version OK: Current ($currentVersion) >= Required ($minVersion)');
       }
 
       return needsUpdate;
     } catch (e) {
-      print('❌ Error checking version requirement: $e');
+      Logger.d('❌ Error checking version requirement: $e');
       
       // Check for 401 errors (session expired) - skip version check if no auth
       if (e is PostgrestException && e.code == '401') {
-        print('🔐 No session for version check - skipping update requirement');
+        Logger.d('🔐 No session for version check - skipping update requirement');
         return false;
-      } else if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
-        print('🔐 Unauthorized access for version check - skipping update requirement');
+      } else if (e is AuthException &&
+          (e.statusCode == '401' || e.message.contains('Unauthorized'))) {
+        Logger.d('🔐 Unauthorized access for version check - skipping update requirement');
         return false;
       }
       

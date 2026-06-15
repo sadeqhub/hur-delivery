@@ -1,6 +1,7 @@
 import 'dart:isolate';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 
 /// Foreground service callback - runs in isolate
 @pragma('vm:entry-point')
@@ -15,14 +16,14 @@ class DeliveryTaskHandler extends TaskHandler {
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    print('✅ Foreground service started at $timestamp');
+    Logger.d('✅ Foreground service started at $timestamp');
     _status = "online";
   }
 
   @override
   void onRepeatEvent(DateTime timestamp) {
     _eventCount++;
-    print('⏱️ Repeat event #$_eventCount at $timestamp | Status: $_status');
+    Logger.d('⏱️ Repeat event #$_eventCount at $timestamp | Status: $_status');
     
     // Keep connection alive by pinging database every event
     try {
@@ -35,22 +36,22 @@ class DeliveryTaskHandler extends TaskHandler {
             .limit(1);
       }
     } catch (e) {
-      print('⚠️ Keepalive ping failed: $e');
+      Logger.d('⚠️ Keepalive ping failed: $e');
     }
   }
 
   @override
   Future<void> onDestroy(DateTime timestamp) async {
-    print('🛑 Foreground service destroyed at $timestamp');
+    Logger.d('🛑 Foreground service destroyed at $timestamp');
   }
 
   @override
   void onButtonPressed(String id) {
-    print('🔘 Button pressed: $id');
+    Logger.d('🔘 Button pressed: $id');
     
     if (id == 'pause') {
       _status = "paused";
-      print('⏸️ Driver paused');
+      Logger.d('⏸️ Driver paused');
 
       FlutterForegroundTask.updateService(
         notificationTitle: 'موقف - متوقف مؤقتاً',
@@ -62,7 +63,7 @@ class DeliveryTaskHandler extends TaskHandler {
       );
     } else if (id == 'resume') {
       _status = "online";
-      print('▶️ Driver resumed');
+      Logger.d('▶️ Driver resumed');
 
       FlutterForegroundTask.updateService(
         notificationTitle: 'متصل - جاهز للطلبات',
@@ -73,7 +74,7 @@ class DeliveryTaskHandler extends TaskHandler {
         ],
       );
     } else if (id == 'offline') {
-      print('🛑 Going offline - stopping service');
+      Logger.d('🛑 Going offline - stopping service');
       _status = "offline";
       FlutterForegroundTask.stopService();
     }
@@ -82,7 +83,7 @@ class DeliveryTaskHandler extends TaskHandler {
   @override
   void onNotificationPressed() {
     // Open app when notification is tapped
-    print('📱 Notification tapped - launching app');
+    Logger.d('📱 Notification tapped - launching app');
     FlutterForegroundTask.launchApp('/');
   }
 }
@@ -118,7 +119,7 @@ class ForegroundServiceManager {
     required String driverName,
   }) async {
     if (_isRunning) {
-      print('⚠️ Foreground service already running');
+      Logger.d('⚠️ Foreground service already running');
       return false;
     }
 
@@ -145,13 +146,13 @@ class ForegroundServiceManager {
       // Start receiving data from service
       _receivePort = FlutterForegroundTask.receivePort;
       _receivePort?.listen((data) {
-        print('📨 Data from service: $data');
+        Logger.d('📨 Data from service: $data');
       });
       
-      print('✅ Foreground service started successfully');
+      Logger.d('✅ Foreground service started successfully');
       return true;
     } catch (e) {
-      print('❌ Failed to start foreground service: $e');
+      Logger.d('❌ Failed to start foreground service: $e');
       return false;
     }
   }
@@ -221,7 +222,7 @@ class ForegroundServiceManager {
   /// Stop foreground service when driver goes offline
   static Future<bool> stopService() async {
     if (!_isRunning) {
-      print('⚠️ Foreground service not running');
+      Logger.d('⚠️ Foreground service not running');
       return false;
     }
 
@@ -230,10 +231,10 @@ class ForegroundServiceManager {
       _isRunning = false;
       _receivePort?.close();
       _receivePort = null;
-      print('✅ Foreground service stopped');
+      Logger.d('✅ Foreground service stopped');
       return true;
     } catch (e) {
-      print('❌ Failed to stop foreground service: $e');
+      Logger.d('❌ Failed to stop foreground service: $e');
       return false;
     }
   }

@@ -7,6 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import '../constants/app_constants.dart';
+import '../utils/logger.dart';
 
 /// Firebase Cloud Messaging Service
 /// 
@@ -27,9 +28,9 @@ class FCMService {
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
-    print('\n═══════════════════════════════════════');
-    print('🔥 INITIALIZING FCM SERVICE');
-    print('═══════════════════════════════════════');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('🔥 INITIALIZING FCM SERVICE');
+    Logger.d('═══════════════════════════════════════');
 
     try {
       // Initialize Firebase Messaging
@@ -49,19 +50,19 @@ class FCMService {
       
       _isInitialized = true;
       
-      print('✅ FCM Service initialized successfully');
-      print('✅ Ready for token generation after authentication');
-      print('═══════════════════════════════════════\n');
+      Logger.d('✅ FCM Service initialized successfully');
+      Logger.d('✅ Ready for token generation after authentication');
+      Logger.d('═══════════════════════════════════════\n');
       
     } catch (e) {
-      print('❌ FCM initialization failed: $e');
+      Logger.d('❌ FCM initialization failed: $e');
       rethrow;
     }
   }
 
   /// Request notification permissions
   static Future<void> _requestPermissions() async {
-    print('🔐 Requesting notification permissions...');
+    Logger.d('🔐 Requesting notification permissions...');
     
     // Request FCM permissions
     final settings = await _messaging!.requestPermission(
@@ -74,7 +75,7 @@ class FCMService {
       sound: true,
     );
     
-    print('FCM Permission status: ${settings.authorizationStatus}');
+    Logger.d('FCM Permission status: ${settings.authorizationStatus}');
     
     // Request Android permissions
     if (Platform.isAndroid) {
@@ -84,7 +85,7 @@ class FCMService {
 
   /// Configure local notifications
   static Future<void> _configureLocalNotifications() async {
-    print('🔧 Configuring local notifications...');
+    Logger.d('🔧 Configuring local notifications...');
     
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
@@ -123,44 +124,44 @@ class FCMService {
 
   /// Initialize FCM with token generation (call after user authentication)
   static Future<void> initializeWithToken() async {
-    print('\n═══════════════════════════════════════');
-    print('🔥 INITIALIZING FCM WITH TOKEN GENERATION');
-    print('═══════════════════════════════════════');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('🔥 INITIALIZING FCM WITH TOKEN GENERATION');
+    Logger.d('═══════════════════════════════════════');
 
     try {
       // Get FCM token
       await _getFCMToken();
       
-      print('✅ FCM token generated and saved');
-      print('✅ Token: ${_fcmToken?.substring(0, 20)}...');
-      print('═══════════════════════════════════════\n');
+      Logger.d('✅ FCM token generated and saved');
+      Logger.d('✅ Token: ${_fcmToken?.substring(0, 20)}...');
+      Logger.d('═══════════════════════════════════════\n');
       
     } catch (e) {
-      print('❌ FCM token generation failed: $e');
+      Logger.d('❌ FCM token generation failed: $e');
       rethrow;
     }
   }
 
   /// Get FCM token
   static Future<void> _getFCMToken() async {
-    print('🎫 Getting FCM token...');
+    Logger.d('🎫 Getting FCM token...');
     
     try {
       _fcmToken = await _messaging!.getToken();
       
       if (_fcmToken != null) {
-        print('✅ FCM Token obtained: ${_fcmToken!.substring(0, 20)}...');
-        print('   Full token length: ${_fcmToken!.length}');
-        print('   Token starts with: ${_fcmToken!.substring(0, 10)}');
+        Logger.d('✅ FCM Token obtained: ${_fcmToken!.substring(0, 20)}...');
+        Logger.d('   Full token length: ${_fcmToken!.length}');
+        Logger.d('   Token starts with: ${_fcmToken!.substring(0, 10)}');
         
         // Save to SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('fcm_token', _fcmToken!);
-        print('✅ FCM token saved to SharedPreferences');
+        Logger.d('✅ FCM token saved to SharedPreferences');
         
         // Listen for token refresh
         _messaging!.onTokenRefresh.listen((newToken) {
-          print('🔄 FCM token refreshed: ${newToken.substring(0, 20)}...');
+          Logger.d('🔄 FCM token refreshed: ${newToken.substring(0, 20)}...');
           _fcmToken = newToken;
           _saveTokenToDatabase();
         });
@@ -168,19 +169,19 @@ class FCMService {
         // Save to database immediately
         await _saveTokenToDatabase();
       } else {
-        print('❌ FCM token is null');
+        Logger.d('❌ FCM token is null');
         throw Exception('Failed to get FCM token');
       }
     } catch (e) {
-      print('❌ Failed to get FCM token: $e');
-      print('❌ Error details: ${e.toString()}');
+      Logger.d('❌ Failed to get FCM token: $e');
+      Logger.d('❌ Error details: ${e.toString()}');
       rethrow;
     }
   }
 
   /// Configure message handlers
   static Future<void> _configureMessageHandlers() async {
-    print('📡 Configuring message handlers...');
+    Logger.d('📡 Configuring message handlers...');
     
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
@@ -198,21 +199,21 @@ class FCMService {
   /// Save FCM token to database
   static Future<void> _saveTokenToDatabase() async {
     if (_fcmToken == null) {
-      print('❌ Cannot save FCM token: token is null');
+      Logger.d('❌ Cannot save FCM token: token is null');
       return;
     }
     
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
-        print('❌ Cannot save FCM token: user not authenticated');
+        Logger.d('❌ Cannot save FCM token: user not authenticated');
         return;
       }
       
-      print('💾 Saving FCM token to database...');
-      print('   User ID: ${user.id}');
-      print('   FCM Token: ${_fcmToken!.substring(0, 20)}...');
-      print('   Platform: ${Platform.isAndroid ? 'android' : 'ios'}');
+      Logger.d('💾 Saving FCM token to database...');
+      Logger.d('   User ID: ${user.id}');
+      Logger.d('   FCM Token: ${_fcmToken!.substring(0, 20)}...');
+      Logger.d('   Platform: ${Platform.isAndroid ? 'android' : 'ios'}');
       
       final result = await Supabase.instance.client
           .from('user_fcm_tokens')
@@ -223,8 +224,8 @@ class FCMService {
             'updated_at': DateTime.now().toIso8601String(),
           });
       
-      print('✅ FCM token saved to database successfully');
-      print('   Result: $result');
+      Logger.d('✅ FCM token saved to database successfully');
+      Logger.d('   Result: $result');
       
       // Verify the token was saved
       final verifyResult = await Supabase.instance.client
@@ -233,28 +234,28 @@ class FCMService {
           .eq('user_id', user.id)
           .single();
       
-      print('✅ Token verification: ${verifyResult['fcm_token']?.toString().substring(0, 20)}...');
+      Logger.d('✅ Token verification: ${verifyResult['fcm_token']?.toString().substring(0, 20)}...');
       
     } catch (e) {
-      print('❌ Failed to save FCM token: $e');
-      print('❌ Error details: ${e.toString()}');
+      Logger.d('❌ Failed to save FCM token: $e');
+      Logger.d('❌ Error details: ${e.toString()}');
       
       // Check if it's an RLS issue
       if (e.toString().contains('row-level security')) {
-        print('❌ RLS policy violation detected');
+        Logger.d('❌ RLS policy violation detected');
       }
     }
   }
 
   /// Handle foreground messages
   static Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    print('\n═══════════════════════════════════════');
-    print('📨 FOREGROUND MESSAGE RECEIVED');
-    print('═══════════════════════════════════════');
-    print('Title: ${message.notification?.title}');
-    print('Body: ${message.notification?.body}');
-    print('Data: ${message.data}');
-    print('═══════════════════════════════════════\n');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('📨 FOREGROUND MESSAGE RECEIVED');
+    Logger.d('═══════════════════════════════════════');
+    Logger.d('Title: ${message.notification?.title}');
+    Logger.d('Body: ${message.notification?.body}');
+    Logger.d('Data: ${message.data}');
+    Logger.d('═══════════════════════════════════════\n');
     
     // Show local notification
     await _showLocalNotification(message);
@@ -262,13 +263,13 @@ class FCMService {
 
   /// Handle background messages
   static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
-    print('\n═══════════════════════════════════════');
-    print('📨 BACKGROUND MESSAGE RECEIVED');
-    print('═══════════════════════════════════════');
-    print('Title: ${message.notification?.title}');
-    print('Body: ${message.notification?.body}');
-    print('Data: ${message.data}');
-    print('═══════════════════════════════════════\n');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('📨 BACKGROUND MESSAGE RECEIVED');
+    Logger.d('═══════════════════════════════════════');
+    Logger.d('Title: ${message.notification?.title}');
+    Logger.d('Body: ${message.notification?.body}');
+    Logger.d('Data: ${message.data}');
+    Logger.d('═══════════════════════════════════════\n');
     
     // Handle based on message type
     await _processMessageData(message.data);
@@ -319,32 +320,32 @@ class FCMService {
     
     switch (messageType) {
       case 'order_assigned':
-        print('📦 Processing order assignment...');
+        Logger.d('📦 Processing order assignment...');
         // Handle order assignment
         break;
       case 'order_accepted':
-        print('✅ Processing order acceptance...');
+        Logger.d('✅ Processing order acceptance...');
         // Handle order acceptance
         break;
       case 'order_delivered':
-        print('🎉 Processing order delivery...');
+        Logger.d('🎉 Processing order delivery...');
         // Handle order delivery
         break;
       default:
-        print('❓ Unknown message type: $messageType');
+        Logger.d('❓ Unknown message type: $messageType');
     }
   }
 
   /// Handle notification tap
   static void _onNotificationTapped(NotificationResponse response) {
-    print('👆 Notification tapped: ${response.payload}');
+    Logger.d('👆 Notification tapped: ${response.payload}');
     
     if (response.payload != null) {
       try {
         final data = jsonDecode(response.payload!);
         _processMessageData(data);
       } catch (e) {
-        print('❌ Failed to parse notification payload: $e');
+        Logger.d('❌ Failed to parse notification payload: $e');
       }
     }
   }
@@ -358,7 +359,7 @@ class FCMService {
     required Map<String, dynamic> data,
   }) async {
     // This method is deprecated - notifications are now handled by database triggers
-    print('⚠️ sendPushNotification is deprecated - use database triggers instead');
+    Logger.d('⚠️ sendPushNotification is deprecated - use database triggers instead');
   }
 
 
@@ -379,7 +380,7 @@ class FCMService {
 /// Background message handler (must be top-level function)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('📨 Background message received: ${message.messageId}');
+  Logger.d('📨 Background message received: ${message.messageId}');
   
   // Initialize Supabase in background isolate
   await Supabase.initialize(

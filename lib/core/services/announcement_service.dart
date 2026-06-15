@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/models/announcement_model.dart';
 import 'error_manager.dart';
+import '../utils/logger.dart';
 
 /// Service to manage system-wide announcements
 class AnnouncementService {
@@ -14,7 +15,7 @@ class AnnouncementService {
   Future<List<AnnouncementModel>> getActiveAnnouncements(String userRole) async {
     return await ErrorManager.safeExecute<List<AnnouncementModel>>(
       operation: () async {
-        print('🔍 Fetching announcements for role: $userRole');
+        Logger.d('🔍 Fetching announcements for role: $userRole');
         
         final response = await _supabase
             .from('system_announcements')
@@ -23,14 +24,14 @@ class AnnouncementService {
             .contains('target_roles', [userRole])
             .order('created_at', ascending: false);
 
-        print('📦 Raw response: ${response.length} announcements found');
+        Logger.d('📦 Raw response: ${response.length} announcements found');
         
         final announcements = (response as List)
             .map((json) {
               try {
                 return AnnouncementModel.fromJson(json);
               } catch (e) {
-                print('❌ Error parsing announcement: $e');
+                Logger.d('❌ Error parsing announcement: $e');
                 return null;
               }
             })
@@ -38,7 +39,7 @@ class AnnouncementService {
             .where((announcement) => announcement.isCurrentlyActive)
             .toList();
 
-        print('✅ Active announcements: ${announcements.length}');
+        Logger.d('✅ Active announcements: ${announcements.length}');
         return announcements;
       },
       operationName: 'fetch-announcements',
@@ -59,7 +60,7 @@ class AnnouncementService {
           .map((json) => AnnouncementModel.fromJson(json))
           .toList();
     } catch (e) {
-      print('Error fetching all announcements: $e');
+      Logger.d('Error fetching all announcements: $e');
       return [];
     }
   }
@@ -76,7 +77,7 @@ class AnnouncementService {
 
       return response != null;
     } catch (e) {
-      print('Error checking dismissal: $e');
+      Logger.d('Error checking dismissal: $e');
       return false;
     }
   }
@@ -91,7 +92,7 @@ class AnnouncementService {
 
       return true;
     } catch (e) {
-      print('Error dismissing announcement: $e');
+      Logger.d('Error dismissing announcement: $e');
       return false;
     }
   }
@@ -116,7 +117,7 @@ class AnnouncementService {
 
       return undismissed;
     } catch (e) {
-      print('Error fetching undismissed announcements: $e');
+      Logger.d('Error fetching undismissed announcements: $e');
       return [];
     }
   }
@@ -150,7 +151,7 @@ class AnnouncementService {
 
       return AnnouncementModel.fromJson(response);
     } catch (e) {
-      print('Error creating announcement: $e');
+      Logger.d('Error creating announcement: $e');
       return null;
     }
   }
@@ -168,7 +169,7 @@ class AnnouncementService {
 
       return true;
     } catch (e) {
-      print('Error updating announcement: $e');
+      Logger.d('Error updating announcement: $e');
       return false;
     }
   }
@@ -183,7 +184,7 @@ class AnnouncementService {
 
       return true;
     } catch (e) {
-      print('Error deleting announcement: $e');
+      Logger.d('Error deleting announcement: $e');
       return false;
     }
   }
@@ -201,7 +202,7 @@ class AnnouncementService {
 
       return true;
     } catch (e) {
-      print('Error toggling announcement status: $e');
+      Logger.d('Error toggling announcement status: $e');
       return false;
     }
   }
@@ -218,13 +219,13 @@ class AnnouncementService {
 
       // Announcement doesn't exist
       if (response == null) {
-        print('❌ Announcement $announcementId no longer exists');
+        Logger.d('❌ Announcement $announcementId no longer exists');
         return false;
       }
 
       // Announcement is not active
       if (response['is_active'] != true) {
-        print('❌ Announcement $announcementId is not active');
+        Logger.d('❌ Announcement $announcementId is not active');
         return false;
       }
 
@@ -235,7 +236,7 @@ class AnnouncementService {
       if (response['start_time'] != null) {
         final startTime = DateTime.parse(response['start_time']);
         if (now.isBefore(startTime)) {
-          print('❌ Announcement $announcementId has not started yet');
+          Logger.d('❌ Announcement $announcementId has not started yet');
           return false;
         }
       }
@@ -244,7 +245,7 @@ class AnnouncementService {
       if (response['end_time'] != null) {
         final endTime = DateTime.parse(response['end_time']);
         if (now.isAfter(endTime)) {
-          print('❌ Announcement $announcementId has ended');
+          Logger.d('❌ Announcement $announcementId has ended');
           return false;
         }
       }
@@ -252,7 +253,7 @@ class AnnouncementService {
       // Announcement still exists and is active
       return true;
     } catch (e) {
-      print('⚠️ Error checking announcement active status: $e');
+      Logger.d('⚠️ Error checking announcement active status: $e');
       // Return true on error to avoid closing dialog unexpectedly
       return true;
     }

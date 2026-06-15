@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 
 /// Domain exception for all messaging operations.
 class MessagingException implements Exception {
@@ -486,7 +487,7 @@ class MessagingService {
     } catch (e) {
       // If the check fails (network error, etc.), continue to create/get conversation
       // The RPC function will handle deduplication on the server side
-      print('⚠️ Failed to check existing conversation, proceeding to create/get: $e');
+      Logger.d('⚠️ Failed to check existing conversation, proceeding to create/get: $e');
     }
 
     final params = {
@@ -621,10 +622,10 @@ class MessagingService {
         orderId: orderId,
       );
       
-      print('✅ Auto support message sent for order $orderCode');
+      Logger.d('✅ Auto support message sent for order $orderCode');
     } catch (e) {
       // Don't fail the conversation creation if auto message fails
-      print('⚠️ Failed to send auto support message: $e');
+      Logger.d('⚠️ Failed to send auto support message: $e');
     }
   }
 

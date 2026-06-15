@@ -1,103 +1,40 @@
-class VoiceRecording {
-  final String id;
-  final String merchantId;
-  final String storagePath;
-  final String filename;
-  final int? durationSeconds;
-  final int? fileSizeBytes;
-  final String? transcription;
-  final Map<String, dynamic>? extractedData;
-  final String? notes;
-  final bool isArchived;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final DateTime? lastUsedAt;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  VoiceRecording({
-    required this.id,
-    required this.merchantId,
-    required this.storagePath,
-    required this.filename,
-    this.durationSeconds,
-    this.fileSizeBytes,
-    this.transcription,
-    this.extractedData,
-    this.notes,
-    this.isArchived = false,
-    required this.createdAt,
-    required this.updatedAt,
-    this.lastUsedAt,
-  });
+part 'voice_recording_model.freezed.dart';
+part 'voice_recording_model.g.dart';
 
-  factory VoiceRecording.fromJson(Map<String, dynamic> json) {
-    return VoiceRecording(
-      id: json['id'] as String,
-      merchantId: json['merchant_id'] as String,
-      storagePath: json['storage_path'] as String,
-      filename: json['filename'] as String,
-      durationSeconds: json['duration_seconds'] as int?,
-      fileSizeBytes: json['file_size_bytes'] as int?,
-      transcription: json['transcription'] as String?,
-      extractedData: json['extracted_data'] as Map<String, dynamic>?,
-      notes: json['notes'] as String?,
-      isArchived: json['is_archived'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      lastUsedAt: json['last_used_at'] != null 
-          ? DateTime.parse(json['last_used_at'] as String) 
-          : null,
-    );
-  }
+DateTime _dateTimeFromJson(dynamic v) => DateTime.parse(v as String);
+DateTime? _nullableDateTimeFromJson(dynamic v) =>
+    v == null ? null : DateTime.parse(v as String);
+String _dateTimeToJson(DateTime dt) => dt.toIso8601String();
+String? _nullableDateTimeToJson(DateTime? dt) => dt?.toIso8601String();
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'merchant_id': merchantId,
-        'storage_path': storagePath,
-        'filename': filename,
-        'duration_seconds': durationSeconds,
-        'file_size_bytes': fileSizeBytes,
-        'transcription': transcription,
-        'extracted_data': extractedData,
-        'notes': notes,
-        'is_archived': isArchived,
-        'created_at': createdAt.toIso8601String(),
-        'updated_at': updatedAt.toIso8601String(),
-        'last_used_at': lastUsedAt?.toIso8601String(),
-      };
+@freezed
+class VoiceRecording with _$VoiceRecording {
+  const VoiceRecording._();
 
-  VoiceRecording copyWith({
-    String? id,
-    String? merchantId,
-    String? storagePath,
-    String? filename,
+  const factory VoiceRecording({
+    required String id,
+    required String merchantId,
+    required String storagePath,
+    required String filename,
     int? durationSeconds,
     int? fileSizeBytes,
     String? transcription,
     Map<String, dynamic>? extractedData,
     String? notes,
-    bool? isArchived,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    @Default(false) bool isArchived,
+    @JsonKey(fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
+    required DateTime createdAt,
+    @JsonKey(fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
+    required DateTime updatedAt,
+    @JsonKey(fromJson: _nullableDateTimeFromJson, toJson: _nullableDateTimeToJson)
     DateTime? lastUsedAt,
-  }) {
-    return VoiceRecording(
-      id: id ?? this.id,
-      merchantId: merchantId ?? this.merchantId,
-      storagePath: storagePath ?? this.storagePath,
-      filename: filename ?? this.filename,
-      durationSeconds: durationSeconds ?? this.durationSeconds,
-      fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
-      transcription: transcription ?? this.transcription,
-      extractedData: extractedData ?? this.extractedData,
-      notes: notes ?? this.notes,
-      isArchived: isArchived ?? this.isArchived,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      lastUsedAt: lastUsedAt ?? this.lastUsedAt,
-    );
-  }
+  }) = _VoiceRecording;
 
-  // Helper getters
+  factory VoiceRecording.fromJson(Map<String, dynamic> json) =>
+      _$VoiceRecordingFromJson(json);
+
   String get formattedDuration {
     if (durationSeconds == null) return '--:--';
     final minutes = durationSeconds! ~/ 60;
@@ -117,7 +54,7 @@ class VoiceRecording {
   String get formattedDate {
     final now = DateTime.now();
     final difference = now.difference(createdAt);
-    
+
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
         return '${difference.inMinutes} دقيقة';
@@ -132,7 +69,8 @@ class VoiceRecording {
     }
   }
 
-  bool get hasTranscription => transcription != null && transcription!.isNotEmpty;
-  bool get hasExtractedData => extractedData != null && extractedData!.isNotEmpty;
+  bool get hasTranscription =>
+      transcription != null && transcription!.isNotEmpty;
+  bool get hasExtractedData =>
+      extractedData != null && extractedData!.isNotEmpty;
 }
-

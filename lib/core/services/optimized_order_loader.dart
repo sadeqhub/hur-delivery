@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/models/order_model.dart';
+import '../../shared/models/order_status.dart';
 import 'network_quality_service.dart';
 import 'request_priority_manager.dart';
+import '../utils/logger.dart';
 
 /// Optimized order loader with priority-based loading and pagination
 class OptimizedOrderLoader {
@@ -102,7 +104,7 @@ class OptimizedOrderLoader {
             .order('created_at', ascending: false)
             .range(offset, offset + pageSize - 1)
             .timeout(timeout, onTimeout: () {
-              print('⚠️ Orders query timeout');
+              Logger.d('⚠️ Orders query timeout');
               return <Map<String, dynamic>>[];
             });
       } else {
@@ -117,7 +119,7 @@ class OptimizedOrderLoader {
             .order('created_at', ascending: false)
             .range(offset, offset + pageSize - 1)
             .timeout(timeout, onTimeout: () {
-              print('⚠️ Orders query timeout');
+              Logger.d('⚠️ Orders query timeout');
               return <Map<String, dynamic>>[];
             });
       }
@@ -137,7 +139,7 @@ class OptimizedOrderLoader {
         }
 
         // Calculate timeout for pending orders
-        if (order['status'] == 'pending' &&
+        if (OrderStatus.fromDb(order['status'] as String?) == OrderStatus.pending &&
             order['driver_id'] != null &&
             order['driver_assigned_at'] != null) {
           try {
@@ -160,7 +162,7 @@ class OptimizedOrderLoader {
 
       return orders;
     } catch (e) {
-      print('❌ Error loading orders page: $e');
+      Logger.d('❌ Error loading orders page: $e');
       return [];
     }
   }
@@ -245,7 +247,7 @@ class OptimizedOrderLoader {
 
       return OrderModel.fromJson(orderData);
     } catch (e) {
-      print('❌ Error loading order details: $e');
+      Logger.d('❌ Error loading order details: $e');
       return null;
     }
   }
@@ -277,7 +279,7 @@ class OptimizedOrderLoader {
 
       return (response as List).cast<Map<String, dynamic>>();
     } catch (e) {
-      print('❌ Error loading order items: $e');
+      Logger.d('❌ Error loading order items: $e');
       return [];
     }
   }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'network_quality_service.dart';
 import 'request_priority_manager.dart';
 import 'screen_visibility_tracker.dart';
+import '../utils/logger.dart';
 
 /// Main performance optimizer that coordinates all optimization services
 class PerformanceOptimizer {
@@ -15,7 +16,7 @@ class PerformanceOptimizer {
 
   /// Initialize all optimization services
   Future<void> initialize() async {
-    print('🚀 Initializing performance optimizer...');
+    Logger.d('🚀 Initializing performance optimizer...');
     
     // Initialize network quality monitoring
     await _networkQuality.initialize();
@@ -28,9 +29,9 @@ class PerformanceOptimizer {
       _updateConcurrencySettings();
     });
     
-    print('✅ Performance optimizer initialized');
-    print('   Network quality: ${_networkQuality.currentQuality}');
-    print('   Max concurrent requests: ${_priorityManager.getStats()['activeRequests']}');
+    Logger.d('✅ Performance optimizer initialized');
+    Logger.d('   Network quality: ${_networkQuality.currentQuality}');
+    Logger.d('   Max concurrent requests: ${_priorityManager.getStats()['activeRequests']}');
   }
 
   /// Update concurrency settings based on network quality

@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 
 /// Service to calculate route time using Mapbox API via Supabase Edge Function
 class RouteTimeService {
@@ -13,9 +14,9 @@ class RouteTimeService {
     required double dropoffLongitude,
   }) async {
     try {
-      print('🌐 Calculating route time...');
-      print('   Pickup: ($pickupLatitude, $pickupLongitude)');
-      print('   Dropoff: ($dropoffLatitude, $dropoffLongitude)');
+      Logger.d('🌐 Calculating route time...');
+      Logger.d('   Pickup: ($pickupLatitude, $pickupLongitude)');
+      Logger.d('   Dropoff: ($dropoffLatitude, $dropoffLongitude)');
 
       final response = await _supabase.functions.invoke(
         'calculate-route-time',
@@ -28,14 +29,14 @@ class RouteTimeService {
       );
 
       if (response.status != 200) {
-        print('❌ Failed to calculate route time: ${response.status}');
-        print('   Error: ${response.data}');
+        Logger.d('❌ Failed to calculate route time: ${response.status}');
+        Logger.d('   Error: ${response.data}');
         return null;
       }
 
       final data = response.data as Map<String, dynamic>?;
       if (data == null || data['success'] != true) {
-        print('❌ Route calculation failed: ${data?['error'] ?? 'Unknown error'}');
+        Logger.d('❌ Route calculation failed: ${data?['error'] ?? 'Unknown error'}');
         return null;
       }
 
@@ -47,14 +48,14 @@ class RouteTimeService {
         timeLimitMinutes: data['timeLimitMinutes'] as int? ?? 0,
       );
 
-      print('✅ Route time calculated:');
-      print('   Duration: ${result.durationSeconds}s (${result.durationMinutes} min)');
-      print('   Distance: ${result.distanceMeters}m');
-      print('   Time limit: ${result.timeLimitSeconds}s (${result.timeLimitMinutes} min)');
+      Logger.d('✅ Route time calculated:');
+      Logger.d('   Duration: ${result.durationSeconds}s (${result.durationMinutes} min)');
+      Logger.d('   Distance: ${result.distanceMeters}m');
+      Logger.d('   Time limit: ${result.timeLimitSeconds}s (${result.timeLimitMinutes} min)');
 
       return result;
     } catch (e) {
-      print('❌ Error calculating route time: $e');
+      Logger.d('❌ Error calculating route time: $e');
       return null;
     }
   }

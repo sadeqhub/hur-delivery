@@ -9,6 +9,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/services/geocoding_service.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../shared/widgets/navigation_overlay_system.dart';
+import '../../../core/utils/logger.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   final double? initialLatitude;
@@ -74,7 +75,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         }
       }
     } catch (e) {
-      print('Could not get current location: $e');
+      Logger.d('Could not get current location: $e');
       // Fallback to Baghdad default
       if (mounted) {
         setState(() {
@@ -112,7 +113,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         });
       }
     } catch (e) {
-      print('Error getting camera position: $e');
+      Logger.d('Error getting camera position: $e');
     }
   }
 

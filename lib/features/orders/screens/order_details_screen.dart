@@ -1,3 +1,4 @@
+// TODO: extract Supabase.instance calls to a feature repository
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -246,7 +247,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> with ScreenVisi
                                 label: loc.assignedAt,
                                 value: _formatDateTime(order.driverAssignedAt!),
                               ),
-                            if (order.status == 'rejected' && order.rejectedAt != null)
+                            if (order.isRejected && order.rejectedAt != null)
                               _ModernInfoRow(
                                 icon: Icons.cancel_outlined,
                                 label: loc.rejectedAt,

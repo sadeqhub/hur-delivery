@@ -53,6 +53,7 @@ dist/
 .env
 .env.local
 .env.*.local
+env.json
 ios/Flutter/Secrets.xcconfig
 
 # Firebase
@@ -114,3 +115,4 @@ webhook*.html
 *.keystore
 key.properties
 local.properties
+.claude/

@@ -1,68 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Consumer;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/driver_wallet_provider.dart';
-import '../../../core/providers/city_settings_provider.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../data/driver_repository.dart';
 
-class DriverRankScreen extends StatefulWidget {
+class DriverRankScreen extends ConsumerStatefulWidget {
   const DriverRankScreen({super.key});
 
   @override
-  State<DriverRankScreen> createState() => _DriverRankScreenState();
+  ConsumerState<DriverRankScreen> createState() => _DriverRankScreenState();
 }
 
-class _DriverRankScreenState extends State<DriverRankScreen> {
+class _DriverRankScreenState extends ConsumerState<DriverRankScreen> {
   String? _currentRank;
   String? _driverCity;
   double _monthlyHours = 0.0;
   bool _isLoading = true;
   final Map<String, double> _commissionRates = {};
-  CitySettingsProvider? _citySettingsProvider;
 
   @override
   void initState() {
     super.initState();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      
+
       final driverId = context.read<AuthProvider>().user?.id;
       if (driverId != null) {
         context.read<DriverWalletProvider>().initialize(driverId);
       }
-      
-      // Listen to city settings changes
-      final citySettingsProvider = context.read<CitySettingsProvider>();
-      _citySettingsProvider = citySettingsProvider;
-      _citySettingsProvider?.addListener(_onCitySettingsChanged);
-      
+
       // Load rank data first to get driver's city
       await _loadRankData();
-      
+
       // Then load commission rates for the driver's city
-      // This will use the RPC function which drivers have access to
       await _loadCommissionRates();
     });
-  }
-
-  @override
-  void dispose() {
-    // Remove listener when screen is disposed
-    _citySettingsProvider?.removeListener(_onCitySettingsChanged);
-    super.dispose();
-  }
-
-  void _onCitySettingsChanged() {
-    // Reload commission rates when city settings change
-    if (mounted && _driverCity != null) {
-      _loadCommissionRates();
-    }
   }
 
   @override
@@ -76,7 +56,7 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
     try {
       final authProvider = context.read<AuthProvider>();
       final driverId = authProvider.user?.id;
-      
+
       if (driverId == null) return;
 
       // Get current rank and city from user model (more reliable)
@@ -87,12 +67,8 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
         _currentRank = user.rank ?? 'bronze';
       } else {
         // Fallback to database query if user model not available
-        final userResponse = await Supabase.instance.client
-            .from('users')
-            .select('rank, city')
-            .eq('id', driverId)
-            .maybeSingle();
-        
+        final userResponse = await DriverRepository.instance.getDriverRankAndCity(driverId);
+
         if (userResponse != null) {
           final city = (userResponse['city'] as String?)?.trim().toLowerCase();
           _driverCity = city; // Store city for commission rate reloading
@@ -101,11 +77,7 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
       }
 
       // Get monthly hours
-      final hoursResponse = await Supabase.instance.client.rpc(
-        'get_driver_monthly_online_hours',
-        params: {'p_driver_id': driverId},
-      );
-      _monthlyHours = (hoursResponse as num?)?.toDouble() ?? 0.0;
+      _monthlyHours = await DriverRepository.instance.getDriverMonthlyOnlineHours(driverId);
 
       // Reload commission rates if city is available
       if (_driverCity != null) {
@@ -128,8 +100,8 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
       final authProvider = context.read<AuthProvider>();
       // Get driver's city directly from user model (more reliable than DB query)
       final driverCity = authProvider.user?.city?.trim().toLowerCase();
-      _driverCity = driverCity; // Store city for listener
-      
+      _driverCity = driverCity; // Store city for reference
+
       if (driverCity == null || driverCity.isEmpty) {
         // No city, use defaults
         debugPrint('⚠️ Driver has no city set, using default commission rates');
@@ -139,22 +111,20 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
 
       debugPrint('📍 Loading commission rates for driver city: $driverCity');
 
-      // Load city settings
-      final citySettingsProvider = context.read<CitySettingsProvider>();
-      
+      // Load city settings via Riverpod notifier
+      final cityNotifier = ref.read(citySettingsProvider.notifier);
+
       // Always use RPC function to load city settings (drivers don't have direct table access)
-      // This bypasses RLS and allows drivers to read their city's settings
-      CitySettings? settings = citySettingsProvider.getSettingsForCity(driverCity);
-      
+      CitySettings? settings = cityNotifier.getSettingsForCity(driverCity);
+
       if (settings == null) {
         debugPrint('📥 City settings not in cache, loading via RPC for: $driverCity');
-        settings = await citySettingsProvider.loadSettingsForCity(driverCity);
+        settings = await cityNotifier.loadSettingsForCity(driverCity);
       }
-      
+
       if (settings != null) {
         debugPrint('✅ Loaded city settings for $driverCity');
-        // Use commission rates from city settings
-        final citySettings = settings; // Promote to non-nullable
+        final citySettings = settings;
         setState(() {
           _commissionRates['trial'] = citySettings.driverCommissionByRank['trial'] ?? 0.0;
           _commissionRates['bronze'] = citySettings.driverCommissionByRank['bronze'] ?? 10.0;
@@ -164,7 +134,6 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
         debugPrint('💰 Commission rates: trial=${_commissionRates['trial']}, bronze=${_commissionRates['bronze']}, silver=${_commissionRates['silver']}, gold=${_commissionRates['gold']}');
       } else {
         debugPrint('⚠️ City settings not found for $driverCity, using defaults');
-        // Fallback to defaults if city settings not found
         _setDefaultCommissionRates();
       }
     } catch (e) {
@@ -178,7 +147,6 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
   }
 
   void _setDefaultCommissionRates() {
-    // Default commission percentages (fallback)
     setState(() {
       _commissionRates['trial'] = 0.0;
       _commissionRates['bronze'] = 10.0;
@@ -190,7 +158,9 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    
+    // Watch city settings so widget rebuilds when they change
+    ref.watch(citySettingsProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.driverRankTitle),
@@ -203,9 +173,7 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
               setState(() {
                 _isLoading = true;
               });
-              // Reload rank data first to get driver's city
               await _loadRankData();
-              // Then reload commission rates (will use RPC function)
               await _loadCommissionRates();
             },
             tooltip: 'Refresh',
@@ -224,11 +192,11 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
                   const SizedBox(height: 12),
                   _buildWalletBalanceCard(),
                   const SizedBox(height: 24),
-                  
+
                   // Rank Benefits
                   _buildRankBenefits(),
                   const SizedBox(height: 24),
-                  
+
                   // Progress to Next Rank
                   _buildProgressToNextRank(),
                 ],
@@ -243,7 +211,7 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
     String rankName;
     IconData rankIcon;
     final rankCode = (_currentRank ?? 'bronze').toLowerCase();
-    
+
     switch (rankCode) {
       case 'gold':
         rankColor = const Color(0xFFC5A059);
@@ -271,6 +239,10 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
         rankIcon = Icons.star_outline;
         break;
     }
+
+    final driverCity = context.read<AuthProvider>().user?.city?.trim().toLowerCase();
+    final cityNotifier = ref.read(citySettingsProvider.notifier);
+    final commissionRate = cityNotifier.getDriverCommissionForRank(driverCity, rankCode);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -314,20 +286,13 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Consumer2<CitySettingsProvider, AuthProvider>(
-            builder: (context, citySettingsProvider, authProvider, _) {
-              // Get driver's city from user model, normalized to lowercase
-              final driverCity = authProvider.user?.city?.trim().toLowerCase();
-              final commissionRate = citySettingsProvider.getDriverCommissionForRank(driverCity, rankCode);
-              return Text(
-                '${loc.commissionLabel}: ${commissionRate.toStringAsFixed(0)}%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              );
-            },
+          Text(
+            '${loc.commissionLabel}: ${commissionRate.toStringAsFixed(0)}%',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -404,6 +369,9 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
 
   Widget _buildRankBenefits() {
     final loc = AppLocalizations.of(context);
+    final driverCity = context.read<AuthProvider>().user?.city?.trim().toLowerCase();
+    final cityNotifier = ref.read(citySettingsProvider.notifier);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -416,47 +384,41 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Consumer2<CitySettingsProvider, AuthProvider>(
-          builder: (context, citySettingsProvider, authProvider, _) {
-            // Get driver's city from user model, normalized to lowercase
-            final driverCity = authProvider.user?.city?.trim().toLowerCase();
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildRankBenefitCard(
-                  'trial',
-                  loc.trialRank,
-                  Colors.green,
-                  '${citySettingsProvider.getDriverCommissionForRank(driverCity, 'trial').toStringAsFixed(0)}% ${loc.commissionLabel}',
-                  loc.trialRequirement,
-                ),
-                const SizedBox(height: 12),
-                _buildRankBenefitCard(
-                  'bronze',
-                  loc.bronzeRank,
-                  Colors.brown.shade400,
-                  '${citySettingsProvider.getDriverCommissionForRank(driverCity, 'bronze').toStringAsFixed(0)}% ${loc.commissionLabel}',
-                  loc.bronzeRequirement,
-                ),
-                const SizedBox(height: 12),
-                _buildRankBenefitCard(
-                  'silver',
-                  loc.silverRank,
-                  Colors.blueGrey,
-                  '${citySettingsProvider.getDriverCommissionForRank(driverCity, 'silver').toStringAsFixed(0)}% ${loc.commissionLabel}',
-                  loc.silverRequirement,
-                ),
-                const SizedBox(height: 12),
-                _buildRankBenefitCard(
-                  'gold',
-                  loc.goldRank,
-                  const Color(0xFFC5A059),
-                  '${citySettingsProvider.getDriverCommissionForRank(driverCity, 'gold').toStringAsFixed(0)}% ${loc.commissionLabel}',
-                  loc.goldRequirement,
-                ),
-              ],
-            );
-          },
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildRankBenefitCard(
+              'trial',
+              loc.trialRank,
+              Colors.green,
+              '${cityNotifier.getDriverCommissionForRank(driverCity, 'trial').toStringAsFixed(0)}% ${loc.commissionLabel}',
+              loc.trialRequirement,
+            ),
+            const SizedBox(height: 12),
+            _buildRankBenefitCard(
+              'bronze',
+              loc.bronzeRank,
+              Colors.brown.shade400,
+              '${cityNotifier.getDriverCommissionForRank(driverCity, 'bronze').toStringAsFixed(0)}% ${loc.commissionLabel}',
+              loc.bronzeRequirement,
+            ),
+            const SizedBox(height: 12),
+            _buildRankBenefitCard(
+              'silver',
+              loc.silverRank,
+              Colors.blueGrey,
+              '${cityNotifier.getDriverCommissionForRank(driverCity, 'silver').toStringAsFixed(0)}% ${loc.commissionLabel}',
+              loc.silverRequirement,
+            ),
+            const SizedBox(height: 12),
+            _buildRankBenefitCard(
+              'gold',
+              loc.goldRank,
+              const Color(0xFFC5A059),
+              '${cityNotifier.getDriverCommissionForRank(driverCity, 'gold').toStringAsFixed(0)}% ${loc.commissionLabel}',
+              loc.goldRequirement,
+            ),
+          ],
         ),
       ],
     );
@@ -471,7 +433,7 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
   ) {
     final loc = AppLocalizations.of(context);
     final isCurrentRank = (_currentRank ?? 'bronze').toLowerCase() == rankCode;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -567,9 +529,8 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
     String? nextRankName;
     double requiredHours = 0.0;
     double progress = 0.0;
-    
+
     if (_currentRank == 'trial') {
-      // Trial rank - show message about first month
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -771,4 +732,3 @@ class _DriverRankScreenState extends State<DriverRankScreen> {
     );
   }
 }
-

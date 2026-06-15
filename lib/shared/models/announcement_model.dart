@@ -1,97 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-/// System-wide announcement model
-class AnnouncementModel {
-  final String id;
-  final String title;
-  final String message;
-  final AnnouncementType type;
-  final bool isActive;
-  final bool isDismissable;
-  final List<String> targetRoles;
-  final DateTime? startTime;
-  final DateTime? endTime;
-  final String? createdBy;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+part 'announcement_model.freezed.dart';
+part 'announcement_model.g.dart';
 
-  AnnouncementModel({
-    required this.id,
-    required this.title,
-    required this.message,
-    required this.type,
-    required this.isActive,
-    required this.isDismissable,
-    required this.targetRoles,
-    this.startTime,
-    this.endTime,
-    this.createdBy,
-    required this.createdAt,
-    required this.updatedAt,
-  });
+DateTime _dateTimeFromJson(dynamic v) => DateTime.parse(v as String);
+DateTime? _nullableDateTimeFromJson(dynamic v) =>
+    v == null ? null : DateTime.parse(v as String);
+String _dateTimeToJson(DateTime dt) => dt.toIso8601String();
+String? _nullableDateTimeToJson(DateTime? dt) => dt?.toIso8601String();
 
-  factory AnnouncementModel.fromJson(Map<String, dynamic> json) {
-    return AnnouncementModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      message: json['message'] as String,
-      type: AnnouncementType.fromString(json['type'] as String),
-      isActive: json['is_active'] as bool? ?? true,
-      isDismissable: json['is_dismissable'] as bool? ?? true,
-      targetRoles: (json['target_roles'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
-      startTime: json['start_time'] != null
-          ? DateTime.parse(json['start_time'] as String)
-          : null,
-      endTime: json['end_time'] != null
-          ? DateTime.parse(json['end_time'] as String)
-          : null,
-      createdBy: json['created_by'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-    );
-  }
+AnnouncementType _announcementTypeFromJson(String v) =>
+    AnnouncementType.fromString(v);
+String _announcementTypeToJson(AnnouncementType t) => t.value;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'message': message,
-      'type': type.value,
-      'is_active': isActive,
-      'is_dismissable': isDismissable,
-      'target_roles': targetRoles,
-      'start_time': startTime?.toIso8601String(),
-      'end_time': endTime?.toIso8601String(),
-      'created_by': createdBy,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-    };
-  }
+@freezed
+class AnnouncementModel with _$AnnouncementModel {
+  const AnnouncementModel._();
 
-  /// Check if announcement is currently active
+  const factory AnnouncementModel({
+    required String id,
+    required String title,
+    required String message,
+    @JsonKey(fromJson: _announcementTypeFromJson, toJson: _announcementTypeToJson)
+    required AnnouncementType type,
+    @JsonKey(name: 'is_active') @Default(true) bool isActive,
+    @JsonKey(name: 'is_dismissable') @Default(true) bool isDismissable,
+    @JsonKey(name: 'target_roles') @Default([]) List<String> targetRoles,
+    @JsonKey(
+        name: 'start_time',
+        fromJson: _nullableDateTimeFromJson,
+        toJson: _nullableDateTimeToJson)
+    DateTime? startTime,
+    @JsonKey(
+        name: 'end_time',
+        fromJson: _nullableDateTimeFromJson,
+        toJson: _nullableDateTimeToJson)
+    DateTime? endTime,
+    @JsonKey(name: 'created_by') String? createdBy,
+    @JsonKey(
+        name: 'created_at',
+        fromJson: _dateTimeFromJson,
+        toJson: _dateTimeToJson)
+    required DateTime createdAt,
+    @JsonKey(
+        name: 'updated_at',
+        fromJson: _dateTimeFromJson,
+        toJson: _dateTimeToJson)
+    required DateTime updatedAt,
+  }) = _AnnouncementModel;
+
+  factory AnnouncementModel.fromJson(Map<String, dynamic> json) =>
+      _$AnnouncementModelFromJson(json);
+
   bool get isCurrentlyActive {
     if (!isActive) return false;
-    
     final now = DateTime.now();
-    
-    // Check start time
-    if (startTime != null && now.isBefore(startTime!)) {
-      return false;
-    }
-    
-    // Check end time
-    if (endTime != null && now.isAfter(endTime!)) {
-      return false;
-    }
-    
+    if (startTime != null && now.isBefore(startTime!)) return false;
+    if (endTime != null && now.isAfter(endTime!)) return false;
     return true;
   }
 }
 
-/// Announcement type enum
 enum AnnouncementType {
   maintenance('maintenance'),
   event('event'),
@@ -110,7 +80,6 @@ enum AnnouncementType {
     );
   }
 
-  /// Get color for this announcement type
   Color getColor() {
     switch (this) {
       case AnnouncementType.maintenance:
@@ -128,7 +97,6 @@ enum AnnouncementType {
     }
   }
 
-  /// Get icon for this announcement type
   IconData getIcon() {
     switch (this) {
       case AnnouncementType.maintenance:
@@ -146,7 +114,6 @@ enum AnnouncementType {
     }
   }
 
-  /// Get Arabic label
   String getArabicLabel() {
     switch (this) {
       case AnnouncementType.maintenance:
@@ -164,4 +131,3 @@ enum AnnouncementType {
     }
   }
 }
-

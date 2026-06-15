@@ -5,6 +5,7 @@
 import 'package:hur_delivery/core/services/optimized_order_loader.dart';
 import 'package:hur_delivery/core/services/performance_optimizer.dart';
 import 'package:hur_delivery/core/services/request_priority_manager.dart';
+import '../utils/logger.dart';
 
 // In OrderProvider class, modify _loadOrders() method:
 
@@ -54,7 +55,7 @@ Future<void> _loadOrders() async {
     notifyListeners();
   } catch (e) {
     _error = e.toString();
-    print('❌ Error loading orders: $e');
+    Logger.d('❌ Error loading orders: $e');
     _orders = [];
     notifyListeners();
   }
@@ -88,7 +89,7 @@ Future<void> refreshOrder(String orderId) async {
       notifyListeners();
     }
   } catch (e) {
-    print('❌ Error refreshing order: $e');
+    Logger.d('❌ Error refreshing order: $e');
   }
 }
 */

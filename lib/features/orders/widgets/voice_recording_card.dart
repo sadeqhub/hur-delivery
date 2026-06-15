@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/models/voice_recording_model.dart';
-import '../../../core/providers/voice_recording_provider.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'dart:io';
+import '../../../core/utils/logger.dart';
 
-class VoiceRecordingCard extends StatefulWidget {
+class VoiceRecordingCard extends ConsumerStatefulWidget {
   final VoiceRecording recording;
   final VoidCallback? onReuse;
   final VoidCallback? onDelete;
@@ -20,10 +22,10 @@ class VoiceRecordingCard extends StatefulWidget {
   });
 
   @override
-  State<VoiceRecordingCard> createState() => _VoiceRecordingCardState();
+  ConsumerState<VoiceRecordingCard> createState() => _VoiceRecordingCardState();
 }
 
-class _VoiceRecordingCardState extends State<VoiceRecordingCard> {
+class _VoiceRecordingCardState extends ConsumerState<VoiceRecordingCard> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
   bool _isLoading = false;
@@ -78,7 +80,7 @@ class _VoiceRecordingCardState extends State<VoiceRecordingCard> {
         if (_localAudioFile == null) {
           setState(() => _isLoading = true);
           
-          final provider = context.read<VoiceRecordingProvider>();
+          final provider = ref.read(voiceRecordingProvider.notifier);
           _localAudioFile = await provider.downloadAudio(widget.recording);
           
           if (_localAudioFile == null) {
@@ -102,7 +104,7 @@ class _VoiceRecordingCardState extends State<VoiceRecordingCard> {
         });
       }
     } catch (e) {
-      print('❌ Error playing audio: $e');
+      Logger.d('❌ Error playing audio: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

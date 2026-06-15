@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider, Provider;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter/foundation.dart'
     show unawaited, kIsWeb, kReleaseMode, debugPrint;
@@ -24,11 +25,10 @@ import '../../../core/providers/auth_provider.dart';
 import '../widgets/state_of_the_art_map_widget.dart';
 import '../../../core/providers/location_provider.dart';
 import '../../../shared/models/order_model.dart';
+import '../../../shared/models/order_status.dart';
 import '../../../core/widgets/header_notification.dart';
 import '../../../core/services/order_redirect_service.dart';
-import '../../../core/providers/announcement_provider.dart';
-import '../../../core/providers/system_status_provider.dart';
-import '../../../core/providers/notification_provider.dart';
+import '../../../core/riverpod/app_providers.dart';
 import '../../../shared/widgets/maintenance_mode_dialog.dart';
 import '../widgets/state_of_the_art_navigation.dart';
 // Removed legacy map/annotation systems
@@ -43,11 +43,14 @@ import '../../../shared/widgets/delivery_timer_widget.dart';
 import '../../../core/services/screen_visibility_tracker.dart';
 import '../providers/driver_status_provider.dart';
 import '../providers/active_order_provider.dart';
+import '../providers/driver_dashboard_controller.dart';
 import '../services/driver_location_manager.dart';
 import '../widgets/driver_map_section.dart';
 import '../widgets/driver_bottom_nav.dart';
 import '../widgets/driver_header_buttons.dart';
 import '../widgets/driver_sidebar.dart';
+import '../widgets/driver_timer_banner.dart';
+import '../widgets/driver_order_swipe_cards.dart';
 
 // ---------------------------------------------------------------------------
 // Public entry point — provides dashboard-scoped providers then renders the
@@ -75,6 +78,7 @@ class DriverDashboard extends StatelessWidget {
           ),
         ),
         Provider(create: (_) => DriverLocationManager()),
+        ChangeNotifierProvider(create: (_) => DriverDashboardController()),
       ],
       child: const _DriverDashboardCore(),
     );
@@ -85,6 +89,7 @@ class DriverDashboard extends StatelessWidget {
 abstract class _OrderItem {
   String get id;
   String get status;
+  bool get isPending => OrderStatus.fromDb(status) == OrderStatus.pending;
 }
 
 class _RegularOrderItem extends _OrderItem {
@@ -98,14 +103,14 @@ class _RegularOrderItem extends _OrderItem {
   String get status => order.status;
 }
 
-class _DriverDashboardCore extends StatefulWidget {
+class _DriverDashboardCore extends ConsumerStatefulWidget {
   const _DriverDashboardCore();
 
   @override
-  State<_DriverDashboardCore> createState() => _DriverDashboardState();
+  ConsumerState<_DriverDashboardCore> createState() => _DriverDashboardState();
 }
 
-class _DriverDashboardState extends State<_DriverDashboardCore>
+class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
     with WidgetsBindingObserver, ScreenVisibilityMixin {
   @override
   String get screenName => 'driver_dashboard';
@@ -353,7 +358,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       height: toggleHeight,
       child: GestureDetector(
         onTap: () async {
-          final systemStatus = context.read<SystemStatusProvider>();
+          final systemStatus = ref.read(systemStatusProvider);
           final authProvider = context.read<AuthProvider>();
 
           // Restrict going online in demo mode
@@ -411,7 +416,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
             await _statusProvider.setOnline(
               newStatus,
               authProvider: authProvider,
-              notificationProvider: context.read<NotificationProvider>(),
+              notificationProvider: ref.read(notificationProvider.notifier),
             );
             // _isOnline is synced by onWentOnline/onWentOffline callbacks.
           } catch (e) {
@@ -647,16 +652,16 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
 
       if (mounted) {
         setState(() {});
-        await context.read<SystemStatusProvider>().initialize();
+        await ref.read(systemStatusProvider.notifier).initialize();
 
         if (authProvider.user != null) {
-          await context.read<AnnouncementProvider>().initialize(
+          await ref.read(announcementProvider.notifier).initialize(
                 userRole: 'driver',
                 userId: authProvider.user!.id,
                 context: context,
               );
 
-          final systemStatus = context.read<SystemStatusProvider>();
+          final systemStatus = ref.read(systemStatusProvider);
           if (!systemStatus.isSystemEnabled) {
             if (_isOnline) {
               await _statusProvider.setOnline(false,
@@ -848,7 +853,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
       // Find index of first pending order (if only one exists)
       // Find pending items (both regular orders and bulk orders)
       final pendingItems =
-          allItemsToShow.where((item) => item.status == 'pending').toList();
+          allItemsToShow.where((item) => item.isPending).toList();
       int initialPage = 0;
 
       if (pendingItems.length == 1) {
@@ -902,7 +907,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         final currentItem = _currentOrderIndex < allItemsToShow.length
             ? allItemsToShow[_currentOrderIndex]
             : null;
-        final isPendingOrder = currentItem?.status == 'pending';
+        final isPendingOrder = currentItem?.isPending ?? false;
         final baseExpandedHeight =
             screenHeight * 0.54; // Base height for order cards
         // Reduced pending order card height by 5% (removed the extra 5% that was added)
@@ -1048,10 +1053,10 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   }
 
   Widget _buildOrderCard(dynamic order) {
-    final isPending = order.status == 'pending';
-    final isAssigned = order.status == 'assigned';
-    final isAccepted = order.status == 'accepted';
-    final isOnTheWay = order.status == 'on_the_way';
+    final isPending = order.isPending;
+    final isAssigned = order.isAssigned;
+    final isAccepted = order.isAccepted;
+    final isOnTheWay = order.isOnTheWay;
 
     // Get vehicle type icon
     final loc = AppLocalizations.of(context);
@@ -1133,10 +1138,10 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   // Expanded card - Modern design inspired by provided template (Compact version)
   Widget _buildExpandedCard(
       dynamic order, IconData vehicleIcon, String vehicleText) {
-    final isPending = order.status == 'pending';
-    final isAssigned = order.status == 'assigned';
-    final isAccepted = order.status == 'accepted';
-    final isOnTheWay = order.status == 'on_the_way';
+    final isPending = order.isPending;
+    final isAssigned = order.isAssigned;
+    final isAccepted = order.isAccepted;
+    final isOnTheWay = order.isOnTheWay;
     final double routeDistanceMeters = LocationService.calculateDistance(
       order.pickupLatitude,
       order.pickupLongitude,
@@ -1258,8 +1263,8 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
                     bottom:
                         0, // No bottom padding - NavigationBarAwareFooterWrapper handles all safe area spacing
                   ),
-                  child: (order.status == 'pending' ||
-                              order.status == 'assigned') &&
+                  child: (order.isPending ||
+                              order.isAssigned) &&
                           !isAccepted
                       ? _buildPendingOrderButtons(order)
                       : _buildMainActionButton(order),
@@ -2228,8 +2233,8 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   }
 
   Widget _buildMainActionButton(dynamic order) {
-    final isAccepted = order.status == 'accepted';
-    final isOnTheWay = order.status == 'on_the_way';
+    final isAccepted = order.isAccepted;
+    final isOnTheWay = order.isOnTheWay;
 
     String buttonText;
     VoidCallback? onPressed;
@@ -2543,9 +2548,8 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   }
 
   Widget _buildCountdownTimer(String orderId) {
-    // Get timeout from OrderProvider (from order_timeout_state table)
     final orderProvider = context.watch<OrderProvider>();
-    final remainingSeconds = orderProvider.getTimeoutRemaining(orderId) ?? 0;
+    final remainingSeconds = orderProvider.getLiveAcceptCountdownSeconds(orderId);
 
     final progress = remainingSeconds / 30.0;
     final Color timerColor = remainingSeconds <= 10
@@ -2635,10 +2639,10 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   }
 
   Widget _buildActionButtons(dynamic order) {
-    final isPending = order.status == 'pending';
-    final isAssigned = order.status == 'assigned';
-    final isAccepted = order.status == 'accepted';
-    final isOnTheWay = order.status == 'on_the_way';
+    final isPending = order.isPending;
+    final isAssigned = order.isAssigned;
+    final isAccepted = order.isAccepted;
+    final isOnTheWay = order.isOnTheWay;
 
     if (isPending || isAssigned) {
       // Show Accept/Reject buttons for pending/assigned orders
@@ -2782,10 +2786,10 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
   }
 
   Widget _buildCompactActionButtons(dynamic order) {
-    final isPending = order.status == 'pending';
-    final isAssigned = order.status == 'assigned';
-    final isAccepted = order.status == 'accepted';
-    final isOnTheWay = order.status == 'on_the_way';
+    final isPending = order.isPending;
+    final isAssigned = order.isAssigned;
+    final isAccepted = order.isAccepted;
+    final isOnTheWay = order.isOnTheWay;
 
     if (isPending || isAssigned) {
       // Bigger Accept/Reject buttons
@@ -3942,9 +3946,9 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
         longitude = order.deliveryLongitude;
         cardId = '${order.id}_dropoff';
       }
-    } else if (order.status == 'pending' ||
-        order.status == 'assigned' ||
-        order.status == 'accepted') {
+    } else if (order.isPending ||
+        order.isAssigned ||
+        order.isAccepted) {
       // Go to pickup location (store)
       latitude = order.pickupLatitude;
       longitude = order.pickupLongitude;
@@ -4194,7 +4198,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
     }
     // DriverStatusProvider and DriverLocationManager dispose via their
     // ChangeNotifierProvider / Provider — no manual cleanup needed here.
-    context.read<AnnouncementProvider>().stopChecking();
+    ref.read(announcementProvider.notifier).stopChecking();
     _locationManager.dispose();
     _orderCardsPageController?.dispose();
     context.read<LocationProvider>().stopLocationTracking();
@@ -4818,7 +4822,7 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
                             ),
                           if (hasRank && hasActiveTimer)
                             const SizedBox(height: 8),
-                          if (hasActiveTimer) _buildProminentTimer(timerOrder),
+                          if (hasActiveTimer) DriverTimerBanner(order: timerOrder),
                         ],
                       ),
                     ),
@@ -5597,495 +5601,6 @@ class _DriverDashboardState extends State<_DriverDashboardCore>
     );
   }
 
-  Widget _buildProminentTimer(OrderModel order) {
-    return _ProminentTimerWidget(order: order);
-  }
-}
-
-/// Prominent timer widget matching rank badge style
-class _ProminentTimerWidget extends StatefulWidget {
-  final OrderModel order;
-
-  const _ProminentTimerWidget({required this.order});
-
-  @override
-  State<_ProminentTimerWidget> createState() => _ProminentTimerWidgetState();
-}
-
-class _ProminentTimerWidgetState extends State<_ProminentTimerWidget> {
-  Timer? _timer;
-  int? _remainingSeconds;
-  bool _lateDialogShown = false;
-  String? _lateDialogOrderId;
-
-  @override
-  void initState() {
-    super.initState();
-    _calculateRemainingTime();
-    _startTimer();
-  }
-
-  @override
-  void didUpdateWidget(_ProminentTimerWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.order.deliveryTimerExpiresAt !=
-            widget.order.deliveryTimerExpiresAt ||
-        oldWidget.order.deliveryTimerStoppedAt !=
-            widget.order.deliveryTimerStoppedAt) {
-      _calculateRemainingTime();
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _calculateRemainingTime() {
-    final order = widget.order;
-
-    // Timer is stopped if driver reached dropoff
-    if (order.deliveryTimerStoppedAt != null) {
-      _remainingSeconds = 0;
-      return;
-    }
-
-    // Timer hasn't started yet
-    if (order.deliveryTimerExpiresAt == null) {
-      _remainingSeconds = null;
-      return;
-    }
-
-    // Calculate remaining / late time (allow negative to count how late)
-    final now = DateTime.now();
-    final expiresAt = order.deliveryTimerExpiresAt!;
-    final difference = expiresAt.difference(now);
-
-    _remainingSeconds = difference.inSeconds;
-
-    // Fire late popup exactly once per order, when timer hits zero (and not stopped)
-    final remaining = _remainingSeconds ?? 0;
-    if (order.deliveryTimerStoppedAt == null &&
-        remaining <= 0 &&
-        (!_lateDialogShown || _lateDialogOrderId != order.id)) {
-      _lateDialogShown = true;
-      _lateDialogOrderId = order.id;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _showLateOrderDialog();
-      });
-    }
-  }
-
-  Future<void> _showLateOrderDialog() async {
-    // Avoid stacking dialogs
-    if (!mounted) return;
-    final loc = AppLocalizations.of(context);
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              const Icon(
-                Icons.error_outline,
-                color: AppColors.error,
-                size: 26,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  loc.deliveryLateTitle,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                loc.deliveryLateMessage,
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.6)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      color: AppColors.warning,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        loc.deliveryTimerInfoMessage,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(loc.deliveryLateAck),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _calculateRemainingTime();
-        });
-      }
-    });
-  }
-
-  String _formatTime(int seconds) {
-    if (seconds < 0) return '00:00';
-
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final order = widget.order;
-
-    // Timer stopped (driver reached dropoff)
-    if (order.deliveryTimerStoppedAt != null) {
-      return Container(
-        height: 64, // Same height as rank badge
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          gradient: LinearGradient(
-            colors: [
-              AppColors.success,
-              AppColors.success.withValues(alpha: 0.8),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.success.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-              spreadRadius: -2,
-            ),
-          ],
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-            gradient: LinearGradient(
-              colors: [
-                Colors.white.withValues(alpha: 0.1),
-                Colors.transparent,
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.black.withValues(alpha: 0.2),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'وصلت إلى موقع التسليم',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.95),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      height: 2,
-                      width: 20,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Calculate remaining / late time
-    final diffSeconds = _remainingSeconds ?? 0;
-    final isLate = diffSeconds <= 0;
-    final lateSeconds = diffSeconds < 0 ? -diffSeconds : 0;
-    final remainingSeconds = diffSeconds > 0 ? diffSeconds : 0;
-    final isWarning = !isLate && remainingSeconds <= 300; // 5 minutes warning
-
-    // Choose colors based on status
-    List<Color> gradientColors;
-    Color iconColor;
-    Color shadowColor;
-    IconData timerIcon;
-
-    if (isLate && lateSeconds > 0) {
-      gradientColors = [
-        AppColors.error,
-        AppColors.error.withValues(alpha: 0.8),
-      ];
-      iconColor = Colors.white;
-      shadowColor = AppColors.error.withValues(alpha: 0.4);
-      timerIcon = Icons.error_outline;
-    } else if (isWarning) {
-      gradientColors = [
-        AppColors.warning,
-        AppColors.warning.withValues(alpha: 0.8),
-      ];
-      iconColor = Colors.white;
-      shadowColor = AppColors.warning.withValues(alpha: 0.4);
-      timerIcon = Icons.timer_outlined;
-    } else {
-      gradientColors = [
-        AppColors.primary,
-        AppColors.primary.withValues(alpha: 0.8),
-      ];
-      iconColor = Colors.white;
-      shadowColor = AppColors.primary.withValues(alpha: 0.4);
-      timerIcon = Icons.timer_outlined;
-    }
-
-    return GestureDetector(
-      onTap: _showTimerInfoDialog,
-      child: Container(
-        height: 64, // Same height as rank badge
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          gradient: LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor,
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-              spreadRadius: -2,
-            ),
-          ],
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-            gradient: LinearGradient(
-              colors: [
-                Colors.white.withValues(alpha: 0.1),
-                Colors.transparent,
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Icon Circle
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.black.withValues(alpha: 0.2),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
-                ),
-                child: Icon(
-                  timerIcon,
-                  color: iconColor,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Text
-              Flexible(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      (isLate && lateSeconds > 0
-                              ? _formatTime(lateSeconds)
-                              : _formatTime(remainingSeconds))
-                          .toUpperCase(),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.95),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      height: 2,
-                      width: 20,
-                      decoration: BoxDecoration(
-                        color: iconColor.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 4),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showTimerInfoDialog() async {
-    if (!mounted) return;
-    final loc = AppLocalizations.of(context);
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              const Icon(
-                Icons.timer_outlined,
-                color: AppColors.primary,
-                size: 26,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  loc.deliveryTimerInfoTitle,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                loc.deliveryTimerInfoMessage,
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        loc.deliveryTimerInfoMessage,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.green.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(loc.ok),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
 
 // Top-level bottom sheet widget for uploading order proof
@@ -7650,8 +7165,7 @@ class _AcceptButtonWithLongPressState extends State<_AcceptButtonWithLongPress>
 
   void _updateTimeout() {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-    final newRemaining =
-        orderProvider.getTimeoutRemaining(widget.orderId) ?? 30;
+    final newRemaining = orderProvider.getLiveAcceptCountdownSeconds(widget.orderId);
 
     if (newRemaining != _remainingSeconds) {
       if (mounted) {
@@ -7872,9 +7386,7 @@ class _TimeoutCountdownPillState extends State<_TimeoutCountdownPill> {
 
   void _updateRemainingSeconds() {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-    final newRemaining = orderProvider.getTimeoutRemaining(widget.order.id) ??
-        widget.order.timeoutRemainingSeconds ??
-        0;
+    final newRemaining = orderProvider.getLiveAcceptCountdownSeconds(widget.order.id);
 
     if (mounted && newRemaining != _remainingSeconds) {
       setState(() {

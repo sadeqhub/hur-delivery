@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'event_notification_service.dart';
+import '../utils/logger.dart';
 
 /// Simple Persistent Service - Keeps app alive and polls for orders
 /// 
@@ -21,14 +22,14 @@ class SimplePersistentService {
     required String userName,
   }) async {
     if (_isRunning) {
-      print('⚠️ Service already running');
+      Logger.d('⚠️ Service already running');
       return true;
     }
 
-    print('\n═══════════════════════════════════════');
-    print('🚀 STARTING SIMPLE PERSISTENT SERVICE');
-    print('═══════════════════════════════════════');
-    print('User: $userName ($userRole)');
+    Logger.d('\n═══════════════════════════════════════');
+    Logger.d('🚀 STARTING SIMPLE PERSISTENT SERVICE');
+    Logger.d('═══════════════════════════════════════');
+    Logger.d('User: $userName ($userRole)');
 
     // Save credentials to shared preferences for background isolate
     final prefs = await SharedPreferences.getInstance();
@@ -69,8 +70,8 @@ class SimplePersistentService {
     );
 
     _isRunning = true;
-    print('✅ Simple persistent service started');
-    print('═══════════════════════════════════════\n');
+    Logger.d('✅ Simple persistent service started');
+    Logger.d('═══════════════════════════════════════\n');
     return true;
   }
 
@@ -78,7 +79,7 @@ class SimplePersistentService {
   static Future<bool> stop() async {
     if (!_isRunning) return true;
 
-    print('🛑 Stopping simple persistent service...');
+    Logger.d('🛑 Stopping simple persistent service...');
     
     await FlutterForegroundTask.stopService();
     
@@ -92,7 +93,7 @@ class SimplePersistentService {
     await prefs.remove('service_notified_orders');
 
     _isRunning = false;
-    print('✅ Service stopped\n');
+    Logger.d('✅ Service stopped\n');
     return true;
   }
 }
@@ -109,14 +110,14 @@ class SimpleTaskHandler extends TaskHandler {
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    print('🔄 Simple task handler started');
+    Logger.d('🔄 Simple task handler started');
   }
 
   @override
   Future<void> onRepeatEvent(DateTime timestamp) async {
     _tickCount++;
     
-    print('💓 Tick $_tickCount: ${timestamp.toString().substring(11, 19)}');
+    Logger.d('💓 Tick $_tickCount: ${timestamp.toString().substring(11, 19)}');
 
     // Poll for new orders every tick (every 3 seconds)
     await _checkForNewOrders();
@@ -132,7 +133,7 @@ class SimpleTaskHandler extends TaskHandler {
       final notifiedOrders = prefs.getStringList('service_notified_orders') ?? [];
 
       if (userId == null || supabaseUrl == null || supabaseKey == null) {
-        print('❌ Missing credentials in background');
+        Logger.d('❌ Missing credentials in background');
         return;
       }
 
@@ -158,7 +159,7 @@ class SimpleTaskHandler extends TaskHandler {
           
           // Check if we already notified for this order
           if (!notifiedOrders.contains(orderId)) {
-            print('🔔🔔🔔 NEW ORDER FOUND IN POLLING: $orderId');
+            Logger.d('🔔🔔🔔 NEW ORDER FOUND IN POLLING: $orderId');
             
             // Add to notified list
             notifiedOrders.add(orderId);
@@ -180,23 +181,23 @@ class SimpleTaskHandler extends TaskHandler {
         }
       }
     } catch (e) {
-      print('❌ Polling error: $e');
+      Logger.d('❌ Polling error: $e');
     }
   }
 
   @override
   Future<void> onDestroy(DateTime timestamp) async {
-    print('🛑 Simple task handler destroyed');
+    Logger.d('🛑 Simple task handler destroyed');
   }
 
   @override
   void onNotificationButtonPressed(String id) {
-    print('🔘 Button pressed: $id');
+    Logger.d('🔘 Button pressed: $id');
   }
 
   @override
   void onNotificationPressed() {
-    print('👆 Notification tapped - launching app');
+    Logger.d('👆 Notification tapped - launching app');
     FlutterForegroundTask.launchApp('/');
   }
 }

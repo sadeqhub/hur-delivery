@@ -1,0 +1,55 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Create env.json
+        run: |
+          echo '{"SUPABASE_URL":"https://placeholder.supabase.co","SUPABASE_ANON_KEY":"placeholder","MAPBOX_ACCESS_TOKEN":"placeholder","ENVIRONMENT":"development","FLAVOR":"dev"}' > env.json
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run code generation
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run convention checks
+        run: bash scripts/check_conventions.sh
+        continue-on-error: true
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Check coverage
+        run: |
+          flutter test --coverage
+          flutter pub global activate coverage
+          flutter pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --packages=.dart_tool/package_config.json --report-on=lib
+          COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep 'lines' | grep -oP '[0-9.]+(?=%)' | head -1)
+          echo "Line coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 30" | bc -l) )); then
+            echo "Coverage $COVERAGE% is below minimum threshold of 30%"
+            exit 1
+          fi

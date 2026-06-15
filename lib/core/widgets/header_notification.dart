@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../utils/logger.dart';
 
 /// Anti-spam header notification service
 /// Prevents the same notification from showing multiple times within a time period
@@ -24,7 +25,7 @@ class HeaderNotificationService {
       final difference = now.difference(lastShown);
 
       if (difference < _antiSpamDuration) {
-        print('🚫 Anti-spam: Blocking duplicate notification (shown ${difference.inSeconds}s ago)');
+        Logger.d('🚫 Anti-spam: Blocking duplicate notification (shown ${difference.inSeconds}s ago)');
         return false;
       }
     }

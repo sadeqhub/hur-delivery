@@ -4,14 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'package:provider/provider.dart';
 import '../../../shared/models/order_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/map_style_helper.dart';
 import '../../../core/localization/app_localizations.dart';
-import '../../../core/providers/theme_provider.dart';
 import '../../../shared/widgets/navigation_overlay_system.dart';
 import 'state_of_the_art_navigation.dart';
+import '../../../core/utils/logger.dart';
 
 /// State-of-the-art map widget with best practices
 class StateOfTheArtMapWidget extends StatefulWidget {
@@ -67,34 +66,34 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
 
   // Public methods for external control
   void clearCoordinateCache() {
-    print(
+    Logger.d(
         '🧹 State-of-the-Art Map: Clearing coordinate cache (no-op in this widget)');
     // This widget doesn't have coordinate caching, but method is provided for compatibility
   }
 
   Future<void> forceRouteRecalculation(OrderModel order) async {
-    print('🔄 State-of-the-Art Map: Force route recalculation requested');
+    Logger.d('🔄 State-of-the-Art Map: Force route recalculation requested');
 
     if (!_isMapReady) {
-      print('⚠️  Map not ready, cannot recalculate route');
+      Logger.d('⚠️  Map not ready, cannot recalculate route');
       return;
     }
 
     try {
       // Clear all existing routes and annotations first
-      print('🧹 Clearing all existing annotations...');
+      Logger.d('🧹 Clearing all existing annotations...');
       await _navigationSystem.clearAll();
 
       // Wait a moment for clearing to complete
       await Future.delayed(const Duration(milliseconds: 150));
 
       // Set the active order which will trigger route calculation
-      print('📍 Setting active order with updated coordinates...');
+      Logger.d('📍 Setting active order with updated coordinates...');
       await _navigationSystem.setActiveOrder(order);
 
-      print('✅ Route recalculation completed');
+      Logger.d('✅ Route recalculation completed');
     } catch (e) {
-      print('❌ Error in force route recalculation: $e');
+      Logger.d('❌ Error in force route recalculation: $e');
     }
   }
 
@@ -121,7 +120,7 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
   @override
   void initState() {
     super.initState();
-    print('🚀 State-of-the-Art Map: Initializing...');
+    Logger.d('🚀 State-of-the-Art Map: Initializing...');
 
     // If driver location is already available, schedule marker creation
     if (widget.driverLocation != null) {
@@ -146,7 +145,7 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
     final oldOrderIdsString = oldWidget.allActiveOrderIds?.join(',') ?? '';
     final newOrderIdsString = widget.allActiveOrderIds?.join(',') ?? '';
     if (oldOrderIdsString != newOrderIdsString && _isMapReady) {
-      print(
+      Logger.d(
           '🔄 State-of-the-Art Map: Active orders list changed, cleaning up orphaned annotations');
       _cleanupOrphanedAnnotations();
     }
@@ -183,7 +182,7 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
 
     // Detect order change
     if (currentOrderId != lastOrderId) {
-      print(
+      Logger.d(
           '🔄 State-of-the-Art Map: Order changed from $lastOrderId to $currentOrderId');
       _lastActiveOrderId = currentOrderId;
 
@@ -221,13 +220,13 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
       final activeOrderIds = widget.allActiveOrderIds ??
           (widget.activeOrder != null ? [widget.activeOrder!.id] : <String>[]);
 
-      print(
+      Logger.d(
           '🧹 State-of-the-Art Map: Cleaning up annotations, keeping: $activeOrderIds');
 
       // Clear annotations for orders not in the active list
       await _navigationSystem.clearOrphanedAnnotations(activeOrderIds);
     } catch (e) {
-      print(
+      Logger.d(
           '❌ State-of-the-Art Map: Error cleaning up orphaned annotations: $e');
     }
   }
@@ -242,7 +241,7 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
 
     try {
       await _navigationSystem.setActiveOrder(order);
-      print('✅ State-of-the-Art Map: Active order set - ${order.id}');
+      Logger.d('✅ State-of-the-Art Map: Active order set - ${order.id}');
 
       if (!mounted) return;
 
@@ -263,14 +262,14 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
       _shouldApplyActiveOrder = false;
       _queuedOrder = null;
     } catch (e) {
-      print('❌ State-of-the-Art Map: Error setting active order: $e');
+      Logger.d('❌ State-of-the-Art Map: Error setting active order: $e');
     }
   }
 
   Future<void> forceRefreshActiveOrder([OrderModel? overrideOrder]) async {
     final targetOrder = overrideOrder ?? widget.activeOrder;
     if (targetOrder == null) {
-      print(
+      Logger.d(
           '⚠️ State-of-the-Art Map: forceRefreshActiveOrder called with null order');
       return;
     }
@@ -291,7 +290,7 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
         });
       }
     } catch (e) {
-      print('❌ State-of-the-Art Map: forceRefreshActiveOrder failed: $e');
+      Logger.d('❌ State-of-the-Art Map: forceRefreshActiveOrder failed: $e');
     }
   }
 
@@ -365,7 +364,7 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
           duration: 1500), // Slightly longer for smoother transition
     );
 
-    print(
+    Logger.d(
         '🗺️ Map refocused to show route: center=$centerLat,$centerLng, zoom=$zoom');
   }
 
@@ -374,9 +373,9 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
 
     try {
       await _navigationSystem.clearAll();
-      print('🧹 State-of-the-Art Map: All annotations cleared');
+      Logger.d('🧹 State-of-the-Art Map: All annotations cleared');
     } catch (e) {
-      print('❌ State-of-the-Art Map: Error clearing annotations: $e');
+      Logger.d('❌ State-of-the-Art Map: Error clearing annotations: $e');
     }
   }
 
@@ -384,14 +383,14 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
     _mapboxMap = mapboxMap;
 
     try {
-      print('🗺️ State-of-the-Art Map: Map created, initializing...');
+      Logger.d('🗺️ State-of-the-Art Map: Map created, initializing...');
 
       // Disable compass
       try {
         await mapboxMap.compass.updateSettings(CompassSettings(enabled: false));
-        print('✅ Compass disabled');
+        Logger.d('✅ Compass disabled');
       } catch (e) {
-        print('⚠️ Error disabling compass: $e');
+        Logger.d('⚠️ Error disabling compass: $e');
       }
 
 
@@ -400,7 +399,7 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
       _navigationSystem.initialize(mapboxMap).then((success) {
         if (success && mounted) {
           _isMapReady = true;
-          print(
+          Logger.d(
               '✅ State-of-the-Art Map: Map ready and navigation system initialized');
 
           // Ensure marker is created once navigation is ready
@@ -410,7 +409,7 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
 
           _applyPendingOrder();
         } else if (!success && mounted) {
-          print(
+          Logger.d(
               '⚠️ Navigation system initialization failed, retrying immediately...');
           // Retry initialization immediately (no delay)
           _navigationSystem.initialize(_mapboxMap!).then((retrySuccess) {
@@ -422,7 +421,7 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
         }
       });
     } catch (e) {
-      print('❌ State-of-the-Art Map: Error in _onMapCreated: $e');
+      Logger.d('❌ State-of-the-Art Map: Error in _onMapCreated: $e');
     }
   }
 
@@ -453,8 +452,8 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
     return Stack(
       children: [
         // Main Mapbox Map with dynamic theme-based styling
-        Consumer<ThemeProvider>(
-          builder: (context, themeProvider, _) {
+        Builder(
+          builder: (context) {
             final mapStyle = MapStyleHelper.getMapStyle(context);
 
             // Lock the initial style once so MapWidget.styleUri never changes.
@@ -477,7 +476,7 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
                   _pendingMapStyle = mapStyle;
                   _currentMapStyle = mapStyle;
 
-                  print(
+                  Logger.d(
                       '🔄 Map style changing to $mapStyle, preserving state...');
 
                   // Load new style - this will trigger onStyleLoadedListener
@@ -514,7 +513,7 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
 
                   // If we're changing style, restore all annotations
                   if (_isChangingStyle) {
-                    print(
+                    Logger.d(
                         '✅ Style loaded after change, restoring annotations...');
                     try {
                       _currentMapStyle = _pendingMapStyle ?? _currentMapStyle;
@@ -528,9 +527,9 @@ class StateOfTheArtMapWidgetState extends State<StateOfTheArtMapWidget> {
 
                       _isChangingStyle = false;
                       _preservedOrder = null;
-                      print('✅ All annotations restored after style change');
+                      Logger.d('✅ All annotations restored after style change');
                     } catch (e) {
-                      print(
+                      Logger.d(
                           '❌ Error restoring annotations after style change: $e');
                       _isChangingStyle = false;
                       _preservedOrder = null;

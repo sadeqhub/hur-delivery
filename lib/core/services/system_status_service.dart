@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'error_manager.dart';
+import '../utils/logger.dart';
+import '../realtime/realtime_manager.dart';
 
 /// Service to check system status and handle maintenance mode
 class SystemStatusService {
@@ -13,32 +15,67 @@ class SystemStatusService {
   bool _isSystemEnabled = true;
   DateTime? _lastCheck;
   Timer? _checkTimer;
-  
+  RealtimeChannel? _statusChannel;
+
   // Callbacks for status changes
   final List<Function(bool)> _statusChangeCallbacks = [];
   
   bool get isSystemEnabled => _isSystemEnabled;
 
-  /// Start periodic checking (every 5 seconds)
+  /// Start real-time listening for system_settings changes.
+  /// Falls back to a 30-second poll when Realtime is not available.
   void startPeriodicChecking() {
-    if (_checkTimer != null) return;
-    
-    print('🔄 Starting system status periodic checks...');
-    
-    // Check immediately
+    if (_checkTimer != null || _statusChannel != null) return;
+
+    Logger.d('🔄 Starting system status realtime listener...');
     checkSystemStatus();
-    
-    // Then check every 5 seconds
-    _checkTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      checkSystemStatus();
-    });
+
+    // Primary: realtime change events on the system_settings row.
+    _statusChannel = _supabase
+        .channel('system_status_settings')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'system_settings',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'key',
+            value: 'system_enabled',
+          ),
+          callback: (payload) {
+            final newValue = payload.newRecord['value'] as String?;
+            final newStatus = newValue == 'true';
+            if (newStatus == _isSystemEnabled) return;
+            Logger.d('🔔 System status changed via realtime: ${newStatus ? "ENABLED" : "DISABLED"}');
+            _isSystemEnabled = newStatus;
+            _notifyStatusChange(newStatus);
+          },
+        )
+        .subscribe((status, error) {
+          // Start fallback poll if the WebSocket fails to connect.
+          if ((error != null || status == 'CLOSED') &&
+              RealtimeManager.instance.isDisabled) {
+            _checkTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+              checkSystemStatus();
+            });
+          }
+        });
+
+    // Immediate fallback when realtime is known-disabled at startup.
+    if (RealtimeManager.instance.isDisabled) {
+      _checkTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+        checkSystemStatus();
+      });
+    }
   }
 
-  /// Stop periodic checking
+  /// Stop periodic checking and realtime subscription.
   void stopPeriodicChecking() {
     _checkTimer?.cancel();
     _checkTimer = null;
-    print('⏹️ Stopped system status periodic checks');
+    _statusChannel?.unsubscribe();
+    _statusChannel = null;
+    Logger.d('⏹️ Stopped system status checks');
   }
 
   /// Check current system status
@@ -55,7 +92,7 @@ class SystemStatusService {
         
         // If status changed, notify callbacks
         if (newStatus != _isSystemEnabled) {
-          print('🔔 System status changed: ${newStatus ? "ENABLED" : "DISABLED"}');
+          Logger.d('🔔 System status changed: ${newStatus ? "ENABLED" : "DISABLED"}');
           _isSystemEnabled = newStatus;
           _notifyStatusChange(newStatus);
         }
@@ -87,7 +124,7 @@ class SystemStatusService {
       try {
         callback(isEnabled);
       } catch (e) {
-        print('Error in status change callback: $e');
+        Logger.d('Error in status change callback: $e');
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import '../utils/logger.dart';
 
 /// Service to play audio notifications for new orders
 class AudioNotificationService {
@@ -16,7 +17,7 @@ class AudioNotificationService {
     
     _audioPlayer.onPlayerComplete.listen((_) {
       _isPlaying = false;
-      print('✅ Notification sound finished playing');
+      Logger.d('✅ Notification sound finished playing');
     });
     
     _initialized = true;
@@ -29,13 +30,13 @@ class AudioNotificationService {
     
     // Prevent overlapping sounds
     if (_isPlaying) {
-      print('🔇 Notification sound already playing, skipping...');
+      Logger.d('🔇 Notification sound already playing, skipping...');
       return;
     }
 
     try {
       _isPlaying = true;
-      print('🔔 Playing new order notification sound...');
+      Logger.d('🔔 Playing new order notification sound...');
       
       // Play the notification.mp3 from assets
       // Note: If the file doesn't exist, this will fail silently
@@ -43,13 +44,13 @@ class AudioNotificationService {
         await _audioPlayer.play(AssetSource('notification.mp3'));
       } catch (e) {
         // If the asset file doesn't exist, log and reset playing state
-        print('⚠️ Notification sound file not found. Please add assets/notification.mp3 to your assets folder.');
-        print('   Error details: $e');
+        Logger.d('⚠️ Notification sound file not found. Please add assets/notification.mp3 to your assets folder.');
+        Logger.d('   Error details: $e');
         _isPlaying = false;
       }
       
     } catch (e) {
-      print('❌ Error playing notification sound: $e');
+      Logger.d('❌ Error playing notification sound: $e');
       _isPlaying = false;
     }
   }
@@ -60,7 +61,7 @@ class AudioNotificationService {
       await _audioPlayer.stop();
       _isPlaying = false;
     } catch (e) {
-      print('❌ Error stopping notification sound: $e');
+      Logger.d('❌ Error stopping notification sound: $e');
     }
   }
 

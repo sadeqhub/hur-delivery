@@ -1,5 +1,3 @@
-// TODO: extract Supabase.instance calls to a feature repository
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -15,14 +13,13 @@ import '../../../core/providers/notification_provider.dart' show NotificationNot
 ///
 /// Any component that needs the driver's status reads [isOnline] from this
 /// provider and calls [setOnline] to change it.  The realtime subscription
-/// and 15 s fallback poll both update only this provider, which then
-/// notifyListeners() — preventing the cascading multi-source divergence.
+/// updates this provider, which then notifyListeners() — preventing the
+/// cascading multi-source divergence.
 class DriverStatusProvider extends ChangeNotifier {
   bool _isOnline = false;
   bool _initialized = false;
   String? _userId;
 
-  Timer? _statusCheckTimer;
   RealtimeChannel? _onlineStatusChannel;
 
   /// Callbacks invoked when the driver goes online / offline so callers
@@ -46,12 +43,10 @@ class DriverStatusProvider extends ChangeNotifier {
     notifyListeners();
 
     _subscribeToRealtime();
-    _startStatusCheckTimer(authProvider);
   }
 
   @override
   void dispose() {
-    _statusCheckTimer?.cancel();
     _onlineStatusChannel?.unsubscribe();
     super.dispose();
   }
@@ -139,33 +134,4 @@ class DriverStatusProvider extends ChangeNotifier {
         .subscribe();
   }
 
-  // ---------------------------------------------------------------------------
-  // 15 s fallback poll (catches missed realtime events)
-  // ---------------------------------------------------------------------------
-
-  void _startStatusCheckTimer(AuthProvider authProvider) {
-    _statusCheckTimer?.cancel();
-    if (_userId == null) return;
-
-    _statusCheckTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
-      try {
-        final data = await Supabase.instance.client
-            .from('users')
-            .select('is_online')
-            .eq('id', _userId!)
-            .single();
-        final dbOnline = data['is_online'] as bool? ?? false;
-        if (dbOnline == _isOnline) return;
-
-        _isOnline = dbOnline;
-        notifyListeners();
-
-        if (dbOnline) {
-          onWentOnline?.call();
-        } else {
-          onWentOffline?.call();
-        }
-      } catch (_) {}
-    });
-  }
 }

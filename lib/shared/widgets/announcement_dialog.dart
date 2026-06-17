@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/responsive_helper.dart';
 import '../../core/utils/responsive_extensions.dart';
@@ -28,7 +29,7 @@ class AnnouncementDialog extends StatefulWidget {
 
 class _AnnouncementDialogState extends State<AnnouncementDialog> {
   Timer? _countdownTimer;
-  Timer? _existenceCheckTimer;
+  RealtimeChannel? _announcementChannel;
   Duration? _remainingTime;
 
   @override
@@ -37,10 +38,10 @@ class _AnnouncementDialogState extends State<AnnouncementDialog> {
     if (!widget.announcement.isDismissable && widget.announcement.endTime != null) {
       _startCountdown();
     }
-    
-    // Always start checking if announcement still exists (for undismissable announcements)
+
+    // Subscribe to realtime changes for undismissable announcements
     if (!widget.announcement.isDismissable) {
-      _startExistenceCheck();
+      _subscribeToAnnouncement();
     }
   }
 
@@ -67,40 +68,54 @@ class _AnnouncementDialogState extends State<AnnouncementDialog> {
     }
   }
 
-  /// Periodically check if the announcement still exists and is active
-  void _startExistenceCheck() {
-    Logger.d('🔍 Starting existence check for announcement: ${widget.announcement.id}');
-    
-    // Check every 3 seconds
-    _existenceCheckTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
-      await _checkAnnouncementExists();
-    });
-  }
+  void _subscribeToAnnouncement() {
+    Logger.d('🔍 Subscribing to realtime for announcement: ${widget.announcement.id}');
 
-  Future<void> _checkAnnouncementExists() async {
-    try {
-      // Check if announcement still exists and is active
-      final stillExists = await AnnouncementService().checkAnnouncementActive(
-        widget.announcement.id,
-      );
-      
-      if (!stillExists && mounted) {
-        Logger.d('✅ Announcement ${widget.announcement.id} was removed or deactivated - auto-closing dialog');
-        _existenceCheckTimer?.cancel();
-        _countdownTimer?.cancel();
-        Navigator.of(context).pop();
-        widget.onDismiss?.call();
-      }
-    } catch (e) {
-      Logger.d('⚠️ Error checking announcement existence: $e');
-      // Don't close on error - better to keep showing than to close unexpectedly
-    }
+    _announcementChannel = Supabase.instance.client
+        .channel('announcement-dialog-${widget.announcement.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.delete,
+          schema: 'public',
+          table: 'announcements',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: widget.announcement.id,
+          ),
+          callback: (payload) {
+            if (!mounted) return;
+            Logger.d('✅ Announcement ${widget.announcement.id} deleted - closing dialog');
+            _countdownTimer?.cancel();
+            Navigator.of(context).pop();
+            widget.onDismiss?.call();
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'announcements',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: widget.announcement.id,
+          ),
+          callback: (payload) {
+            final isActive = payload.newRecord['is_active'] as bool? ?? true;
+            if (!isActive && mounted) {
+              Logger.d('✅ Announcement ${widget.announcement.id} deactivated - closing dialog');
+              _countdownTimer?.cancel();
+              Navigator.of(context).pop();
+              widget.onDismiss?.call();
+            }
+          },
+        )
+        .subscribe();
   }
 
   @override
   void dispose() {
     _countdownTimer?.cancel();
-    _existenceCheckTimer?.cancel();
+    _announcementChannel?.unsubscribe();
     super.dispose();
   }
 

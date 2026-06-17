@@ -1,16 +1,15 @@
-// TODO: extract Supabase.instance calls to a feature repository
 import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/services/messaging_service.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../data/messaging_repository.dart';
 
 class MessagingThreadScreen extends StatefulWidget {
   final String conversationId;
@@ -22,6 +21,7 @@ class MessagingThreadScreen extends StatefulWidget {
 }
 
 class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
+  final _messagingRepo = MessagingRepository();
   late final Stream<List<Message>> _stream;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scroll = ScrollController();
@@ -159,19 +159,11 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
   }) async {
     if (senderId == null) return null;
     try {
-      final data = await Supabase.instance.client
-          .from('messages')
-          .select()
-          .eq('conversation_id', conversationId)
-          .eq('sender_id', senderId)
-          .gte(
-            'created_at',
-            startedAt.subtract(const Duration(seconds: 2)).toIso8601String(),
-          )
-          .order('created_at', ascending: false)
-          .limit(1)
-          .maybeSingle();
-
+      final data = await _messagingRepo.resolveRecentMessage(
+        conversationId: conversationId,
+        senderId: senderId,
+        startedAt: startedAt,
+      );
       if (data == null) return null;
       return Message.fromMap(Map<String, dynamic>.from(data));
     } catch (e) {
@@ -210,7 +202,7 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
     final hasImage = _pendingImage != null;
     if (!hasText && !hasImage) return;
 
-    final myId = Supabase.instance.client.auth.currentUser?.id;
+    final myId = _messagingRepo.currentUserId;
     final replyToId = _replyingTo?.id;
     Message? optimistic;
     String? attachmentUrl;
@@ -235,18 +227,11 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
                 ? 'image/gif'
                 : 'image/jpeg';
 
-        await Supabase.instance.client.storage.from('files').uploadBinary(
-              objectPath,
-              bytes,
-              fileOptions: FileOptions(
-                upsert: true,
-                contentType: mime,
-              ),
-            );
-
-        attachmentUrl = Supabase.instance.client.storage
-            .from('files')
-            .getPublicUrl(objectPath);
+        attachmentUrl = await _messagingRepo.uploadAttachment(
+          objectPath: objectPath,
+          bytes: bytes,
+          contentType: mime,
+        );
         attachmentType = mime;
       }
 
@@ -403,7 +388,7 @@ class _MessagingThreadScreenState extends State<MessagingThreadScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final myId = Supabase.instance.client.auth.currentUser?.id;
+    final myId = _messagingRepo.currentUserId;
 
     final isDark = theme.brightness == Brightness.dark;
 

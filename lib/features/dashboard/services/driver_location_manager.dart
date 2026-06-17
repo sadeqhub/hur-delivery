@@ -1,5 +1,3 @@
-// TODO: extract Supabase.instance calls to a feature repository
-import 'dart:async';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -7,21 +5,17 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/location_provider.dart';
 import '../../../core/providers/order_provider.dart';
 
-/// Owns all background location work for a driver session.
+/// Owns dropoff-proximity checking for a driver session.
 ///
-/// **Old architecture problems fixed here:**
-///   - There were TWO competing timers: `_locationTimer` (5 s, push GPS→DB)
-///     and `_driverLocationTimer` (10 s, read DB→local state).  The DB
-///     read-back timer was redundant and caused positional spikes when the
-///     reads arrived out of order.  This class keeps only the 5 s push.
-///   - Both timers could be double-started because `_startLocationTracking()`
-///     was called from 3 different call sites without a running-guard.
-///     The [_running] flag prevents that.
-///   - There was a fire-and-forget "aggressive init" loop (10 × 1 s retries
-///     after init) that could overlap with the normal 5 s timer.  Removed.
+/// The 5 s GPS→DB location push that previously lived here has been removed:
+/// the foreground background-service already owns that write and keeping a
+/// second competing timer caused positional spikes and double-writes.
+///
+/// This class now only:
+///   1. Ensures the foreground location stream is running (for map display).
+///   2. Checks dropoff proximity on each location update from [LocationProvider].
 class DriverLocationManager {
   bool _running = false;
-  Timer? _timer;
 
   AuthProvider? _authProvider;
   LocationProvider? _locationProvider;
@@ -33,7 +27,7 @@ class DriverLocationManager {
   // Lifecycle
   // ---------------------------------------------------------------------------
 
-  /// Start pushing GPS location to the database every 5 seconds.
+  /// Start proximity checking.
   ///
   /// Idempotent — calling start() while already running is a no-op.
   void start({
@@ -48,64 +42,37 @@ class DriverLocationManager {
     _locationProvider = locationProvider;
     _orderProvider = orderProvider;
 
-    // Ensure the foreground position stream is running (for map display and
-    // for getCurrentLocation() calls below).
+    // Ensure the foreground position stream is running (for map display).
     if (!locationProvider.isTracking) {
       locationProvider.startLocationTracking();
     }
-
-    // Immediate push on start so the driver's marker appears right away.
-    unawaited(_pushLocation());
-
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      unawaited(_pushLocation());
-    });
   }
 
-  /// Stop background DB updates.  Foreground location tracking in
+  /// Stop proximity checking.  Foreground location tracking in
   /// [LocationProvider] is intentionally kept running so the driver can
   /// still see their position on the map while offline.
   void stop() {
     _running = false;
-    _timer?.cancel();
-    _timer = null;
-    // Do NOT call locationProvider.stopLocationTracking() here.
   }
 
   void dispose() => stop();
 
   // ---------------------------------------------------------------------------
-  // Internal
+  // Public — called by the foreground location service after each GPS fix
   // ---------------------------------------------------------------------------
 
-  Future<void> _pushLocation() async {
-    final auth = _authProvider;
-    final loc = _locationProvider;
-    if (auth == null || loc == null || auth.user == null) return;
-
-    try {
-      final position = await loc
-          .getCurrentLocation()
-          .timeout(const Duration(seconds: 5), onTimeout: () => null);
-
-      if (position == null || !_running) return;
-
-      await auth
-          .updateUserLocation(
-            position.latitude,
-            position.longitude,
-            accuracy: position.accuracy,
-            heading: position.heading,
-            speed: position.speed,
-          )
-          .timeout(const Duration(seconds: 5), onTimeout: () => false);
-
-      // Check dropoff proximity for active on_the_way orders (non-blocking).
-      unawaited(_checkDropoffProximity(position));
-    } catch (_) {
-      // Silent — location errors are transient and should not crash the session.
-    }
+  /// Check dropoff proximity for active on_the_way orders.
+  ///
+  /// Call this after each GPS fix from the background service to avoid
+  /// spawning a separate timer.
+  Future<void> checkDropoffProximity(geo.Position driverPosition) async {
+    if (!_running) return;
+    await _checkDropoffProximity(driverPosition);
   }
+
+  // ---------------------------------------------------------------------------
+  // Internal
+  // ---------------------------------------------------------------------------
 
   Future<void> _checkDropoffProximity(geo.Position driverPosition) async {
     final auth = _authProvider;

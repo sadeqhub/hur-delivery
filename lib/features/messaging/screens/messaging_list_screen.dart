@@ -1,9 +1,8 @@
-// TODO: extract Supabase.instance calls to a feature repository
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/messaging_service.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/order_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'messaging_thread_screen.dart';
@@ -30,11 +29,12 @@ class _MessagingListScreenState extends State<MessagingListScreen> {
   @override
   void initState() {
     super.initState();
-    final currentUser = Supabase.instance.client.auth.currentUser;
-    _role = currentUser?.userMetadata?['role'] as String? ??
-        currentUser?.appMetadata['role'] as String? ??
-        currentUser?.userMetadata?['app_role'] as String? ??
-        currentUser?.appMetadata['app_role'] as String?;
+    // Role is sourced from AuthProvider — no direct Supabase auth call needed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _role = context.read<AuthProvider>().user?.role;
+      }
+    });
     _load();
     if (widget.startSupportOnLoad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

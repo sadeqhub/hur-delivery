@@ -1,14 +1,13 @@
-// TODO: extract Supabase.instance calls to a feature repository
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../legal/screens/terms_conditions_screen.dart';
 import '../../../core/utils/logger.dart';
+import '../data/auth_repository.dart';
 
 class DriverWalkthroughScreen extends StatefulWidget {
   const DriverWalkthroughScreen({super.key});
@@ -60,13 +59,7 @@ class _DriverWalkthroughScreenState extends State<DriverWalkthroughScreen> {
       }
 
       // Update database to mark walkthrough as completed
-      await Supabase.instance.client
-          .from('users')
-          .update({
-            'driver_walkthrough_completed': true,
-            'driver_walkthrough_completed_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', userId);
+      await AuthRepository().completeDriverWalkthrough(userId);
 
       // Refresh user data
       await authProvider.refreshUser();

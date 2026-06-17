@@ -80,10 +80,10 @@ ADMIN_CREDENTIALS.txt
 *.key
 
 # Test and debug files
-test_*.dart
-*_test.dart
+/test_*.dart
+!/test/**/*_test.dart
 debug_*.sql
-test_*.sql
+/test_*.sql
 
 # Documentation (keep only main README files)
 **/DEPLOY*.md

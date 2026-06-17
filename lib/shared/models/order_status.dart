@@ -100,4 +100,6 @@ enum OrderStatus {
         unassigned => {assigned, cancelled},
         unknown => {},
       };
+
+  bool canTransitionTo(OrderStatus next) => allowedTransitions.contains(next);
 }

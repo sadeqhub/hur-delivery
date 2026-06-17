@@ -236,14 +236,13 @@ class FCMService {
       
       Logger.d('✅ Token verification: ${verifyResult['fcm_token']?.toString().substring(0, 20)}...');
       
-    } catch (e) {
+    } on PostgrestException catch (e) {
       Logger.d('❌ Failed to save FCM token: $e');
-      Logger.d('❌ Error details: ${e.toString()}');
-      
-      // Check if it's an RLS issue
-      if (e.toString().contains('row-level security')) {
+      if (e.code == '42501' || (e.message?.contains('row-level security') ?? false)) {
         Logger.d('❌ RLS policy violation detected');
       }
+    } catch (e) {
+      Logger.d('❌ Failed to save FCM token: $e');
     }
   }
 

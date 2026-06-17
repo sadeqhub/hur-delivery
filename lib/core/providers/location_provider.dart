@@ -246,14 +246,16 @@ class LocationProvider extends ChangeNotifier {
   }
 
   // Get error message
+  // Plugin exception — typed catch not available; match on message.
   String _getErrorMessage(dynamic error) {
-    if (error.toString().contains('Location services disabled')) {
+    final msg = error.toString();
+    if (msg.contains('Location services disabled')) {
       return 'خدمات الموقع معطلة';
-    } else if (error.toString().contains('Location permission denied')) {
+    } else if (msg.contains('Location permission denied')) {
       return 'إذن الموقع مرفوض';
-    } else if (error.toString().contains('Location timeout')) {
+    } else if (msg.contains('Location timeout')) {
       return 'انتهت مهلة الحصول على الموقع';
-    } else if (error.toString().contains('Location unavailable')) {
+    } else if (msg.contains('Location unavailable')) {
       return 'الموقع غير متاح';
     } else {
       return 'خطأ في الحصول على الموقع';

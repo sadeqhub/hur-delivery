@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/logger.dart';
 
@@ -37,11 +39,9 @@ class OtpService {
               },
             )
             .timeout(const Duration(seconds: 30));
-      } catch (invokeError) {
-        Logger.d('❌ [OtpService] Function invoke failed: $invokeError');
-        if (invokeError.toString().contains('404') ||
-            invokeError.toString().contains('not found') ||
-            invokeError.toString().contains('Function not found')) {
+      } on FunctionException catch (e) {
+        Logger.d('❌ [OtpService] Function invoke failed: $e');
+        if (e.status == 404 || (e.details?.toString().contains('not found') ?? false)) {
           return const OtpSendResult(
             success: false,
             error: 'الدالة غير متاحة. الرجاء التأكد من نشر الدالة على Supabase.',
@@ -84,24 +84,28 @@ class OtpService {
 
       Logger.d('✅ [OtpService] OTP sent successfully');
       return const OtpSendResult(success: true);
+    } on TimeoutException catch (_) {
+      return const OtpSendResult(
+        success: false,
+        error: 'انتهت مهلة الطلب. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى',
+      );
+    } on SocketException catch (_) {
+      return const OtpSendResult(
+        success: false,
+        error: 'خطأ في الاتصال بالإنترنت. يرجى التحقق من الاتصال والمحاولة مرة أخرى',
+      );
+    } on FunctionException catch (e) {
+      Logger.d('❌ [OtpService] sendOtp FunctionException: $e');
+      if (e.status == 404 || (e.details?.toString().contains('not found') ?? false)) {
+        return const OtpSendResult(
+          success: false,
+          error: 'الدالة غير متاحة. الرجاء التأكد من نشر الدالة على Supabase.',
+        );
+      }
+      return const OtpSendResult(success: false, error: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
     } catch (e, stackTrace) {
       Logger.d('❌ [OtpService] sendOtp error: $e\n$stackTrace');
-      String error;
-      if (e.toString().contains('timeout') ||
-          e.toString().contains('TimeoutException')) {
-        error =
-            'انتهت مهلة الطلب. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى';
-      } else if (e.toString().contains('SocketException') ||
-          e.toString().contains('network')) {
-        error =
-            'خطأ في الاتصال بالإنترنت. يرجى التحقق من الاتصال والمحاولة مرة أخرى';
-      } else if (e.toString().contains('404') ||
-          e.toString().contains('not found')) {
-        error = 'الدالة غير متاحة. الرجاء التأكد من نشر الدالة على Supabase.';
-      } else {
-        error = 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
-      }
-      return OtpSendResult(success: false, error: error);
+      return const OtpSendResult(success: false, error: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
     }
   }
 

@@ -131,8 +131,8 @@ class SessionService {
             );
           });
         }
-      } else if (e.toString().contains('401') ||
-          e.toString().contains('Unauthorized')) {
+      } else if (e is AuthException &&
+          (e.statusCode == '401' || (e.message?.contains('Unauthorized') ?? false))) {
         Logger.d('🔐 Unauthorized access (401) - attempting refresh before logout...');
         final refreshed = await attemptRefresh();
         if (!refreshed) {

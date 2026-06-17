@@ -1725,13 +1725,14 @@ class OrderProvider extends ChangeNotifier {
 
   // Get error message
   String _getErrorMessage(dynamic error) {
-    if (error.toString().contains('Order not found')) {
+    final msg = error is PostgrestException ? error.message : error.toString();
+    if (msg.contains('Order not found')) {
       return 'الطلب غير موجود';
-    } else if (error.toString().contains('Driver not available')) {
+    } else if (msg.contains('Driver not available')) {
       return 'لا يوجد سائق متاح';
-    } else if (error.toString().contains('Order already assigned')) {
+    } else if (msg.contains('Order already assigned')) {
       return 'الطلب مخصص بالفعل';
-    } else if (error.toString().contains('Invalid status transition')) {
+    } else if (msg.contains('Invalid status transition')) {
       return 'تغيير الحالة غير صحيح';
     } else {
       return 'حدث خطأ غير متوقع';

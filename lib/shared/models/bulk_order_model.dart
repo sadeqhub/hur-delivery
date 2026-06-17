@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'bulk_order_item.dart';
+import 'order_status.dart';
 
 part 'bulk_order_model.freezed.dart';
 part 'bulk_order_model.g.dart';
@@ -52,11 +53,13 @@ class BulkOrderModel with _$BulkOrderModel {
   factory BulkOrderModel.fromJson(Map<String, dynamic> json) =>
       _$BulkOrderModelFromJson(json);
 
-  bool get isPending => status == 'pending';
-  bool get isAccepted => status == 'accepted';
-  bool get isPickedUp => status == 'picked_up';
-  bool get isOnTheWay => status == 'on_the_way';
-  bool get isDelivered => status == 'delivered';
-  bool get isCancelled => status == 'cancelled';
-  bool get isRejected => status == 'rejected';
+  OrderStatus get statusEnum => OrderStatus.fromDb(status);
+
+  bool get isPending => statusEnum == OrderStatus.pending;
+  bool get isAccepted => statusEnum == OrderStatus.accepted;
+  bool get isPickedUp => statusEnum == OrderStatus.pickedUp;
+  bool get isOnTheWay => statusEnum == OrderStatus.onTheWay;
+  bool get isDelivered => statusEnum == OrderStatus.delivered;
+  bool get isCancelled => statusEnum == OrderStatus.cancelled;
+  bool get isRejected => statusEnum == OrderStatus.rejected;
 }

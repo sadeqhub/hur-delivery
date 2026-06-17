@@ -452,37 +452,8 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (e.message.contains('user_already_exists') ||
           e.message.contains('already registered') ||
           e.statusCode == '422') {
-        Logger.d('⚠️ User already exists, checking if we can sign in...');
-        // If OTP was already verified (consumed), try login with deterministic password
-        // Don't try to reset password again - OTP is already consumed
-        final cleaned = _cleanPhoneNumber(phoneE164).replaceAll('+', '');
-        
-        // Derive deterministic password via SECURITY DEFINER RPC.
-        // The RPC returns the password string only; id_number is never sent
-        // to the client.
-        try {
-          final deterministicPassword = await Supabase.instance.client
-              .rpc('derive_legacy_password', params: {'p_phone': cleaned});
-
-          if (deterministicPassword is String && deterministicPassword.isNotEmpty) {
-            Logger.d(
-                '🔐 Attempting login with deterministic password (phone@idNumber)');
-            final loginOk =
-                await loginWithPassword(phoneE164, deterministicPassword);
-            if (loginOk) {
-              Logger.d('✅ Logged in with deterministic password');
-              return true;
-            }
-          }
-        } catch (_) {}
-        
-        // If login fails, that's okay - we'll proceed to registration
-        // The auth account exists
-        Logger.d(
-            '⚠️ Could not login automatically, but auth account exists - proceed to registration');
-        // Return true to allow proceeding to registration
-        // Navigation will be handled by the caller based on user role
-        return true;
+        _error = 'فشل التحقق: حاول مرة أخرى';
+        return false;
       }
       _error = _getErrorMessage(e);
       return false;
@@ -503,59 +474,30 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     try {
       final cleaned = _cleanPhoneNumber(phoneE164);
       final noPlus = cleaned.replaceAll('+', '');
-      final emailLegacy = '$noPlus@hurdelivery.com';
-      final emailCanon = '$noPlus@hur.delivery';
-      // Try legacy then canonical. Ensure a matching profile row exists; otherwise sign out and try next.
-      for (final em in [emailLegacy, emailCanon]) {
-        try {
-          Logger.d('🔐 [DEBUG] Attempting login with email: $em');
-          final res = await Supabase.instance.client.auth.signInWithPassword(
-            email: em,
-            password: password,
-          );
-          if (res.user != null) {
-            Logger.d('✅ [DEBUG] Auth sign-in successful for $em');
+      final email = '$noPlus@hur.delivery';
+      try {
+        Logger.d('🔐 Attempting login with email: $email');
+        final res = await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+        if (res.user != null) {
+          Logger.d('✅ Auth sign-in successful');
+          await _loadUserProfile();
+          if (_user != null) {
+            return true;
+          }
+          final repaired = await _attemptRelinkProfileByPhone();
+          if (repaired) {
             await _loadUserProfile();
             if (_user != null) {
-              Logger.d('✅ [DEBUG] Profile loaded successfully');
               return true;
             }
-            Logger.d(
-                '⚠️ [DEBUG] Auth successful but no profile found, attempting repair...');
-            // Attempt to repair profile linkage by phone and retry once
-            final repaired = await _attemptRelinkProfileByPhone();
-            if (repaired) {
-              await _loadUserProfile();
-              if (_user != null) {
-                Logger.d('✅ [DEBUG] Profile relinked and loaded');
-                return true;
-              }
-            }
-            // No profile attached to this auth user; sign out and try next candidate
-            await Supabase.instance.client.auth.signOut();
-            Logger.d(
-                '⚠️ [DEBUG] No profile found after repair, trying next email domain...');
           }
-        } catch (e) {
-          Logger.d('❌ [DEBUG] Login failed for $em: $e');
-          Logger.d('❌ [DEBUG] Error type: ${e.runtimeType}');
-          Logger.d('❌ [DEBUG] Error string: ${e.toString()}');
-          // Log password format for debugging (first 5 chars only)
-          if (password.length > 5) {
-            Logger.d(
-                '❌ [DEBUG] Password format: ${password.substring(0, 5)}...${password.substring(password.length - 3)}');
-          }
-          // Check if it's an invalid credentials error
-          if (e is AuthException &&
-              (e.message.contains('Invalid login credentials') ||
-                  e.message.contains('invalid_credentials') ||
-                  e.statusCode == '400')) {
-            Logger.d(
-                '⚠️ [DEBUG] Invalid credentials - email format or password mismatch');
-            Logger.d('⚠️ [DEBUG] Tried email: $em');
-            Logger.d('⚠️ [DEBUG] Password length: ${password.length}');
-          }
+          await Supabase.instance.client.auth.signOut();
         }
+      } catch (e) {
+        Logger.d('❌ Login failed: $e');
       }
       _error = 'error_invalid_credentials';
       return false;
@@ -788,32 +730,19 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
               return;
             }
           } catch (signInError) {
-            // Try legacy email format
-            try {
-              final legacyEmail = '$emailNoPlus@hurdelivery.com';
-              final legacyResponse =
-                  await Supabase.instance.client.auth.signInWithPassword(
-                email: legacyEmail,
-                password: password,
-              );
-              
-              if (legacyResponse.user != null) {
-                Logger.d('✅ Signed in to existing account (legacy)');
-                return;
-              }
-            } catch (_) {}
-            
             Logger.d('⚠️ Could not sign in to existing account: $signInError');
             throw Exception(
                 'حسابك موجود ولكن حدث خطأ في تسجيل الدخول. يرجى التواصل مع الدعم الفني.');
           }
         }
-      } catch (e) {
-        if (e.toString().contains('حسابك موجود')) {
+      } on PostgrestException catch (e) {
+        if (e.message.contains('حسابك موجود') || e.code == '23505') { // 23505 = unique_violation
           rethrow;
         }
         Logger.d('⚠️ Error checking for existing profile: $e');
         // Continue to create new account
+      } catch (e) {
+        rethrow;
       }
       
       // No existing profile found - create new auth account

@@ -108,11 +108,11 @@ class SessionService {
           .maybeSingle();
 
       if (result == null) {
-        onForceLogout('تم تسجيل الدخول من جهاز آخر');
+        onForceLogout('device_logged_in_elsewhere'); // l10n key
       } else {
         final isActive = result['is_active'];
         if (isActive == false || isActive == null) {
-          onForceLogout('تم تسجيل الدخول من جهاز آخر');
+          onForceLogout('device_logged_in_elsewhere'); // l10n key
         }
       }
     } catch (e) {
@@ -120,7 +120,7 @@ class SessionService {
         Logger.d('🔐 Session expired (401) - attempting refresh before logout...');
         final refreshed = await attemptRefresh();
         if (!refreshed) {
-          onForceLogout('انتهت صلاحية الجلسة');
+          onForceLogout('session_expired'); // l10n key
         } else {
           Logger.d('✅ Session refreshed, retrying session check...');
           Future.delayed(const Duration(milliseconds: 500), () {
@@ -136,7 +136,7 @@ class SessionService {
         Logger.d('🔐 Unauthorized access (401) - attempting refresh before logout...');
         final refreshed = await attemptRefresh();
         if (!refreshed) {
-          onForceLogout('انتهت صلاحية الجلسة');
+          onForceLogout('session_expired'); // l10n key
         }
       }
     }

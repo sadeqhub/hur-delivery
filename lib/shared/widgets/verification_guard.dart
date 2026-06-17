@@ -59,6 +59,9 @@ class _VerificationGuardState extends State<VerificationGuard> {
         .from('users')
         .stream(primaryKey: ['id'])
         .eq('id', userId)
+        .handleError((Object error, StackTrace stack) {
+          Logger.d('⚠️ [VerificationGuard] realtime stream error (ignored): $error');
+        })
         .listen((data) {
           if (!mounted) return;
           if (data.isNotEmpty) {

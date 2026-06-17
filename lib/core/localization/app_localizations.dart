@@ -9,6 +9,9 @@ class AppLocalizations {
 
   AppLocalizations(this.locale);
 
+  /// Language code string — mirrors the generated flutter_gen convention.
+  String get localeName => locale.languageCode;
+
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
 
@@ -1177,6 +1180,11 @@ class AppLocalizations {
       'your_location_button': 'موقعك',
       'accept_order_button': 'قبول الطلب',
       'time_remaining_label': 'الوقت المتبقي: ',
+      'driver_ready_in_prefix': 'الجاهزية بعد',
+      'order_ready_now': 'الطلب جاهز الآن',
+      'driver_order_completed_stub': 'اكتمل الطلب',
+      'driver_pickup_received_button': 'تم استلام الطلب',
+      'driver_deliver_complete_button': 'تم التوصيل',
 
       // Delivery Timer - Late popup & info
       'delivery_late_title': 'الطلب متأخر',
@@ -1223,6 +1231,26 @@ class AppLocalizations {
       'error_weak_password': 'كلمة المرور ضعيفة. استخدم 8 أحرف أو أرقام على الأقل',
       'error_account_creation_failed': 'فشل إنشاء الحساب',
       'error_invalid_credentials': 'بيانات الدخول غير صحيحة',
+      // Session & auth error codes (L10n sweep — session_service, auth_provider)
+      'session_expired': 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.',
+      'device_logged_in_elsewhere': 'تم تسجيل الدخول من جهاز آخر',
+      'error_not_authenticated': 'المستخدم غير مسجل الدخول',
+      'error_phone_not_found': 'رقم الهاتف غير موجود',
+      'error_invalid_role_type': 'خطأ في تحديد نوع المستخدم. يرجى المحاولة مرة أخرى.',
+      'error_invalid_role_value': 'نوع المستخدم غير صحيح. يرجى المحاولة مرة أخرى.',
+      'error_national_id_must_be_12_digits': 'رقم الهوية الوطني يجب أن يكون 12 رقمًا بالضبط',
+      'error_national_id_duplicate': 'رقم الهوية الوطني مسجل بالفعل لحساب آخر',
+      'error_data_already_registered': 'البيانات المدخلة مسجلة بالفعل في النظام',
+      'error_password_fetch_failed': 'تعذر الحصول على كلمة المرور من الخادم',
+      // OTP error codes (L10n sweep — otp_service)
+      'otp_function_not_found': 'خدمة OTP غير متاحة، يرجى التواصل مع الدعم',
+      'otp_rate_limit_exceeded': 'عذرًا لقد تجاوزت الحد المسموح من المحاولات. يرجى المحاولة لاحقًا.',
+      'otp_send_failed': 'فشل إرسال رمز التحقق، الرجاء المحاولة لاحقاً',
+      'otp_request_timeout': 'انتهت مهلة الطلب. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى',
+      'otp_network_error': 'خطأ في الاتصال بالإنترنت. يرجى التحقق من الاتصال والمحاولة مرة أخرى',
+      'otp_unexpected_error': 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+      'otp_verify_failed': 'فشل التحقق من رمز التحقق',
+      'otp_invalid_code': 'رمز التحقق غير صحيح',
     },
     'en': {
       'app_title': 'Hur Delivery',
@@ -2167,6 +2195,11 @@ class AppLocalizations {
       'your_location_button': 'Your Location',
       'accept_order_button': 'Accept Order',
       'time_remaining_label': 'Time remaining: ',
+      'driver_ready_in_prefix': 'Ready in',
+      'order_ready_now': 'Order ready now',
+      'driver_order_completed_stub': 'Order completed',
+      'driver_pickup_received_button': 'Order picked up',
+      'driver_deliver_complete_button': 'Complete delivery',
 
       // Delivery Timer - Late popup & info
       'delivery_late_title': 'Order is late',
@@ -2213,6 +2246,26 @@ class AppLocalizations {
       'error_weak_password': 'Weak password. Use at least 8 characters or digits',
       'error_account_creation_failed': 'Account creation failed',
       'error_invalid_credentials': 'Invalid login credentials',
+      // Session & auth error codes (L10n sweep — session_service, auth_provider)
+      'session_expired': 'Your session has expired. Please sign in again.',
+      'device_logged_in_elsewhere': 'You have been signed in on another device',
+      'error_not_authenticated': 'User is not signed in',
+      'error_phone_not_found': 'Phone number not found',
+      'error_invalid_role_type': 'Error determining user type. Please try again.',
+      'error_invalid_role_value': 'Invalid user type. Please try again.',
+      'error_national_id_must_be_12_digits': 'National ID must be exactly 12 digits',
+      'error_national_id_duplicate': 'National ID is already registered to another account',
+      'error_data_already_registered': 'The entered data is already registered in the system',
+      'error_password_fetch_failed': 'Failed to retrieve password from server',
+      // OTP error codes (L10n sweep — otp_service)
+      'otp_function_not_found': 'OTP service unavailable, please contact support',
+      'otp_rate_limit_exceeded': 'Too many attempts. Please try again later.',
+      'otp_send_failed': 'Failed to send verification code. Please try again.',
+      'otp_request_timeout': 'Request timed out. Check your internet connection and try again.',
+      'otp_network_error': 'Network error. Please check your connection and try again.',
+      'otp_unexpected_error': 'An unexpected error occurred. Please try again.',
+      'otp_verify_failed': 'Verification code check failed',
+      'otp_invalid_code': 'Invalid verification code',
     },
   };
 
@@ -3254,6 +3307,36 @@ class AppLocalizations {
   String get errorWeakPassword => _get('error_weak_password');
   String get errorAccountCreationFailed => _get('error_account_creation_failed');
   String get errorInvalidCredentials => _get('error_invalid_credentials');
+
+  // Session & auth error code getters (L10n sweep — session_service, auth_provider)
+  String get sessionExpired => _get('session_expired');
+  String get deviceLoggedInElsewhere => _get('device_logged_in_elsewhere');
+  String get errorNotAuthenticated => _get('error_not_authenticated');
+  String get errorPhoneNotFound => _get('error_phone_not_found');
+  String get errorInvalidRoleType => _get('error_invalid_role_type');
+  String get errorInvalidRoleValue => _get('error_invalid_role_value');
+  String get errorNationalIdMust12Digits => _get('error_national_id_must_be_12_digits');
+  String get errorNationalIdDuplicate => _get('error_national_id_duplicate');
+  String get errorDataAlreadyRegistered => _get('error_data_already_registered');
+  String get errorPasswordFetchFailed => _get('error_password_fetch_failed');
+
+  // OTP error code getters (L10n sweep — otp_service)
+  String get otpFunctionNotFound => _get('otp_function_not_found');
+  String get otpRateLimitExceeded => _get('otp_rate_limit_exceeded');
+  String get otpSendFailed => _get('otp_send_failed');
+  String get otpRequestTimeout => _get('otp_request_timeout');
+  String get otpNetworkError => _get('otp_network_error');
+  String get otpUnexpectedError => _get('otp_unexpected_error');
+  String get otpVerifyFailed => _get('otp_verify_failed');
+  String get otpInvalidCode => _get('otp_invalid_code');
+
+  // Driver order card action buttons (used by order_card_actions.dart)
+  String get driverReadyInPrefix => _get('driver_ready_in_prefix');
+  String get orderReadyNow => _get('order_ready_now');
+  String get driverOrderCompletedStub => _get('driver_order_completed_stub');
+  String get driverPickupReceivedButton => _get('driver_pickup_received_button');
+  String get driverDeliverCompleteButton => _get('driver_deliver_complete_button');
+  String get orderValue => _get('order_value');
 }
 
 class _AppLocalizationsDelegate

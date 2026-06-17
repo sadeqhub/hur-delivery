@@ -7,11 +7,10 @@ import 'package:provider/provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider, Provider;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter/foundation.dart'
-    show unawaited, kIsWeb, kReleaseMode, debugPrint;
+    show unawaited, kReleaseMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:image_picker/image_picker.dart' as ip;
 import 'package:geolocator/geolocator.dart' as geo;
 
 import '../../../core/theme/app_theme.dart';
@@ -51,6 +50,7 @@ import '../widgets/driver_header_buttons.dart';
 import '../widgets/driver_sidebar.dart';
 import '../widgets/driver_timer_banner.dart';
 import '../widgets/driver_order_swipe_cards.dart';
+import '../widgets/order_proof_uploader.dart';
 
 // ---------------------------------------------------------------------------
 // Public entry point — provides dashboard-scoped providers then renders the
@@ -264,74 +264,6 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
     }
     final order = activeOrders[index];
     return order.id;
-  }
-
-  Widget _buildSupportShortcut({bool onPrimaryBackground = false}) {
-    final backgroundColor =
-        onPrimaryBackground ? Colors.white.withValues(alpha: 0.15) : Colors.white;
-    final iconColor = onPrimaryBackground ? Colors.white : AppColors.primary;
-    final border = onPrimaryBackground
-        ? Border.all(color: Colors.white.withValues(alpha: 0.5))
-        : null;
-    final boxShadow = onPrimaryBackground
-        ? <BoxShadow>[]
-        : <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ];
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(30),
-        onTap: _openSupportChat,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            border: border,
-            shape: BoxShape.circle,
-            boxShadow: boxShadow,
-          ),
-          child: Icon(
-            Icons.support_agent,
-            color: iconColor,
-            size: 24,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSidebarToggleButton() {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.themeSurface,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: Icon(
-          _showSidebar ? Icons.home_rounded : Icons.menu_rounded,
-          color: context.themePrimary,
-          size: 28,
-        ),
-        onPressed: () {
-          setState(() {
-            _showSidebar = !_showSidebar;
-          });
-        },
-      ),
-    );
   }
 
   Widget _buildOnlineToggleButton() {
@@ -1279,40 +1211,6 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
     return card;
   }
 
-  // Bulk order methods removed - bulk orders are no longer supported
-
-
-  Widget _buildModernAddressRow(
-      {required IconData icon,
-      required Color iconColor,
-      required String address,
-      required dynamic order,
-      required bool isPickup}) {
-    return InkWell(
-      onTap: () {
-        // Navigate to pickup or dropoff when clicking on the address row
-        _openInMaps(order, isPickup: isPickup);
-      },
-      child: Row(
-        children: [
-          Icon(icon, color: iconColor, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              address,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildProminentAddressCard({
     required IconData icon,
     required Color iconColor,
@@ -1701,57 +1599,6 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDistancePill(dynamic order) {
-    if (order == null) return const SizedBox.shrink();
-
-    final double routeDistanceMeters = LocationService.calculateDistance(
-      order.pickupLatitude,
-      order.pickupLongitude,
-      order.deliveryLatitude,
-      order.deliveryLongitude,
-    );
-    final String distanceText =
-        LocationService.getFormattedDistance(routeDistanceMeters);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(
-            alpha: 0.2), // Glass effect for visibility on primary background
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.route_outlined,
-            color: Colors.white,
-            size: 20,
-          ),
-          SizedBox(width: context.rs(8)),
-          Text(
-            distanceText,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-            textDirection: TextDirection.ltr,
           ),
         ],
       ),
@@ -2232,7 +2079,7 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
               right: 16,
               top: 16,
             ),
-            child: _OrderProofUploader(
+            child: OrderProofUploader(
               orderId: order.id,
               onUploaded: () async {
                 print('📸 ========================================');
@@ -2299,106 +2146,7 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
     );
   }
 
-  Widget _buildAddressRow(
-      {required IconData icon,
-      required String label,
-      required String address,
-      bool isPickup = false,
-      required dynamic order}) {
-    // Match pin colors: Teal for pickup, Orange for dropoff
-    final addressColor = isPickup ? AppColors.primary : AppColors.warning;
 
-    return InkWell(
-      onTap: () {
-        // Navigate to pickup or dropoff when clicking anywhere on the address row
-        _openInMaps(order, isPickup: isPickup);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: addressColor.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: addressColor.withValues(alpha: 0.2), width: 1),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: addressColor, size: 18),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          color: addressColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      // Quick navigation button indicator
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: addressColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Icon(
-                          Icons.navigation,
-                          color: addressColor,
-                          size: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    address,
-                    style: TextStyle(
-                      color: context.themeTextPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      height: 1.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
-
-  Widget _buildTimeoutCountdownPill(dynamic order) {
-    return _TimeoutCountdownPill(order: order);
-  }
-
-
-  String _formatReadyCountdown(int seconds) {
-    if (seconds <= 0) return 'الآن';
-
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
-    final secs = seconds % 60;
-
-    if (hours > 0) {
-      return '$hoursس $minutesد';
-    } else if (minutes > 0) {
-      return '$minutesد $secsث';
-    } else {
-      return '$secsث';
-    }
-  }
 
 
 
@@ -2423,29 +2171,6 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
         return Icons.block;
       default:
         return Icons.help;
-    }
-  }
-
-  String _getOrderStatusText(String status) {
-    switch (status) {
-      case 'pending':
-        return 'في الانتظار';
-      case 'assigned':
-        return 'تم التخصيص';
-      case 'accepted':
-        return 'تم القبول';
-      case 'on_the_way':
-        return 'في الطريق';
-      case 'delivered':
-        return 'تم التسليم';
-      case 'cancelled':
-        return 'ملغي';
-      case 'unassigned':
-        return 'غير مخصص';
-      case 'rejected':
-        return 'مرفوض';
-      default:
-        return 'غير معروف';
     }
   }
 
@@ -2986,17 +2711,6 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
     );
   }
 
-  void _callPhone(String phone, String name) {
-    _showContactDialog(
-      context: context,
-      name: name,
-      phone: phone,
-      title: 'الاتصال',
-      icon: Icons.phone,
-      color: AppColors.primary,
-    );
-  }
-
   void _showContactDialog({
     required BuildContext context,
     required String name,
@@ -3252,25 +2966,6 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
         );
       },
     );
-  }
-
-  String _getDateDifferenceText(DateTime orderDate) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final orderDay = DateTime(orderDate.year, orderDate.month, orderDate.day);
-    final difference = orderDay.difference(today).inDays;
-
-    final loc = AppLocalizations.of(context);
-
-    if (difference == 0) {
-      return loc.today;
-    } else if (difference == 1) {
-      return 'غداً'; // Tomorrow (Arabic) / Tomorrow (English)
-    } else if (difference == 2) {
-      return 'بعد غد'; // Day after tomorrow
-    } else {
-      return 'خلال $difference ${loc.daysShort}'; // In X days
-    }
   }
 
   Future<void> _makePhoneCall(String phone) async {

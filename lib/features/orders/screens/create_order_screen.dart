@@ -24,6 +24,7 @@ import '../../../shared/widgets/delivery_fee_dropdown.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../shared/widgets/navigation_overlay_system.dart';
 import 'location_picker_screen.dart';
+import 'order_form_builder_mixin.dart';
 import '../../../core/utils/logger.dart';
 
 class CreateOrderScreen extends StatefulWidget {
@@ -40,7 +41,7 @@ class CreateOrderScreen extends StatefulWidget {
   State<CreateOrderScreen> createState() => _CreateOrderScreenState();
 }
 
-class _CreateOrderScreenState extends State<CreateOrderScreen> {
+class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBuilderMixin<CreateOrderScreen> {
   final _formKey = GlobalKey<FormState>();
   final _customerNameController = TextEditingController();
   final _customerPhoneController = TextEditingController();
@@ -98,6 +99,23 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   String? _activeOrderDriverName;
   // Support multiple drivers if merchant has multiple active orders
   List<Map<String, String>> _availableDrivers = []; // List of {id, name}
+
+  // ── OrderFormBuilderMixin interface ──────────────────────────────────────
+  @override FocusNode get pickupAddressFocusNode => _pickupAddressFocusNode;
+  @override FocusNode get deliveryAddressFocusNode => _deliveryAddressFocusNode;
+  @override bool get showPickupSuggestions => _showPickupSuggestions;
+  @override bool get showDeliverySuggestions => _showDeliverySuggestions;
+  @override List<NajafDistrict> get pickupAddressSuggestions => _pickupAddressSuggestions;
+  @override List<NajafDistrict> get deliveryAddressSuggestions => _deliveryAddressSuggestions;
+  @override TextEditingController get customerPhoneController => _customerPhoneController;
+  @override FocusNode get customerPhoneFocusNode => _customerPhoneFocusNode;
+  @override bool get phoneLocked => _phoneLocked;
+  @override bool get showPhoneSuggestions => _showPhoneSuggestions;
+  @override set showPhoneSuggestions(bool value) { _showPhoneSuggestions = value; }
+  @override void geocodeAddress(String type) => _geocodeAddress(type);
+  @override void selectDistrict(NajafDistrict district, String type) => _selectDistrict(district, type);
+  @override void debouncedFetchPhoneSuggestions(String input) => _debouncedFetchPhoneSuggestions(input);
+  // ─────────────────────────────────────────────────────────────────────────
 
   @override
   void initState() {
@@ -1428,7 +1446,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         ),
                         const SizedBox(height: 16),
                         // Order Fee (Total Amount)
-                        _buildTextField(
+                        buildTextField(
                           controller: _totalAmountController,
                           label: loc.totalAmount,
                           hint: '0',
@@ -1472,7 +1490,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               const SizedBox(height: 24),
               
               // Customer Phone Field (Optional) - Right above Advanced Settings
-              _buildPhoneField(),
+              buildPhoneField(),
               if (_showPhoneSuggestions && _phoneSuggestions.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -1655,7 +1673,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Customer Name (Optional)
-                          _buildTextField(
+                          buildTextField(
                             controller: _customerNameController,
                             label: AppLocalizations.of(context).customerNameOptional,
                             hint: AppLocalizations.of(context).enterCustomerName,
@@ -1666,7 +1684,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               const SizedBox(height: 16),
               
                           // Pickup Location (Auto-set to merchant location, but editable)
-              _buildLocationField(
+              buildLocationField(
                 controller: _pickupAddressController,
                 label: AppLocalizations.of(context).pickupLocation,
                 hint: AppLocalizations.of(context).pickupLocationHint,
@@ -1685,7 +1703,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _buildSectionHeader(loc.vehicleType, Icons.directions_car),
+                                  buildSectionHeader(loc.vehicleType, Icons.directions_car),
               const SizedBox(height: 16),
                                   Container(
                                     padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
@@ -1905,9 +1923,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _buildSectionHeader(loc.notesOptional, Icons.note),
+                                  buildSectionHeader(loc.notesOptional, Icons.note),
                                   const SizedBox(height: 16),
-                                  _buildTextField(
+                                  buildTextField(
                                     controller: _notesController,
                                     label: loc.additionalNotes,
                                     hint: loc.addNotesHint,
@@ -1929,7 +1947,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _buildSectionHeader(loc.whenReady, Icons.access_time),
+                                  buildSectionHeader(loc.whenReady, Icons.access_time),
               const SizedBox(height: 16),
                                   Container(
                                     padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 20)),
@@ -2222,415 +2240,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       ), // end Scaffold
     ); // end PopScope
   }
-
-  Widget _buildSectionHeader(String title, IconData icon) {
-    return Builder(
-      builder: (context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-                color: context.themePrimary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-                color: context.themePrimary,
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: AppTextStyles.heading3.copyWith(
-            color: context.themeTextPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-        );
-      },
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-    bool isRequired = false,
-    String? suffix,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: context.themeTextPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (isRequired)
-              const Text(
-                ' *',
-                style: TextStyle(color: AppColors.error),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          maxLines: maxLines,
-          validator: validator,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: context.themeTextPrimary,
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-            ),
-            prefixIcon: Icon(icon, color: AppColors.primary),
-            suffixText: suffix,
-            suffixStyle: AppTextStyles.bodyMedium.copyWith(
-              color: context.themeTextSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-            filled: true,
-            fillColor: context.themeSurfaceVariant,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: context.themeBorder),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: context.themeBorder),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPhoneField() {
-    return Builder(
-      builder: (context) {
-        final loc = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-                  loc.customerPhoneLabel,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: context.themeTextPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              ' (${loc.optional})',
-              style: TextStyle(
-                color: context.themeTextSecondary,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Country code prefix with spacing
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                decoration: BoxDecoration(
-                  color: context.themeSurface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: context.themeBorder),
-                ),
-                child: Text(
-                  '+964',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: context.themeTextPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textDirection: TextDirection.ltr,
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Phone input field
-              Expanded(
-          child: TextFormField(
-            controller: _customerPhoneController,
-            focusNode: _customerPhoneFocusNode,
-            keyboardType: TextInputType.phone,
-            maxLines: 1,
-            validator: (value) {
-              // Phone is now optional, but if provided, must be valid
-              if (value != null && value.trim().isNotEmpty) {
-              // Enforce Iraqi local format: 7XXXXXXXXX (10 digits)
-              final digits = value.replaceAll(RegExp(r'\D'), '');
-              if (!(digits.length == 10 && digits.startsWith('7'))) {
-                    return loc.phoneInvalidFormat;
-                }
-              }
-              return null;
-            },
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: context.themeTextPrimary,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-            decoration: InputDecoration(
-              hintText: '7XX XXX XXXX',
-              hintStyle: AppTextStyles.bodyMedium.copyWith(
-                color: context.themeTextTertiary,
-              ),
-              prefixIcon: const Icon(Icons.phone, color: AppColors.primary),
-              filled: true,
-              fillColor: context.themeSurfaceVariant,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: context.themeBorder),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: context.themeBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.error),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            ),
-            onTap: () {
-              if (!_phoneLocked && _customerPhoneController.text.replaceAll(RegExp(r'\\D'), '').length >= 3) {
-                _debouncedFetchPhoneSuggestions(_customerPhoneController.text);
-                setState(() {
-                  _showPhoneSuggestions = true;
-                });
-              }
-            },
-            onChanged: (val) {
-              // Ensure suggestions panel visibility while typing
-              if (!_phoneLocked && val.replaceAll(RegExp(r'\\D'), '').length >= 3) {
-                setState(() {
-                  _showPhoneSuggestions = true;
-                });
-              } else {
-                setState(() {
-                  _showPhoneSuggestions = false;
-                });
-              }
-            },
-            onFieldSubmitted: (_) {
-              // Lock and unfocus on accept
-              final digits = _customerPhoneController.text.replaceAll(RegExp(r'\\D'), '');
-              if (digits.length == 10 && digits.startsWith('7')) {
-                _phoneLocked = true;
-                _customerPhoneFocusNode.unfocus();
-                setState(() => _showPhoneSuggestions = false);
-              }
-            },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-      },
-    );
-  }
-
-  Widget _buildLocationField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    required VoidCallback onTap,
-    required bool hasLocation,
-    required String type,
-    bool isRequired = false,
-  }) {
-    final focusNode = type == 'pickup' ? _pickupAddressFocusNode : _deliveryAddressFocusNode;
-    final showSuggestions = type == 'pickup' ? _showPickupSuggestions : _showDeliverySuggestions;
-    final suggestions = type == 'pickup' ? _pickupAddressSuggestions : _deliveryAddressSuggestions;
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: context.themeTextPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (isRequired)
-              const Text(
-                ' *',
-                style: TextStyle(color: AppColors.error),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-        Container(
-          decoration: BoxDecoration(
-            color: context.themeSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: hasLocation ? AppColors.success : context.themeBorder,
-              width: hasLocation ? 2 : 1,
-            ),
-            boxShadow: hasLocation
-                ? [
-                    BoxShadow(
-                      color: AppColors.success.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              // Icon
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: (hasLocation ? AppColors.success : AppColors.primary).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: hasLocation ? AppColors.success : AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-              ),
-              // Text Field
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                      focusNode: focusNode,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: context.themeTextPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: hint,
-                    hintStyle: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textTertiary,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    border: InputBorder.none,
-                    suffixIcon: hasLocation
-                        ? const Icon(Icons.check_circle, color: AppColors.success, size: 20)
-                        : null,
-                  ),
-                  onSubmitted: (_) => _geocodeAddress(type),
-                ),
-              ),
-              // Map Button
-              Builder(
-                builder: (context) {
-                  final loc = AppLocalizations.of(context);
-                  return IconButton(
-                onPressed: onTap,
-                icon: const Icon(Icons.map, color: AppColors.primary),
-                    tooltip: loc.openMap,
-                  );
-                },
-              ),
-              // Geocode Button
-              Builder(
-                builder: (context) {
-                  final loc = AppLocalizations.of(context);
-                  return IconButton(
-                onPressed: () => _geocodeAddress(type),
-                icon: const Icon(Icons.search, color: AppColors.success),
-                    tooltip: loc.searchAddress,
-                  );
-                },
-              ),
-            ],
-          ),
-            ),
-            // Suggestions dropdown
-            if (showSuggestions && suggestions.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                constraints: const BoxConstraints(maxHeight: 250),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: suggestions.length,
-                  separatorBuilder: (context, index) => Divider(height: 1, color: AppColors.border.withOpacity(0.5)),
-                  itemBuilder: (context, index) {
-                    final district = suggestions[index];
-                    return ListTile(
-                      dense: true,
-                      leading: const Icon(Icons.location_on, color: AppColors.primary, size: 20),
-                      title: Text(
-                        district.name,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      onTap: () => _selectDistrict(district, type),
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
   String _calculateGrandTotal() {
     final total = double.tryParse(_totalAmountController.text.trim()) ?? 0.0;
     final delivery = double.tryParse(_deliveryFeeController.text.trim()) ?? 0.0;

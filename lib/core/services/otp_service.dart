@@ -44,7 +44,7 @@ class OtpService {
         if (e.status == 404 || (e.details?.toString().contains('not found') ?? false)) {
           return const OtpSendResult(
             success: false,
-            error: 'الدالة غير متاحة. الرجاء التأكد من نشر الدالة على Supabase.',
+            error: 'otp_function_not_found', // l10n key
           );
         }
         rethrow;
@@ -61,7 +61,7 @@ class OtpService {
           if (retry != null && retry > 0) {
             return OtpSendResult(
               success: false,
-              error: 'الرجاء الانتظار $retry ثانية قبل إعادة الإرسال',
+              error: 'otp_rate_limit_seconds:$retry', // l10n key with seconds suffix
               retryAfterSeconds: retry,
             );
           }
@@ -70,15 +70,14 @@ class OtpService {
           }
           return const OtpSendResult(
             success: false,
-            error:
-                'عذرًا لقد تجاوزت الحد المسموح من المحاولات. يرجى اعادة المحاولة لاحقًا.',
+            error: 'otp_rate_limit_exceeded', // l10n key
           );
         }
         return OtpSendResult(
           success: false,
           error: errorMsg?.isNotEmpty == true
               ? errorMsg!
-              : 'فشل إرسال رمز التحقق، الرجاء المحاولة لاحقاً',
+              : 'otp_send_failed', // l10n key
         );
       }
 
@@ -87,25 +86,25 @@ class OtpService {
     } on TimeoutException catch (_) {
       return const OtpSendResult(
         success: false,
-        error: 'انتهت مهلة الطلب. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى',
+        error: 'otp_request_timeout', // l10n key
       );
     } on SocketException catch (_) {
       return const OtpSendResult(
         success: false,
-        error: 'خطأ في الاتصال بالإنترنت. يرجى التحقق من الاتصال والمحاولة مرة أخرى',
+        error: 'otp_network_error', // l10n key
       );
     } on FunctionException catch (e) {
       Logger.d('❌ [OtpService] sendOtp FunctionException: $e');
       if (e.status == 404 || (e.details?.toString().contains('not found') ?? false)) {
         return const OtpSendResult(
           success: false,
-          error: 'الدالة غير متاحة. الرجاء التأكد من نشر الدالة على Supabase.',
+          error: 'otp_function_not_found', // l10n key
         );
       }
-      return const OtpSendResult(success: false, error: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
+      return const OtpSendResult(success: false, error: 'otp_unexpected_error'); // l10n key
     } catch (e, stackTrace) {
       Logger.d('❌ [OtpService] sendOtp error: $e\n$stackTrace');
-      return const OtpSendResult(success: false, error: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
+      return const OtpSendResult(success: false, error: 'otp_unexpected_error'); // l10n key
     }
   }
 
@@ -128,7 +127,7 @@ class OtpService {
         final data = response.data as Map<String, dynamic>?;
         return OtpVerifyResult(
           success: false,
-          error: (data?['error'] as String?) ?? 'فشل التحقق من رمز التحقق',
+          error: (data?['error'] as String?) ?? 'otp_verify_failed', // l10n key
         );
       }
 
@@ -137,7 +136,7 @@ class OtpService {
       if (!success) {
         return OtpVerifyResult(
           success: false,
-          error: (data?['error'] as String?) ?? 'رمز التحقق غير صحيح',
+          error: (data?['error'] as String?) ?? 'otp_invalid_code', // l10n key
         );
       }
 
@@ -147,7 +146,7 @@ class OtpService {
           sessionData['refresh_token'] == null) {
         return const OtpVerifyResult(
           success: false,
-          error: 'فشل التحقق: يرجى المحاولة مرة أخرى',
+          error: 'otp_verify_failed', // l10n key
         );
       }
 
@@ -157,7 +156,7 @@ class OtpService {
       Logger.d('❌ [OtpService] verifyOtp error: $e');
       return const OtpVerifyResult(
         success: false,
-        error: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+        error: 'otp_unexpected_error', // l10n key
       );
     }
   }

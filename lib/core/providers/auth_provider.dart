@@ -452,7 +452,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (e.message.contains('user_already_exists') ||
           e.message.contains('already registered') ||
           e.statusCode == '422') {
-        _error = 'فشل التحقق: حاول مرة أخرى';
+        _error = 'error_login_failed_retry'; // l10n key
         return false;
       }
       _error = _getErrorMessage(e);
@@ -629,7 +629,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       } else {
         Logger.d(
             '⚠️ [DEBUG] Edge Function response missing newPassword field. Response: $data');
-        _error = 'تعذر الحصول على كلمة المرور من الخادم';
+        _error = 'error_password_fetch_failed'; // l10n key
         return false;
       }
       
@@ -656,7 +656,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         Logger.d('✅ OTP verified');
       } else {
         Logger.d('❌ OTP verification failed');
-        _error = 'رمز التحقق غير صحيح';
+        _error = 'otp_invalid_code'; // l10n key
         return false;
       }
 
@@ -1249,7 +1249,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     try {
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser == null) {
-        _error = 'المستخدم غير مسجل الدخول';
+        _error = 'error_not_authenticated'; // l10n key
         Logger.d('❌ Registration failed: No current user found');
         return false;
       }
@@ -1327,7 +1327,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       final cleanedPhone =
           phoneForUser.isNotEmpty ? _cleanPhoneNumber(phoneForUser) : '';
       if (cleanedPhone.isEmpty) {
-        _error = 'رقم الهاتف غير موجود';
+        _error = 'error_phone_not_found'; // l10n key
         Logger.d('❌ Registration failed: No phone number available');
         return false;
       }
@@ -1413,7 +1413,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       // Final validation: ensure role is set before insert/update
       if (!upsertData.containsKey('role') || upsertData['role'] == null) {
         Logger.d('❌ CRITICAL: Role not set in upsertData!');
-        _error = 'خطأ في تحديد نوع المستخدم. يرجى المحاولة مرة أخرى.';
+        _error = 'error_invalid_role_type'; // l10n key
         return false;
       }
       
@@ -1421,7 +1421,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       final finalRole = (upsertData['role'] as String).trim().toLowerCase();
       if (!['driver', 'merchant', 'customer', 'admin'].contains(finalRole)) {
         Logger.d('❌ CRITICAL: Invalid role after normalization: $finalRole');
-        _error = 'نوع المستخدم غير صحيح. يرجى المحاولة مرة أخرى.';
+        _error = 'error_invalid_role_value'; // l10n key
         return false;
       }
       
@@ -1446,7 +1446,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
           final cleanedIdNumber = idNumber.replaceAll(RegExp(r'[^0-9]'), '');
           if (cleanedIdNumber.length != 12) {
             Logger.d('❌ ID number must be exactly 12 digits for national_id. Got: ${cleanedIdNumber.length} digits');
-            _error = 'رقم الهوية الوطني يجب أن يكون 12 رقمًا بالضبط عندما يكون نوع الوثيقة هو البطاقة الوطنية';
+            _error = 'error_national_id_must_be_12_digits'; // l10n key
             return false;
           }
           // Use cleaned version
@@ -1472,11 +1472,11 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
 
           if (taken == true) {
             Logger.d('❌ ID number already registered to a different user');
-            _error = 'رقم الهوية الوطني مسجل بالفعل لحساب آخر. لا يمكن استخدام نفس الهوية لأكثر من حساب.';
+            _error = 'error_national_id_duplicate'; // l10n key
             return false;
           }
         }
-        
+
           response = await Supabase.instance.client
               .from('users')
               .update(upsertData)
@@ -1497,11 +1497,11 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
 
           if (taken == true) {
             Logger.d('❌ ID number already registered to another user');
-            _error = 'رقم الهوية الوطني مسجل بالفعل لحساب آخر. لا يمكن استخدام نفس الهوية لأكثر من حساب.';
+            _error = 'error_national_id_duplicate'; // l10n key
             return false;
           }
         }
-        
+
         // Insert new user
         response = await Supabase.instance.client
             .from('users')
@@ -1572,10 +1572,9 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
               e.code == '23505')) {
         if (e.message.contains('id_number') ||
             (e.details?.toString().contains('id_number') ?? false)) {
-          _error =
-              'رقم الهوية الوطني مسجل بالفعل في النظام. لا يمكن استخدام نفس الهوية لأكثر من حساب.';
+          _error = 'error_national_id_duplicate'; // l10n key
         } else {
-          _error = 'البيانات المدخلة مسجلة بالفعل في النظام';
+          _error = 'error_data_already_registered'; // l10n key
         }
       } else {
         _error = _getErrorMessage(e);

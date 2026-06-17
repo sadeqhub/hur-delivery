@@ -1,4 +1,3 @@
-// TODO: extract Supabase.instance calls to a feature repository
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +15,7 @@ import '../../../shared/widgets/responsive_container.dart';
 import 'user_registration_screen.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/logger.dart';
+import '../data/auth_repository.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phone;
@@ -204,19 +204,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     // 2) Fast DB lookup by ID (single query, short timeout)
     try {
-      final response = await Supabase.instance.client
-          .from('users')
-          .select('role')
-          .eq('id', currentUser.id)
-          .maybeSingle()
-          .timeout(
-            const Duration(seconds: 3),
-            onTimeout: () {
-              Logger.d('⏱️ Role lookup timed out');
-              return null;
-            },
-          );
-      final dbRole = response?['role'] as String?;
+      final dbRole = await AuthRepository().getUserRole(currentUser.id);
       if (dbRole != null && dbRole.isNotEmpty) {
         Logger.d('⚡ Quick DB role lookup succeeded: $dbRole');
         return dbRole;
@@ -236,16 +224,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     String? userRole;
     final user = auth.user;
     
+    final _repo = AuthRepository();
     try {
-      profileCheck = await Supabase.instance.client
-          .from('users')
-          .select('role, id, phone')
-          .eq('id', currentUser.id)
-          .maybeSingle();
+      profileCheck = await _repo.getUserRoleById(currentUser.id);
     } catch (e) {
       Logger.d('⚠️ Fallback lookup by ID failed: $e');
     }
-    
+
     if (profileCheck != null) {
       userRole = profileCheck['role'] as String?;
     } else if (widget.phone.isNotEmpty) {
@@ -257,12 +242,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         }
         final phoneWithPlus = '+$cleanedPhone';
 
-        profileCheck = await Supabase.instance.client
-            .from('users')
-            .select('role, id, phone')
-            .or('phone.eq.$cleanedPhone,phone.eq.$phoneWithPlus')
-            .maybeSingle();
-
+        profileCheck = await _repo.getUserRoleByPhone(cleanedPhone, phoneWithPlus);
         userRole ??= profileCheck?['role'] as String?;
       } catch (e) {
         Logger.d('⚠️ Fallback phone search failed: $e');

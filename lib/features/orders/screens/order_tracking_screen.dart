@@ -1,8 +1,6 @@
-// TODO: extract Supabase.instance calls to a feature repository
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/localization/app_localizations.dart';
@@ -11,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../shared/widgets/navigation_overlay_system.dart';
 import '../../dashboard/widgets/state_of_the_art_map_widget.dart';
+import '../data/order_repository.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   final String orderId;
@@ -83,11 +82,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
 
     try {
       // PERFORMANCE: Use materialized view (215ms → <10ms, 95% faster)
-      final response = await Supabase.instance.client
-          .from('recent_driver_locations')
-          .select()
-          .eq('driver_id', order.driverId!)
-          .maybeSingle();
+      final response = await OrderRepository().getDriverLocation(order.driverId!);
 
       if (mounted) {
         final wasBackingOff = _consecutiveErrors >= _backoffThreshold;

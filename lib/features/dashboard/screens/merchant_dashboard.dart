@@ -20,7 +20,6 @@ import '../../wallet/widgets/wallet_balance_widget.dart';
 import '../../wallet/widgets/credit_limit_guard.dart';
 import '../../wallet/screens/wallet_screen.dart';
 import 'merchant_analytics_screen.dart';
-import 'dart:async';
 import '../../../core/riverpod/app_providers.dart';
 import '../../../shared/widgets/maintenance_mode_dialog.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -801,35 +800,10 @@ class _ActiveOrdersList extends StatefulWidget {
 }
 
 class _ActiveOrdersListState extends State<_ActiveOrdersList> {
-  Timer? _refreshTimer;
-  OrderProvider? _orderProvider;
-
-  @override
-  void initState() {
-    super.initState();
-    
-    // Refresh every 5 seconds to keep orders live and updated
-    // Note: Real-time subscription handles instant updates, this is just a backup
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (mounted && _orderProvider != null && !_orderProvider!.isLoading) {
-        // Fetch fresh data from the database (only if not already loading)
-        _orderProvider!.refreshOrders();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<OrderProvider>(
       builder: (context, orderProvider, _) {
-        // Store reference to provider for timer callback
-        _orderProvider = orderProvider;
         if (orderProvider.isLoading && orderProvider.orders.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),

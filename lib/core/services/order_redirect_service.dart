@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
@@ -7,11 +6,11 @@ import '../../shared/models/order_status.dart';
 import '../utils/logger.dart';
 
 /// Global Order Redirect Service
-/// 
+///
 /// Monitors for new active orders assigned to drivers and redirects them
 /// to the dashboard ONCE per new order (not repeatedly)
 class OrderRedirectService {
-  static Timer? _monitorTimer;
+  static RealtimeChannel? _ordersChannel;
   static String? _currentDriverId;
   static String? _lastSeenOrderId;
   static bool _isMonitoring = false;
@@ -21,28 +20,43 @@ class OrderRedirectService {
   static Future<void> startMonitoring(BuildContext context, String driverId) async {
     _context = context;
     _currentDriverId = driverId;
-    
+
     if (_isMonitoring) {
       Logger.d('ℹ️ Order redirect service already monitoring');
       return;
     }
-    
+
     Logger.d('\n═══════════════════════════════════════');
     Logger.d('🔔 STARTING ORDER REDIRECT SERVICE');
     Logger.d('═══════════════════════════════════════');
     Logger.d('Driver ID: $driverId');
-    
+
     // Load last seen order from storage
     await _loadLastSeenOrder();
-    
-    // Start monitoring every 3 seconds
+
+    // Start realtime monitoring
     _isMonitoring = true;
-    _monitorTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-      await _checkForNewOrders();
-    });
-    
-    Logger.d('✅ Order redirect service started (checking every 3 seconds)');
+    _startRealtimeMonitoring();
+
+    Logger.d('✅ Order redirect service started (realtime)');
     Logger.d('═══════════════════════════════════════\n');
+  }
+
+  static void _startRealtimeMonitoring() {
+    _ordersChannel = Supabase.instance.client
+        .channel('order-redirect-$_currentDriverId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'orders',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'driver_id',
+            value: _currentDriverId!,
+          ),
+          callback: (payload) async => _checkForNewOrders(),
+        )
+        .subscribe();
   }
 
   /// Load last seen order from SharedPreferences
@@ -142,8 +156,8 @@ class OrderRedirectService {
   /// Stop monitoring
   static void stopMonitoring() {
     Logger.d('🛑 Stopping order redirect service');
-    _monitorTimer?.cancel();
-    _monitorTimer = null;
+    _ordersChannel?.unsubscribe();
+    _ordersChannel = null;
     _isMonitoring = false;
     _context = null;
     _currentDriverId = null;

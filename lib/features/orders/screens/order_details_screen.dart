@@ -1,4 +1,3 @@
-// TODO: extract Supabase.instance calls to a feature repository
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -12,7 +11,7 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/utils/responsive_extensions.dart';
 import '../../../shared/widgets/responsive_container.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../data/order_repository.dart';
 
 import '../../../core/providers/order_provider.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -1713,9 +1712,7 @@ class _OrderProofGalleryState extends State<_OrderProofGallery> {
       final List<_ProofItem> items = [];
       for (final r in rows) {
         final path = r['storage_path'] as String;
-        final url = await Supabase.instance.client.storage
-            .from('order_proofs')
-            .createSignedUrl(path, 60 * 10); // 10 minutes
+        final url = await OrderRepository().createOrderProofSignedUrl(path);
         items.add(_ProofItem(url: url, createdAt: DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now()));
       }
       if (mounted) setState(() => _items = items);

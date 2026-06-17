@@ -1,9 +1,7 @@
-// TODO: extract Supabase.instance calls to a feature repository
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -13,6 +11,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/utils/logger.dart';
+import '../data/auth_repository.dart';
 
 class IdVerificationReviewScreen extends StatefulWidget {
   final Map<String, dynamic> extractedData;
@@ -85,23 +84,12 @@ class _IdVerificationReviewScreenState
     super.dispose();
   }
 
+  final _authRepo = AuthRepository();
+
   // Check if user already has an ID number in the database
   Future<bool> _checkIfUserHasIdNumber() async {
     try {
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser == null) return false;
-      
-      final response = await Supabase.instance.client
-          .from('my_profile')
-          .select('id_number')
-          .maybeSingle();
-      
-      if (response != null && response['id_number'] != null) {
-        final idNumber = response['id_number'] as String;
-        return idNumber.isNotEmpty;
-      }
-      
-      return false;
+      return await _authRepo.currentUserHasIdNumber();
     } catch (e) {
       Logger.d('⚠️ Error checking ID number: $e');
       return false;
@@ -109,25 +97,14 @@ class _IdVerificationReviewScreenState
   }
 
   Future<String?> _uploadToStorage(File file, String path) async {
-    try {
-      final supabase = Supabase.instance.client;
-      
-      Logger.d('📤 Uploading file to: $path');
-      
-      await supabase.storage.from('files').upload(
-          path,
-          file,
-          fileOptions: const FileOptions(
-            upsert: true,
-          ),
-        );
-      
+    Logger.d('📤 Uploading file to: $path');
+    final result = await _authRepo.uploadFileToBucket(file, path);
+    if (result != null) {
       Logger.d('✅ File uploaded successfully');
-      return path;
-    } catch (e) {
-      Logger.d('❌ Upload error: $e');
-      return null;
+    } else {
+      Logger.d('❌ Upload error');
     }
+    return result;
   }
 
   Future<void> _submitVerification() async {
@@ -165,9 +142,7 @@ class _IdVerificationReviewScreenState
           '$storageBasePath/id_front_review_$timestamp.jpg',
         );
         if (idFrontPath != null) {
-          idFrontPublicUrl = Supabase.instance.client.storage
-              .from('files')
-              .getPublicUrl(idFrontPath);
+          idFrontPublicUrl = _authRepo.getFilePublicUrl(idFrontPath);
         }
       }
 
@@ -178,9 +153,7 @@ class _IdVerificationReviewScreenState
           '$storageBasePath/id_back_review_$timestamp.jpg',
         );
         if (idBackPath != null) {
-          idBackPublicUrl = Supabase.instance.client.storage
-              .from('files')
-              .getPublicUrl(idBackPath);
+          idBackPublicUrl = _authRepo.getFilePublicUrl(idBackPath);
         }
       }
 
@@ -191,9 +164,7 @@ class _IdVerificationReviewScreenState
           '$storageBasePath/selfie_review_$timestamp.jpg',
         );
         if (selfiePath != null) {
-          selfiePublicUrl = Supabase.instance.client.storage
-              .from('files')
-              .getPublicUrl(selfiePath);
+          selfiePublicUrl = _authRepo.getFilePublicUrl(selfiePath);
         }
       }
 
@@ -265,10 +236,7 @@ class _IdVerificationReviewScreenState
               'id_birth_date': _birthDateController.text,
             'updated_at': DateTime.now().toIso8601String(),
           };
-          await Supabase.instance.client
-              .from('users')
-              .update(updateData)
-              .eq('id', userId);
+          await _authRepo.updateUserProfile(userId, updateData);
           Logger.d('✅ Users table updated with reviewed info');
         } catch (e) {
           Logger.d('⚠️ Failed to update users table with reviewed info: $e');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../shared/models/order_model.dart';
@@ -98,7 +99,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
         _orderSubscription = null;
         if (oldChannel != null) {
           oldChannel.unsubscribe();
-          Supabase.instance.client.removeChannel(oldChannel);
+          ApiClient.instance.removeChannel(oldChannel);
         }
       } catch (_) {}
       
@@ -157,9 +158,8 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
   
   void _subscribeToOrderUpdates() {
     try {
-      _orderSubscription = Supabase.instance.client
-          .channel('order_${widget.order.id}')
-          .onPostgresChanges(
+      final channel = ApiClient.instance.channel('order_${widget.order.id}') as RealtimeChannel;
+      _orderSubscription = channel.onPostgresChanges(
             event: PostgresChangeEvent.update,
             schema: 'public',
             table: 'orders',
@@ -231,7 +231,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
       _orderSubscription = null;
       if (channel != null) {
         channel.unsubscribe();
-        Supabase.instance.client.removeChannel(channel);
+        ApiClient.instance.removeChannel(channel);
       }
       _animationController.dispose();
       _flashAnimationController.dispose();

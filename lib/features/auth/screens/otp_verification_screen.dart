@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/network/api_client.dart';
 import 'dart:async';
 
 import '../../../core/theme/app_theme.dart';
@@ -122,7 +122,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       final auth = context.read<AuthProvider>();
       
       // Check if user is authenticated
-      final currentUser = Supabase.instance.client.auth.currentUser;
+      final currentUser = ApiClient.instance.currentUser;
       if (currentUser == null) {
         Logger.d('⚠️ No authenticated user after OTP verification');
         if (mounted) {

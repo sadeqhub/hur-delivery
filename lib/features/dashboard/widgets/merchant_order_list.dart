@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
@@ -352,7 +352,7 @@ class _MerchantActiveOrdersListState extends State<MerchantActiveOrdersList> {
   // ignore: unused_element
   Future<int> _checkOnlineDrivers() async {
     try {
-      final merchantId = Supabase.instance.client.auth.currentUser?.id;
+      final merchantId = ApiClient.instance.currentUser?.id;
       if (merchantId == null) return 0;
 
       final merchantCity =

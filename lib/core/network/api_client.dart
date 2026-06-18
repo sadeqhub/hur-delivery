@@ -37,4 +37,12 @@ class ApiClient {
 
   /// Returns a [RealtimeChannel] for a given channel name.
   dynamic channel(String name) => _client.channel(name);
+
+  /// Removes a realtime channel from the Supabase client.
+  Future<String> removeChannel(RealtimeChannel channel) =>
+      _client.removeChannel(channel);
+
+  /// Returns the current authenticated user from in-memory auth state.
+  /// Does NOT make a network call — use only for reading local session data.
+  User? get currentUser => _client.auth.currentUser;
 }

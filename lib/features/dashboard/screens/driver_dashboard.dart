@@ -9,7 +9,6 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:flutter/foundation.dart'
     show unawaited, kReleaseMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 
@@ -51,6 +50,7 @@ import '../widgets/driver_sidebar.dart';
 import '../widgets/driver_timer_banner.dart';
 import '../widgets/driver_order_swipe_cards.dart';
 import '../widgets/order_proof_uploader.dart';
+import '../../driver/data/driver_repository.dart';
 
 // ---------------------------------------------------------------------------
 // Public entry point — provides dashboard-scoped providers then renders the
@@ -2650,11 +2650,8 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
     try {
       print('📞 Fetching merchant details for: $merchantId');
 
-      final merchantResponse = await Supabase.instance.client
-          .from('users')
-          .select('id, phone, name, store_name')
-          .eq('id', merchantId)
-          .maybeSingle();
+      final merchantResponse =
+          await DriverRepository.instance.getMerchantContactInfo(merchantId);
 
       if (merchantResponse == null) {
         print(
@@ -3668,26 +3665,18 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
 
       // Check each order
       for (final order in activeOrders) {
-        try {
-          final result = await Supabase.instance.client.rpc(
-            'check_dropoff_proximity',
-            params: {
-              'p_order_id': order.id,
-              'p_driver_id': authProvider.user!.id,
-              'p_driver_latitude': driverPosition.latitude,
-              'p_driver_longitude': driverPosition.longitude,
-            },
-          );
+        final result = await DriverRepository.instance.checkDropoffProximity(
+          orderId: order.id,
+          driverId: authProvider.user!.id,
+          driverLatitude: driverPosition.latitude,
+          driverLongitude: driverPosition.longitude,
+        );
 
-          if (result is Map && result['timer_stopped'] == true) {
-            print(
-                '✅ Timer stopped for order ${order.id} - driver reached dropoff');
-            // Reload orders to get updated timer status
-            await orderProvider.initialize();
-          }
-        } catch (e) {
+        if (result != null && result['timer_stopped'] == true) {
           print(
-              '⚠️ Error checking dropoff proximity for order ${order.id}: $e');
+              '✅ Timer stopped for order ${order.id} - driver reached dropoff');
+          // Reload orders to get updated timer status
+          await orderProvider.initialize();
         }
       }
     } catch (e) {

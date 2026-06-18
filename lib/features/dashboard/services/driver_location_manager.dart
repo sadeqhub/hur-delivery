@@ -86,19 +86,17 @@ class DriverLocationManager {
         order.deliveryTimerStoppedAt == null);
 
     for (final order in activeOrders) {
-      try {
-        final timerStopped = await DriverRepository.instance.checkDropoffProximity(
-          orderId: order.id,
-          driverId: auth.user!.id,
-          driverLatitude: driverPosition.latitude,
-          driverLongitude: driverPosition.longitude,
-        );
+      final result = await DriverRepository.instance.checkDropoffProximity(
+        orderId: order.id,
+        driverId: auth.user!.id,
+        driverLatitude: driverPosition.latitude,
+        driverLongitude: driverPosition.longitude,
+      );
 
-        if (timerStopped) {
-          // Reload orders to reflect the updated timer status.
-          await orders.initialize();
-        }
-      } catch (_) {}
+      if (result != null && result['timer_stopped'] == true) {
+        // Reload orders to reflect the updated timer status.
+        await orders.initialize();
+      }
     }
   }
 }

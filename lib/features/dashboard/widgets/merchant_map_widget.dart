@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/network/api_client.dart';
 import 'package:http/http.dart' as http;
 import '../../../shared/models/order_model.dart';
 import '../../../core/utils/map_style_helper.dart';
@@ -196,8 +197,7 @@ class _MerchantMapWidgetState extends State<MerchantMapWidget> {
     // Initial fetch shows current state — realtime only delivers changes.
     _fetchDriverLocations();
 
-    _driverLocationChannel = Supabase.instance.client
-        .channel('merchant_map_driver_locs')
+    _driverLocationChannel = (ApiClient.instance.channel('merchant_map_driver_locs') as RealtimeChannel)
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',

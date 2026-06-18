@@ -214,6 +214,25 @@ class AuthRepository {
     }
   }
 
+  /// Marks the merchant walkthrough as completed for the given user.
+  Future<void> completeMerchantWalkthrough(String userId) async {
+    Logger.d(_tag, 'completeMerchantWalkthrough: ${Logger.redactId(userId)}');
+    try {
+      await _client
+          .from('users')
+          .update({
+            'merchant_walkthrough_completed': true,
+            'merchant_walkthrough_completed_at':
+                DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', userId)
+          .timeout(const Duration(seconds: 15));
+    } catch (e, st) {
+      Logger.e(_tag, 'completeMerchantWalkthrough failed', error: e, stack: st);
+      throw ErrorMapper.map(e);
+    }
+  }
+
   /// Marks the driver walkthrough as completed for the given user.
   Future<void> completeDriverWalkthrough(String userId) async {
     Logger.d(_tag, 'completeDriverWalkthrough: ${Logger.redactId(userId)}');

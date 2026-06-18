@@ -126,7 +126,7 @@ class AuthRepository {
         return await Supabase.instance.client.auth.setSession(refreshToken);
       }
 
-      throw const AppFailure.unknown('OTP verified but no session returned');
+      throw AppFailure.unknown('OTP verified but no session returned');
     } on AppFailure {
       rethrow;
     } catch (e, st) {

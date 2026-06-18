@@ -133,7 +133,7 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: Tooltip(
-                    message: 'خطأ في الاتصال',
+                    message: AppLocalizations.of(context).errConnectionError,
                     child: Container(
                       margin: const EdgeInsets.symmetric(vertical: 12),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -142,18 +142,18 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: AppColors.error, width: 1),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.cloud_off_rounded,
                             size: 16,
                             color: AppColors.error,
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Text(
-                            'غير متصل',
-                            style: TextStyle(
+                            AppLocalizations.of(context).offlineStatus,
+                            style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: AppColors.error,
@@ -603,51 +603,53 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
     );
   }
 
-  String _getUserFriendlyError(String error) {
+  String _getUserFriendlyError(String error, [BuildContext? ctx]) {
     final errorLower = error.toLowerCase();
-    
-    if (errorLower.contains('connection') || 
-        errorLower.contains('network') || 
+    final loc = ctx != null ? AppLocalizations.of(ctx) : null;
+
+    if (errorLower.contains('connection') ||
+        errorLower.contains('network') ||
         errorLower.contains('timeout')) {
-      return 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
-    } else if (errorLower.contains('auth') || 
+      return loc?.errCannotConnectServerRetry ?? 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
+    } else if (errorLower.contains('auth') ||
                errorLower.contains('session') ||
                errorLower.contains('token')) {
-      return 'انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.';
-    } else if (errorLower.contains('permission') || 
+      return loc?.sessionExpiredLoginAgain ?? 'انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.';
+    } else if (errorLower.contains('permission') ||
                errorLower.contains('denied')) {
-      return 'لا تملك الصلاحية للوصول إلى هذه البيانات.';
+      return loc?.noPermissionData ?? 'لا تملك الصلاحية للوصول إلى هذه البيانات.';
     } else {
-      return 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى لاحقاً.';
+      return loc?.unexpectedErrorRetry ?? 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى لاحقاً.';
     }
   }
 
   void _showConnectionHelpDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('مساعدة في حل المشكلة'),
-        content: const SingleChildScrollView(
+        title: Text(loc.helpSolveProblem),
+        content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'جرب الخطوات التالية:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                loc.tryTheseSteps,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              SizedBox(height: 12),
-              Text('1️⃣ تأكد من اتصال الإنترنت'),
-              SizedBox(height: 8),
-              Text('2️⃣ أغلق التطبيق وأعد فتحه'),
-              SizedBox(height: 8),
-              Text('3️⃣ تحقق من تحديث التطبيق'),
-              SizedBox(height: 8),
-              Text('4️⃣ أعد تشغيل جهازك إذا استمرت المشكلة'),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
+              Text('1️⃣ ${loc.checkInternet}'),
+              const SizedBox(height: 8),
+              Text('2️⃣ ${loc.closeReopenApp}'),
+              const SizedBox(height: 8),
+              Text('3️⃣ ${loc.checkAppUpdate}'),
+              const SizedBox(height: 8),
+              Text('4️⃣ ${loc.restartDevice}'),
+              const SizedBox(height: 12),
               Text(
-                'إذا استمرت المشكلة، تواصل مع الدعم الفني.',
-                style: TextStyle(fontStyle: FontStyle.italic),
+                loc.contactSupportIfPersists,
+                style: const TextStyle(fontStyle: FontStyle.italic),
               ),
             ],
           ),
@@ -655,14 +657,14 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('حسناً'),
+            child: Text(loc.ok),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _openSupportChat(context);
             },
-            child: const Text('تواصل مع الدعم'),
+            child: Text(loc.contactSupport),
           ),
         ],
       ),
@@ -679,12 +681,8 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
       builder: (context) => WillPopScope(
         onWillPop: () async => false, // Prevent back button
         child: AlertDialog(
-          title: Text(isArabic ? 'الموقع مطلوب' : 'Location Required'),
-          content: Text(
-            isArabic 
-                ? 'يرجى تحديد موقع المتجر وعنوانه المكتوب للمتابعة.\nهذا يضمن وصول السائقين إليك بدقة.'
-                : 'Please set your store location and address to continue.\nThis ensures drivers can reach you accurately.'
-          ),
+          title: Text(loc.locationRequiredTitle),
+          content: Text(loc.locationRequiredMessage),
           actions: [
             TextButton(
               onPressed: () async {
@@ -709,7 +707,7 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
                    }
                 }
               },
-              child: Text(isArabic ? 'تحديث الموقع' : 'Update Location'),
+              child: Text(loc.updateLocation),
             ),
           ],
         ),

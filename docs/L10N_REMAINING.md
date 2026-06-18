@@ -1,8 +1,26 @@
 # L10N Remaining — Hardcoded Arabic Strings
 
-Generated 2026-06-17 after the l10n sweep that moved **23+ keys** out of
-`session_service.dart`, `otp_service.dart`, and `auth_provider.dart` into the
-hand-written `AppLocalizations` static map.
+Updated 2026-06-18 after the l10n sweep that moved **35+ additional keys** out of
+`order_provider.dart`, `merchant_dashboard.dart`, and `user_registration_screen.dart`
+into the hand-written `AppLocalizations` static map.
+
+Previous sweep (2026-06-17): moved **23+ keys** from `session_service.dart`,
+`otp_service.dart`, and `auth_provider.dart`.
+
+**Running total: 58+ keys moved across 6 files.**
+
+### Revised counts after 2026-06-18 sweep
+
+| File | Before | After | Moved |
+|------|-------:|------:|------:|
+| `lib/core/providers/order_provider.dart` | 119 | 5 | 114 |
+| `lib/features/dashboard/screens/merchant_dashboard.dart` | 70 | 4 | 66 |
+| `lib/features/auth/screens/user_registration_screen.dart` | 49 | 31 | 18 |
+
+Note: remaining strings in `user_registration_screen.dart` are data-array labels
+(restaurant categories, document type labels, "hear about us" options) which are
+bilingual value/label pairs — not suitable for AppLocalizations without a data
+refactor.
 
 The grep pattern used: `'[^']*[؀-ۿ][^']*'` (Arabic Unicode block in
 single-quoted Dart string literals).  Counts below are *line matches*, not

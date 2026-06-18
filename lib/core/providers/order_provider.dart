@@ -405,13 +405,13 @@ class OrderProvider extends ChangeNotifier {
           errorString.contains('socketexception') ||
           errorString.contains('hostname') ||
           errorString.contains('no address associated')) {
-        _error = 'لا يمكن الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت / Unable to connect to server. Please check your internet connection.';
+        _error = 'err_cannot_connect_server'; // L10n key
       } else if (errorString.contains('timeout')) {
-        _error = 'انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى / Connection timeout. Please try again.';
+        _error = 'err_connection_timeout'; // L10n key
       } else if (errorString.contains('network') || errorString.contains('connection')) {
-        _error = 'مشكلة في الاتصال بالشبكة. يرجى التحقق من اتصال الإنترنت / Network connection problem. Please check your internet connection.';
+        _error = 'err_network_connection_problem'; // L10n key
       } else {
-        _error = 'حدث خطأ أثناء تحميل الطلبات. يرجى المحاولة مرة أخرى / An error occurred while loading orders. Please try again.';
+        _error = 'err_loading_orders'; // L10n key
       }
       Logger.d('❌ Error in _loadOrders: $e');
       // Set orders to empty list on error to avoid showing stale data
@@ -789,7 +789,7 @@ class OrderProvider extends ChangeNotifier {
     try {
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser == null) {
-        _error = 'المستخدم غير مسجل الدخول';
+        _error = 'err_user_not_logged_in'; // L10n key
         return null;
       }
 
@@ -847,7 +847,7 @@ class OrderProvider extends ChangeNotifier {
         },
       );
       if (orderResponse == null) {
-        _error = _error ?? 'حدث خطأ في إنشاء الطلب. يرجى المحاولة مرة أخرى.';
+        _error = _error ?? 'err_create_order'; // L10n key
         return null;
       }
 
@@ -888,7 +888,7 @@ class OrderProvider extends ChangeNotifier {
       // Check if error is due to system being disabled
       final errorString = e.toString();
       if (errorString.contains('SYSTEM_DISABLED') || errorString.contains('وضع الصيانة')) {
-        _error = 'النظام حالياً في وضع الصيانة. لا يمكن إنشاء طلبات جديدة.';
+        _error = 'err_system_maintenance_no_orders'; // L10n key
       } else {
         // Extract more detailed error message
         String detailedError = errorString;
@@ -900,7 +900,7 @@ class OrderProvider extends ChangeNotifier {
             // If parsing fails, use original error
           }
         }
-        _error = detailedError.isNotEmpty ? detailedError : 'حدث خطأ في إنشاء الطلب. يرجى المحاولة مرة أخرى.';
+        _error = detailedError.isNotEmpty ? detailedError : 'err_create_order'; // L10n key
         Logger.d('   User-friendly error: $_error');
       }
       return null;
@@ -1010,7 +1010,7 @@ class OrderProvider extends ChangeNotifier {
         defaultValue: false,
       );
       if (ok != true) {
-        _error = _error ?? 'تعذر تحديث حالة الطلب.';
+        _error = _error ?? 'err_update_order_status'; // L10n key
         return false;
       }
 
@@ -1125,7 +1125,7 @@ class OrderProvider extends ChangeNotifier {
         defaultValue: false,
       );
       if (ok != true) {
-        _error = _error ?? 'تعذر قبول الطلب.';
+        _error = _error ?? 'err_accept_order'; // L10n key
         return false;
       }
 
@@ -1145,7 +1145,7 @@ class OrderProvider extends ChangeNotifier {
     } catch (e) {
       final msg = e.toString();
       if (msg.contains('DRIVER_WALLET_NEGATIVE')) {
-        _error = 'رصيد محفظتك بالسالب. يرجى شحن المحفظة أولاً لتسديد العمولة ثم حاول مرة أخرى.';
+        _error = 'err_low_wallet_balance'; // L10n key
       } else {
         _error = msg;
       }
@@ -1184,7 +1184,7 @@ class OrderProvider extends ChangeNotifier {
         defaultValue: false,
       );
       if (ok != true) {
-        _error = _error ?? 'تعذر رفض الطلب.';
+        _error = _error ?? 'err_reject_order'; // L10n key
         return false;
       }
 
@@ -1483,7 +1483,7 @@ class OrderProvider extends ChangeNotifier {
       );
 
       if (ok != true) {
-        _error = _error ?? 'تعذر تحديث حالة الطلب.';
+        _error = _error ?? 'err_update_order_status'; // L10n key
         return false;
       }
 
@@ -1568,7 +1568,7 @@ class OrderProvider extends ChangeNotifier {
 
       return true;
     } on TimeoutException catch (e) {
-      _error = 'انتهت مهلة الرفع. يرجى المحاولة مرة أخرى / Upload timeout. Please try again.';
+      _error = 'err_upload_timeout'; // L10n key
       Logger.d('❌ Upload timeout: $e');
       return false;
     } catch (e) {
@@ -1615,7 +1615,7 @@ class OrderProvider extends ChangeNotifier {
     try {
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser == null) {
-        _error = 'المستخدم غير مسجل الدخول';
+        _error = 'err_user_not_logged_in'; // L10n key
         return false;
       }
 
@@ -1648,17 +1648,18 @@ class OrderProvider extends ChangeNotifier {
           // Handle specific error types
           if (error == 'no_drivers') {
             final vehicleType = response['vehicle_type'] as String?;
-            final vehicleTypeArabic = vehicleType == 'motorcycle' || vehicleType == 'motorbike'
-                ? 'دراجة نارية'
-                : vehicleType == 'car'
-                    ? 'سيارة'
-                    : vehicleType == 'truck'
-                        ? 'شاحنة'
-                        : 'مركبة';
-            
-            errorMessage = 'لا يوجد سائقي $vehicleTypeArabic متصلين حالياً. يرجى المحاولة لاحقاً.';
+            // L10n keys used so UI layer can resolve locale-appropriate message
+            if (vehicleType == 'motorcycle' || vehicleType == 'motorbike') {
+              errorMessage = 'no_motorbike_drivers_online'; // L10n key
+            } else if (vehicleType == 'car') {
+              errorMessage = 'no_car_drivers_online'; // L10n key
+            } else if (vehicleType == 'truck') {
+              errorMessage = 'no_truck_drivers_online'; // L10n key
+            } else {
+              errorMessage = 'no_vehicle_drivers_online'; // L10n key
+            }
           } else {
-            errorMessage = message ?? 'فشل إعادة نشر الطلب';
+            errorMessage = message ?? 'err_repost_failed'; // L10n key
           }
 
           Logger.d('❌ Repost failed: $errorMessage');
@@ -1677,14 +1678,14 @@ class OrderProvider extends ChangeNotifier {
         success = response;
         Logger.d('✅ Order $orderId reposted (legacy boolean response): $success');
         if (!success) {
-          errorMessage = 'فشل إعادة نشر الطلب';
+          errorMessage = 'err_repost_failed'; // L10n key
           _error = errorMessage;
           return false;
         }
       } else {
         // Unexpected response type
         Logger.d('⚠️ Unexpected response type: ${response.runtimeType}');
-        errorMessage = 'استجابة غير متوقعة من الخادم';
+        errorMessage = 'err_unexpected_server_response'; // L10n key
         _error = errorMessage;
         return false;
       }
@@ -1727,15 +1728,15 @@ class OrderProvider extends ChangeNotifier {
   String _getErrorMessage(dynamic error) {
     final msg = error is PostgrestException ? error.message : error.toString();
     if (msg.contains('Order not found')) {
-      return 'الطلب غير موجود';
+      return 'order_not_found_msg'; // L10n key
     } else if (msg.contains('Driver not available')) {
-      return 'لا يوجد سائق متاح';
+      return 'no_driver_available_msg'; // L10n key
     } else if (msg.contains('Order already assigned')) {
-      return 'الطلب مخصص بالفعل';
+      return 'order_already_assigned_msg'; // L10n key
     } else if (msg.contains('Invalid status transition')) {
-      return 'تغيير الحالة غير صحيح';
+      return 'invalid_status_transition_msg'; // L10n key
     } else {
-      return 'حدث خطأ غير متوقع';
+      return 'unexpected_error_msg'; // L10n key
     }
   }
 

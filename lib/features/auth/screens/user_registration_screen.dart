@@ -314,7 +314,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('رقم الهوية الوطني يجب أن يكون 12 رقمًا بالضبط. الرقم المستخرج: $idNumber'),
+                content: Text(AppLocalizations.of(context).nationalIdMustBe12DigitsExtracted(idNumber)),
                 backgroundColor: AppColors.error,
                 duration: const Duration(seconds: 5),
               ),
@@ -1188,7 +1188,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'أضف صورة شخصية واضحة لسهولة تمييزك من قبل العملاء.',
+                    AppLocalizations.of(context).addClearProfilePhoto,
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: context.themeTextSecondary,
                     ),
@@ -1614,7 +1614,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         },
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return 'نوع الوثيقة مطلوب';
+            return AppLocalizations.of(context).documentTypeRequired;
           }
           return null;
         },
@@ -1649,9 +1649,9 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           color: context.themeTextPrimary,
         ),
         decoration: InputDecoration(
-          labelText: 'نوع النشاط التجاري',
+          labelText: AppLocalizations.of(context).businessTypeLabel,
           labelStyle: TextStyle(color: context.themeTextSecondary),
-          hintText: 'ما نوع عملك؟',
+          hintText: AppLocalizations.of(context).businessTypeHint,
           hintStyle: TextStyle(color: context.themeTextTertiary),
           prefixIcon: Icon(Icons.business, color: context.themePrimary),
           border: InputBorder.none,
@@ -1662,7 +1662,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           DropdownMenuItem<String>(
             value: null,
             child: Text(
-              'اختر نوع النشاط التجاري',
+              AppLocalizations.of(context).selectBusinessType,
               style: TextStyle(color: context.themeTextTertiary),
             ),
           ),
@@ -1681,7 +1681,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         },
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return 'نوع النشاط التجاري مطلوب';
+            return AppLocalizations.of(context).businessTypeRequired;
           }
           return null;
         },
@@ -1691,14 +1691,15 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
     );
   }
 
-  String _getDocumentFrontLabel() {
+  String _getDocumentFrontLabel([BuildContext? ctx]) {
+    final loc = ctx != null ? AppLocalizations.of(ctx) : null;
     switch (_selectedDocumentType) {
       case 'driver_license':
-        return 'رخصة القيادة - الجانب الأمامي';
+        return loc?.drivingLicenseFront ?? 'رخصة القيادة - الجانب الأمامي';
       case 'passport':
-        return 'جواز السفر - الصفحة الرئيسية';
+        return loc?.passportMainPage ?? 'جواز السفر - الصفحة الرئيسية';
       default:
-        return 'الهوية الوطنية - الجانب الأمامي';
+        return loc?.nationalIdFront ?? 'الهوية الوطنية - الجانب الأمامي';
     }
   }
 

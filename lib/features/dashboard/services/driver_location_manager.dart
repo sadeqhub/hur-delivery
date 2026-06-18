@@ -1,9 +1,9 @@
 import 'package:geolocator/geolocator.dart' as geo;
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/location_provider.dart';
 import '../../../core/providers/order_provider.dart';
+import '../../driver/data/driver_repository.dart';
 
 /// Owns dropoff-proximity checking for a driver session.
 ///
@@ -86,22 +86,17 @@ class DriverLocationManager {
         order.deliveryTimerStoppedAt == null);
 
     for (final order in activeOrders) {
-      try {
-        final result = await Supabase.instance.client.rpc(
-          'check_dropoff_proximity',
-          params: {
-            'p_order_id': order.id,
-            'p_driver_id': auth.user!.id,
-            'p_driver_latitude': driverPosition.latitude,
-            'p_driver_longitude': driverPosition.longitude,
-          },
-        );
+      final result = await DriverRepository.instance.checkDropoffProximity(
+        orderId: order.id,
+        driverId: auth.user!.id,
+        driverLatitude: driverPosition.latitude,
+        driverLongitude: driverPosition.longitude,
+      );
 
-        if (result is Map && result['timer_stopped'] == true) {
-          // Reload orders to reflect the updated timer status.
-          await orders.initialize();
-        }
-      } catch (_) {}
+      if (result != null && result['timer_stopped'] == true) {
+        // Reload orders to reflect the updated timer status.
+        await orders.initialize();
+      }
     }
   }
 }

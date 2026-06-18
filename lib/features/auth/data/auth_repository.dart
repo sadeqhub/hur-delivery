@@ -296,7 +296,7 @@ class AuthRepository {
   Future<bool> currentUserHasIdNumber() async {
     Logger.d(_tag, 'currentUserHasIdNumber');
     try {
-      final row = await Supabase.instance.client
+      final row = await _client
           .from('my_profile')
           .select('id_number')
           .maybeSingle();

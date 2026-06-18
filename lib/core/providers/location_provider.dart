@@ -143,10 +143,10 @@ class LocationProvider extends ChangeNotifier {
         },
       );
       
-      // Periodic timer: fires every 30s as a "heartbeat" database update for
-      // stationary drivers (the stream only fires on 10m+ movement).
-      // We do NOT call notifyListeners() here — the stream already handles UI
-      // updates. The timer solely keeps the server-side location fresh.
+      // Sole location write path — foreground service not yet implemented.
+      // Fires every 30s as a heartbeat DB update for stationary drivers
+      // (the position stream only fires on 10m+ movement). We do NOT call
+      // notifyListeners() here — the stream already handles UI updates.
       _periodicUpdateTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
         if (!_isTracking) {
           timer.cancel();

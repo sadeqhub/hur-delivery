@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/localization/app_localizations.dart';
@@ -25,30 +26,32 @@ class OrderTrackingScreen extends StatefulWidget {
 
 class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     with WidgetsBindingObserver {
-  Timer? _driverLocationTimer;
+  RealtimeChannel? _locationChannel;
   Map<String, dynamic>? _driverLocation;
   String? _locationError;
 
-  // Adaptive interval: 3s normally, backs off to 10s after consecutive errors
-  static const _normalInterval = Duration(seconds: 3);
-  static const _backoffInterval = Duration(seconds: 10);
-  int _consecutiveErrors = 0;
-  static const _backoffThreshold = 3;
+  final _orderRepo = OrderRepository();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.read<OrderProvider>().initialize();
-      _startDriverLocationTracking();
+      final order =
+          context.read<OrderProvider>().getOrderById(widget.orderId);
+      if (order?.driverId != null) {
+        // Fetch initial location so the map is not blank on open.
+        await _fetchDriverLocationOnce(order!.driverId!);
+        _subscribeToDriverLocation(order.driverId!);
+      }
     });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _driverLocationTimer?.cancel();
+    _locationChannel?.unsubscribe();
     super.dispose();
   }
 
@@ -56,54 +59,68 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      _driverLocationTimer?.cancel();
-      _driverLocationTimer = null;
+      _locationChannel?.unsubscribe();
+      _locationChannel = null;
     } else if (state == AppLifecycleState.resumed &&
-        _driverLocationTimer == null) {
-      _consecutiveErrors = 0;
-      _startDriverLocationTracking();
+        _locationChannel == null) {
+      final order =
+          context.read<OrderProvider>().getOrderById(widget.orderId);
+      if (order?.driverId != null) {
+        _fetchDriverLocationOnce(order!.driverId!);
+        _subscribeToDriverLocation(order.driverId!);
+      }
     }
   }
 
-  void _startDriverLocationTracking() {
-    _driverLocationTimer?.cancel();
-    final interval = _consecutiveErrors >= _backoffThreshold
-        ? _backoffInterval
-        : _normalInterval;
-    _driverLocationTimer = Timer.periodic(interval, (_) {
-      _fetchDriverLocation();
-    });
-    _fetchDriverLocation();
+  /// Subscribe to realtime changes on the drivers table for this driverId.
+  void _subscribeToDriverLocation(String driverId) {
+    _locationChannel?.unsubscribe();
+    _locationChannel = Supabase.instance.client
+        .channel('tracking-driver-$driverId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'drivers',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: driverId,
+          ),
+          callback: (payload) => _updateDriverPosition(payload.newRecord),
+        )
+        .subscribe();
   }
 
-  Future<void> _fetchDriverLocation() async {
-    final order = context.read<OrderProvider>().getOrderById(widget.orderId);
-    if (order == null || order.driverId == null) return;
+  void _updateDriverPosition(Map<String, dynamic> record) {
+    if (!mounted) return;
+    setState(() {
+      _driverLocation = record;
+      _locationError = null;
+    });
+  }
 
+  /// One-shot fetch of the latest driver location (materialized view, ~<10ms).
+  Future<void> _fetchDriverLocationOnce(String driverId) async {
     try {
-      // PERFORMANCE: Use materialized view (215ms → <10ms, 95% faster)
-      final response = await OrderRepository().getDriverLocation(order.driverId!);
-
+      final response = await _orderRepo.getDriverLocation(driverId);
       if (mounted) {
-        final wasBackingOff = _consecutiveErrors >= _backoffThreshold;
-        _consecutiveErrors = 0;
         setState(() {
           _driverLocation = response;
           _locationError = null;
         });
-        // Restore normal polling interval after recovering from backoff
-        if (wasBackingOff) _startDriverLocationTracking();
       }
     } catch (e) {
       if (mounted) {
-        _consecutiveErrors++;
         setState(() => _locationError = e.toString());
-        // Switch to backoff interval when threshold is reached
-        if (_consecutiveErrors == _backoffThreshold) {
-          _startDriverLocationTracking();
-        }
       }
     }
+  }
+
+  /// Retry handler wired to the error banner's Retry button.
+  Future<void> _fetchDriverLocation() async {
+    final order = context.read<OrderProvider>().getOrderById(widget.orderId);
+    if (order?.driverId == null) return;
+    await _fetchDriverLocationOnce(order!.driverId!);
   }
 
   @override

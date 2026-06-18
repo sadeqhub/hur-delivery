@@ -277,6 +277,193 @@ class OrderRepository {
     }
   }
 
+  // ─── Merchant helpers ────────────────────────────────────────────────────
+
+  /// Returns the merchant's city for driver-availability lookups.
+  Future<String?> getMerchantCity(String merchantId) async {
+    Logger.d(_tag, 'getMerchantCity: ${Logger.redactId(merchantId)}');
+    try {
+      final row = await _client
+          .from('users')
+          .select('city')
+          .eq('id', merchantId)
+          .maybeSingle()
+          .timeout(const Duration(seconds: 10));
+      return (row?['city'] as String?)?.trim();
+    } catch (e, st) {
+      Logger.e(_tag, 'getMerchantCity failed', error: e, stack: st);
+      throw ErrorMapper.map(e);
+    }
+  }
+
+  /// Returns drivers that are online and located in [city].
+  Future<List<Map<String, dynamic>>> getOnlineDriversInCity(String city) async {
+    Logger.d(_tag, 'getOnlineDriversInCity: $city');
+    try {
+      final rows = await _client
+          .from('users')
+          .select('id, name, is_online, manual_verified')
+          .eq('role', 'driver')
+          .eq('is_online', true)
+          .ilike('city', city)
+          .timeout(const Duration(seconds: 10));
+      return List<Map<String, dynamic>>.from(rows as List);
+    } catch (e, st) {
+      Logger.e(_tag, 'getOnlineDriversInCity failed', error: e, stack: st);
+      throw ErrorMapper.map(e);
+    }
+  }
+
+  /// Returns all drivers (any online status) in [city] — for diagnostic logging.
+  Future<List<Map<String, dynamic>>> getAllDriversInCity(String city) async {
+    Logger.d(_tag, 'getAllDriversInCity: $city');
+    try {
+      final rows = await _client
+          .from('users')
+          .select('id, name, is_online, manual_verified, role')
+          .eq('role', 'driver')
+          .ilike('city', city)
+          .timeout(const Duration(seconds: 10));
+      return List<Map<String, dynamic>>.from(rows as List);
+    } catch (e, st) {
+      Logger.e(_tag, 'getAllDriversInCity failed', error: e, stack: st);
+      throw ErrorMapper.map(e);
+    }
+  }
+
+  /// Returns driver_id values for orders in active statuses filtered to [driverIds].
+  Future<List<String>> getBusyDriverIds(List<String> driverIds) async {
+    Logger.d(_tag, 'getBusyDriverIds: ${driverIds.length} drivers');
+    try {
+      final rows = await _client
+          .from('orders')
+          .select('driver_id')
+          .inFilter('driver_id', driverIds)
+          .inFilter('status', ['pending', 'assigned', 'accepted', 'on_the_way'])
+          .timeout(const Duration(seconds: 10));
+      return (rows as List)
+          .map((r) => r['driver_id'] as String?)
+          .whereType<String>()
+          .toList();
+    } catch (e, st) {
+      Logger.e(_tag, 'getBusyDriverIds failed', error: e, stack: st);
+      throw ErrorMapper.map(e);
+    }
+  }
+
+  /// Returns active orders for [merchantId] that have an assigned driver,
+  /// with nested driver name for the "assign to same driver" UI.
+  Future<List<Map<String, dynamic>>> getActiveOrdersWithDrivers(
+      String merchantId) async {
+    Logger.d(
+        _tag, 'getActiveOrdersWithDrivers: ${Logger.redactId(merchantId)}');
+    try {
+      final rows = await _client
+          .from('orders')
+          .select('id, driver_id, driver:users!driver_id(id, name)')
+          .eq('merchant_id', merchantId)
+          .inFilter('status', ['pending', 'accepted', 'on_the_way'])
+          .not('driver_id', 'is', null)
+          .order('created_at', ascending: false)
+          .timeout(const Duration(seconds: 15));
+      return List<Map<String, dynamic>>.from(rows as List);
+    } catch (e, st) {
+      Logger.e(_tag, 'getActiveOrdersWithDrivers failed', error: e, stack: st);
+      throw ErrorMapper.map(e);
+    }
+  }
+
+  /// Returns historic customer_phone values for [merchantId] matching [patterns].
+  Future<List<String>> getPhoneSuggestions({
+    required String merchantId,
+    required List<String> patterns,
+    int limit = 10,
+  }) async {
+    Logger.d(_tag,
+        'getPhoneSuggestions: ${Logger.redactId(merchantId)} patterns=${patterns.length}');
+    try {
+      final results = <String>{};
+      for (final p in patterns) {
+        final rows = await _client
+            .from('orders')
+            .select('customer_phone')
+            .eq('merchant_id', merchantId)
+            .ilike('customer_phone', p)
+            .limit(limit)
+            .timeout(const Duration(seconds: 5));
+        for (final r in rows) {
+          final ph = (r['customer_phone'] ?? '').toString();
+          if (ph.isNotEmpty) results.add(ph);
+        }
+      }
+      return results.take(limit).toList();
+    } catch (e, st) {
+      Logger.e(_tag, 'getPhoneSuggestions failed', error: e, stack: st);
+      throw ErrorMapper.map(e);
+    }
+  }
+
+  /// Returns the merchant's location row (latitude, longitude, address, store_name).
+  Future<Map<String, dynamic>?> getMerchantLocation(String merchantId) async {
+    Logger.d(_tag, 'getMerchantLocation: ${Logger.redactId(merchantId)}');
+    try {
+      final row = await _client
+          .from('users')
+          .select('latitude, longitude, address, store_name')
+          .eq('id', merchantId)
+          .single()
+          .timeout(const Duration(seconds: 10));
+      return row;
+    } catch (e, st) {
+      Logger.e(_tag, 'getMerchantLocation failed', error: e, stack: st);
+      throw ErrorMapper.map(e);
+    }
+  }
+
+  /// Caches a reverse-geocoded address back into the merchant's users row.
+  Future<void> updateMerchantAddress(
+      String merchantId, String address) async {
+    Logger.d(_tag, 'updateMerchantAddress: ${Logger.redactId(merchantId)}');
+    try {
+      await _client
+          .from('users')
+          .update({'address': address})
+          .eq('id', merchantId)
+          .timeout(const Duration(seconds: 10));
+    } catch (e, st) {
+      Logger.e(_tag, 'updateMerchantAddress failed', error: e, stack: st);
+      throw ErrorMapper.map(e);
+    }
+  }
+
+  /// Inserts a new scheduled order.
+  Future<void> createScheduledOrder(Map<String, dynamic> data) async {
+    Logger.d(_tag, 'createScheduledOrder');
+    try {
+      await _client
+          .from('scheduled_orders')
+          .insert(data)
+          .timeout(const Duration(seconds: 30));
+    } catch (e, st) {
+      Logger.e(_tag, 'createScheduledOrder failed', error: e, stack: st);
+      throw ErrorMapper.map(e);
+    }
+  }
+
+  /// Inserts a new order created from a voice recording.
+  Future<void> createVoiceOrder(Map<String, dynamic> data) async {
+    Logger.d(_tag, 'createVoiceOrder');
+    try {
+      await _client
+          .from('orders')
+          .insert(data)
+          .timeout(const Duration(seconds: 30));
+    } catch (e, st) {
+      Logger.e(_tag, 'createVoiceOrder failed', error: e, stack: st);
+      throw ErrorMapper.map(e);
+    }
+  }
+
   // ─── Realtime ────────────────────────────────────────────────────────────
 
   /// Returns a typed stream of order updates for a given merchant.

@@ -1,4 +1,3 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/api_client.dart';
 
 class DriverRepository {
@@ -32,5 +31,27 @@ class DriverRepository {
         .eq('driver_notified_location', false)
         .eq('coordinates_auto_updated', false);
     return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Calls the `check_dropoff_proximity` RPC to evaluate whether the driver
+  /// has reached the delivery drop-off point and should stop the delivery timer.
+  ///
+  /// Returns `true` if the timer was stopped, `false` otherwise.
+  Future<bool> checkDropoffProximity({
+    required String orderId,
+    required String driverId,
+    required double driverLatitude,
+    required double driverLongitude,
+  }) async {
+    final result = await ApiClient.instance.rpc<dynamic>(
+      'check_dropoff_proximity',
+      params: {
+        'p_order_id': orderId,
+        'p_driver_id': driverId,
+        'p_driver_latitude': driverLatitude,
+        'p_driver_longitude': driverLongitude,
+      },
+    );
+    return result is Map && result['timer_stopped'] == true;
   }
 }

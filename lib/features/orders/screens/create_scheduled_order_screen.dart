@@ -1,4 +1,3 @@
-// TODO: extract Supabase.instance calls to a feature repository
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -20,6 +19,7 @@ import '../../../shared/widgets/delivery_fee_dropdown.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../shared/widgets/navigation_overlay_system.dart';
 import '../screens/location_picker_screen.dart';
+import '../data/order_repository.dart';
 import '../../../core/utils/logger.dart';
 
 class CreateScheduledOrderScreen extends StatefulWidget {
@@ -34,6 +34,7 @@ class CreateScheduledOrderScreen extends StatefulWidget {
 
 class _CreateScheduledOrderScreenState extends State<CreateScheduledOrderScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _orderRepo = OrderRepository();
   bool _isLoading = false;
 
   // Order details
@@ -138,33 +139,26 @@ class _CreateScheduledOrderScreenState extends State<CreateScheduledOrderScreen>
       final digits = input.replaceAll(RegExp(r'\D'), '');
       if (digits.length < 3) return;
 
-      // Query distinct customer_phone for this merchant starting with typed digits
       final patterns = <String>[
         '$digits%',
         '+964$digits%',
         '964$digits%',
       ];
 
-      final results = <String>{};
-      for (final p in patterns) {
-        final rows = await Supabase.instance.client
-            .from('orders')
-            .select('customer_phone')
-            .eq('merchant_id', merchantId)
-            .ilike('customer_phone', p)
-            .limit(10);
-        for (final r in rows) {
-          final ph = (r['customer_phone'] ?? '').toString();
-          if (ph.isNotEmpty) results.add(ph);
-        }
-      }
+      final suggestions = await _orderRepo.getPhoneSuggestions(
+        merchantId: merchantId,
+        patterns: patterns,
+      );
 
-      setState(() {
-        _phoneSuggestions = results.take(10).toList();
-        _showPhoneSuggestions = _phoneSuggestions.isNotEmpty && _customerPhoneFocusNode.hasFocus;
-      });
+      if (mounted) {
+        setState(() {
+          _phoneSuggestions = suggestions;
+          _showPhoneSuggestions =
+              _phoneSuggestions.isNotEmpty && _customerPhoneFocusNode.hasFocus;
+        });
+      }
     } catch (e) {
-      // Silently ignore
+      // Silently ignore — autocomplete is best-effort
     }
   }
 
@@ -197,21 +191,18 @@ class _CreateScheduledOrderScreenState extends State<CreateScheduledOrderScreen>
         storeName = user.storeName;
       } else {
         // If cached data doesn't have location, fetch from database
-        final merchantData = await Supabase.instance.client
-            .from('users')
-            .select('latitude, longitude, address, store_name')
-            .eq('id', merchantId)
-            .single();
+        final merchantData =
+            await _orderRepo.getMerchantLocation(merchantId);
 
-        final latValue = merchantData['latitude'];
-        final lngValue = merchantData['longitude'];
+        final latValue = merchantData?['latitude'];
+        final lngValue = merchantData?['longitude'];
         if (latValue != null && lngValue != null) {
           lat = double.parse(latValue.toString());
           lng = double.parse(lngValue.toString());
         }
-        address = merchantData['address'] as String?;
-        storeName = merchantData['store_name'] as String?;
-            }
+        address = merchantData?['address'] as String?;
+        storeName = merchantData?['store_name'] as String?;
+      }
 
       // Set coordinates
       if (lat != null && lng != null) {
@@ -233,17 +224,14 @@ class _CreateScheduledOrderScreenState extends State<CreateScheduledOrderScreen>
 
             // Cache the geocoded address in the database
             try {
-              await Supabase.instance.client
-                  .from('users')
-                  .update({'address': geocodedAddress})
-                  .eq('id', merchantId);
+              await _orderRepo.updateMerchantAddress(merchantId, geocodedAddress);
 
               // Refresh the user object to get the updated address
               await authProvider.refreshUser();
 
-              Logger.d('✅ Cached geocoded address: $geocodedAddress');
+              Logger.d('Cached geocoded address: $geocodedAddress');
             } catch (e) {
-              Logger.d('⚠️ Failed to cache address: $e');
+              Logger.d('Failed to cache address: $e');
               // Continue anyway - we have the address to display
             }
           }
@@ -983,9 +971,7 @@ class _CreateScheduledOrderScreenState extends State<CreateScheduledOrderScreen>
     final merchantId = Supabase.instance.client.auth.currentUser?.id;
     if (merchantId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(loc.merchantDataErrorLoginAgain),
-        ),
+        SnackBar(content: Text(loc.merchantDataErrorLoginAgain)),
       );
       return;
     }
@@ -1059,10 +1045,10 @@ class _CreateScheduledOrderScreenState extends State<CreateScheduledOrderScreen>
         vehicleType = 'motorbike';
       }
 
-      await Supabase.instance.client.from('scheduled_orders').insert({
+      await _orderRepo.createScheduledOrder({
         'merchant_id': merchantId,
-        'customer_name': _customerNameController.text.trim().isNotEmpty 
-            ? _customerNameController.text.trim() 
+        'customer_name': _customerNameController.text.trim().isNotEmpty
+            ? _customerNameController.text.trim()
             : loc.customerNameFallback,
         'customer_phone': customerPhone,
         'pickup_address': _pickupAddressController.text,
@@ -1074,7 +1060,9 @@ class _CreateScheduledOrderScreenState extends State<CreateScheduledOrderScreen>
         'vehicle_type': vehicleType,
         'total_amount': double.parse(_totalAmountController.text),
         'delivery_fee': double.parse(_deliveryFeeController.text),
-        'notes': _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
+        'notes': _notesController.text.trim().isNotEmpty
+            ? _notesController.text.trim()
+            : null,
         'scheduled_date': scheduledDate.toIso8601String().split('T')[0],
         'scheduled_time':
             '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}:00',

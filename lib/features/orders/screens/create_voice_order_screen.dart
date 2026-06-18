@@ -1,4 +1,3 @@
-// TODO: extract Supabase.instance calls to a feature repository
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +20,7 @@ import '../../../shared/widgets/primary_button.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../screens/voice_library_screen.dart';
 import '../screens/create_order_screen.dart';
+import '../data/order_repository.dart';
 import '../../../core/utils/logger.dart';
 
 class CreateVoiceOrderScreen extends ConsumerStatefulWidget {
@@ -34,6 +34,8 @@ class CreateVoiceOrderScreen extends ConsumerStatefulWidget {
 
 class _CreateVoiceOrderScreenState extends ConsumerState<CreateVoiceOrderScreen>
     with SingleTickerProviderStateMixin {
+  final _orderRepo = OrderRepository();
+
   bool _isRecording = false;
   bool _isProcessing = false;
   bool _isLoading = false;
@@ -81,14 +83,12 @@ class _CreateVoiceOrderScreenState extends ConsumerState<CreateVoiceOrderScreen>
       });
 
       final merchantId = Supabase.instance.client.auth.currentUser?.id;
-      final merchantCityRow = merchantId == null
-          ? null
-          : await Supabase.instance.client
-              .from('users')
-              .select('city')
-              .eq('id', merchantId)
-              .maybeSingle();
-      final merchantCity = (merchantCityRow?['city'] ?? '').toString();
+      if (merchantId == null) {
+        if (mounted) setState(() { _onlineDriversCount = 0; _checkingDrivers = false; });
+        return;
+      }
+
+      final merchantCity = await _orderRepo.getMerchantCity(merchantId) ?? '';
       if (merchantCity.isEmpty) {
         if (mounted) {
           setState(() {
@@ -99,13 +99,7 @@ class _CreateVoiceOrderScreenState extends ConsumerState<CreateVoiceOrderScreen>
         return;
       }
 
-      // Get only online drivers
-      final onlineDrivers = await Supabase.instance.client
-          .from('users')
-          .select('id')
-          .eq('role', 'driver')
-          .eq('is_online', true)
-          .eq('city', merchantCity);
+      final onlineDrivers = await _orderRepo.getOnlineDriversInCity(merchantCity);
 
       if (onlineDrivers.isEmpty) {
         if (mounted) {
@@ -117,26 +111,14 @@ class _CreateVoiceOrderScreenState extends ConsumerState<CreateVoiceOrderScreen>
         return;
       }
 
-      // Get driver IDs
-      final driverIds = (onlineDrivers as List<dynamic>)
-          .map((driver) => driver['id'] as String?)
+      final driverIds = onlineDrivers
+          .map((d) => d['id'] as String?)
           .whereType<String>()
           .toList();
 
-      // Check for active orders
-      final activeOrders = await Supabase.instance.client
-          .from('orders')
-          .select('driver_id')
-          .inFilter('driver_id', driverIds)
-          .inFilter('status', ['pending', 'assigned', 'accepted', 'on_the_way']);
+      final busyIds = await _orderRepo.getBusyDriverIds(driverIds);
+      final busyDriverIds = busyIds.toSet();
 
-      // Get drivers with active orders
-      final busyDriverIds = (activeOrders as List<dynamic>)
-          .map((order) => order['driver_id'] as String?)
-          .whereType<String>()
-          .toSet();
-
-      // Calculate free drivers (online without active orders)
       final freeDriverCount =
           driverIds.where((id) => !busyDriverIds.contains(id)).length;
 
@@ -147,7 +129,7 @@ class _CreateVoiceOrderScreenState extends ConsumerState<CreateVoiceOrderScreen>
         });
       }
     } catch (e) {
-      Logger.d('❌ Error checking available drivers: $e');
+      Logger.d('Error checking available drivers: $e');
       if (mounted) {
         setState(() {
           _checkingDrivers = false;
@@ -1084,7 +1066,7 @@ class _CreateVoiceOrderScreenState extends ConsumerState<CreateVoiceOrderScreen>
               ? loc.customerNameFallback
               : _customerName!;
 
-      await Supabase.instance.client.from('orders').insert({
+      await _orderRepo.createVoiceOrder({
         'merchant_id': merchantId,
         'customer_name': customerName,
         'customer_phone': _customerPhone!,
@@ -1098,8 +1080,7 @@ class _CreateVoiceOrderScreenState extends ConsumerState<CreateVoiceOrderScreen>
         'total_amount': finalTotal,
         'delivery_fee': finalDeliveryFee,
         'notes': _notes ??
-            AppLocalizations.of(context)
-                .voiceOrderNote(_transcription ?? ''),
+            AppLocalizations.of(context).voiceOrderNote(_transcription ?? ''),
         'status': 'pending',
       });
 

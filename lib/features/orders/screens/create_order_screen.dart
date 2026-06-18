@@ -1,4 +1,3 @@
-// TODO: extract Supabase.instance calls to a feature repository
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,6 +24,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../shared/widgets/navigation_overlay_system.dart';
 import 'location_picker_screen.dart';
 import 'order_form_builder_mixin.dart';
+import '../data/order_repository.dart';
 import '../../../core/utils/logger.dart';
 
 class CreateOrderScreen extends StatefulWidget {
@@ -59,11 +59,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
   double? _deliveryLatitude;
   double? _deliveryLongitude;
   
+  final _orderRepo = OrderRepository();
+
   bool _isLoading = false;
   int _onlineDriversCount = 0;
   bool _checkingDrivers = true;
   RealtimeChannel? _driversChannel;
-  Timer? _refreshTimer;
   Timer? _phoneDebounce;
   List<String> _phoneSuggestions = [];
   bool _showPhoneSuggestions = false;
@@ -159,7 +160,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
     _checkOnlineDrivers();
     _checkActiveOrderForSameDriver();
     _subscribeToDriverUpdates();
-    _startPeriodicRefresh();
 
     // ValueNotifiers mirror the text controllers — only the summary widget
     // subscribes to these, so keystrokes no longer rebuild the entire form.
@@ -351,7 +351,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
     _driversChannel?.unsubscribe();
     _phoneDebounce?.cancel();
     _addressDebounce?.cancel();
@@ -386,34 +385,26 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
       final digits = input.replaceAll(RegExp(r'\D'), '');
       if (digits.length < 3) return;
 
-      // Query distinct customer_phone for this merchant starting with typed digits (ignoring +964 if present)
-      // Normalize search by allowing both with and without +964
       final patterns = <String>[
         '$digits%',
         '+964$digits%',
         '964$digits%',
       ];
 
-      final results = <String>{};
-      for (final p in patterns) {
-        final rows = await Supabase.instance.client
-            .from('orders')
-            .select('customer_phone')
-            .eq('merchant_id', merchantId)
-            .ilike('customer_phone', p)
-            .limit(10);
-        for (final r in rows) {
-          final ph = (r['customer_phone'] ?? '').toString();
-          if (ph.isNotEmpty) results.add(ph);
-        }
-      }
+      final suggestions = await _orderRepo.getPhoneSuggestions(
+        merchantId: merchantId,
+        patterns: patterns,
+      );
 
-      setState(() {
-        _phoneSuggestions = results.take(10).toList();
-        _showPhoneSuggestions = _phoneSuggestions.isNotEmpty && _customerPhoneFocusNode.hasFocus;
-      });
+      if (mounted) {
+        setState(() {
+          _phoneSuggestions = suggestions;
+          _showPhoneSuggestions =
+              _phoneSuggestions.isNotEmpty && _customerPhoneFocusNode.hasFocus;
+        });
+      }
     } catch (e) {
-      // Silently ignore
+      // Silently ignore — autocomplete is best-effort
     }
   }
 
@@ -571,22 +562,19 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
         storeName = user.storeName;
       } else {
         // If cached data doesn't have location, fetch from database
-        final merchantData = await Supabase.instance.client
-            .from('users')
-            .select('latitude, longitude, address, store_name')
-            .eq('id', merchantId)
-            .single();
-        
-        final latValue = merchantData['latitude'];
-        final lngValue = merchantData['longitude'];
+        final merchantData =
+            await _orderRepo.getMerchantLocation(merchantId);
+
+        final latValue = merchantData?['latitude'];
+        final lngValue = merchantData?['longitude'];
         if (latValue != null && lngValue != null) {
           lat = double.parse(latValue.toString());
           lng = double.parse(lngValue.toString());
         }
-        address = merchantData['address'] as String?;
-        storeName = merchantData['store_name'] as String?;
-            }
-      
+        address = merchantData?['address'] as String?;
+        storeName = merchantData?['store_name'] as String?;
+      }
+
       if (lat != null && lng != null) {
       setState(() {
           _pickupLatitude = lat;
@@ -647,13 +635,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
     }
   }
 
-  void _startPeriodicRefresh() {
-    // Refresh driver count every 10 seconds as fallback
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      _checkOnlineDrivers();
-    });
-  }
-
   void _subscribeToDriverUpdates() {
     try {
       // Optimized: Subscribe only to UPDATE events (not INSERT/DELETE) and filter by role + is_online changes
@@ -708,14 +689,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
       Logger.d('═══════════════════════════════════════');
 
       final merchantId = Supabase.instance.client.auth.currentUser?.id;
-      final merchantCityRow = merchantId == null
-          ? null
-          : await Supabase.instance.client
-              .from('users')
-              .select('city')
-              .eq('id', merchantId)
-              .maybeSingle();
-      final merchantCity = (merchantCityRow?['city'] ?? '').toString();
+      if (merchantId == null) {
+        if (mounted) setState(() { _onlineDriversCount = 0; _checkingDrivers = false; });
+        return;
+      }
+
+      // Parallelise city + all-drivers fetch (diagnostic) for faster init.
+      final merchantCity = await _orderRepo.getMerchantCity(merchantId) ?? '';
       if (merchantCity.isEmpty) {
         if (mounted) {
           setState(() {
@@ -725,32 +705,25 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
         }
         return;
       }
-      
-      // First check all drivers to see their status
-      final allDrivers = await Supabase.instance.client
-          .from('users')
-          .select('id, name, is_online, manual_verified, role')
-          .eq('role', 'driver')
-          .ilike('city', merchantCity);
-      
+
+      // Parallelise: diagnostic snapshot + online drivers list.
+      final results = await Future.wait([
+        _orderRepo.getAllDriversInCity(merchantCity),
+        _orderRepo.getOnlineDriversInCity(merchantCity),
+      ]);
+      final allDrivers = results[0];
+      final onlineDrivers = results[1];
+
       Logger.d('📊 Total drivers: ${allDrivers.length}');
       for (var driver in allDrivers) {
         final online = driver['is_online'] ?? false;
         final verified = driver['manual_verified'] ?? false;
         Logger.d('   ${driver['name']}: online=$online, verified=$verified');
       }
-      
-      // Get only online drivers — ilike for case-insensitive city matching.
-      final onlineDrivers = await Supabase.instance.client
-          .from('users')
-          .select('id, name, is_online, manual_verified')
-          .eq('role', 'driver')
-          .eq('is_online', true)
-          .ilike('city', merchantCity);
-      
+
       Logger.d('');
       Logger.d('📋 Online drivers: ${onlineDrivers.length}');
-      
+
       if (onlineDrivers.isEmpty) {
         Logger.d('❌ NO ONLINE DRIVERS FOUND!');
         if (mounted) {
@@ -761,48 +734,37 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
         }
         return;
       }
-      
-      // Get driver IDs
-      final driverIds = (onlineDrivers as List<dynamic>)
-          .map((driver) => driver['id'] as String?)
+
+      final driverIds = onlineDrivers
+          .map((d) => d['id'] as String?)
           .whereType<String>()
           .toList();
-      
-      // Check for active orders
-      final activeOrders = await Supabase.instance.client
-          .from('orders')
-          .select('driver_id')
-          .inFilter('driver_id', driverIds)
-          .inFilter('status', ['pending', 'assigned', 'accepted', 'on_the_way']);
-      
-      // Get drivers with active orders
-      final busyDriverIds = (activeOrders as List<dynamic>)
-          .map((order) => order['driver_id'] as String?)
-          .whereType<String>()
-          .toSet();
-      
-      // Calculate free drivers
-      final freeDriverCount = driverIds.where((id) => !busyDriverIds.contains(id)).length;
-      
+
+      final busyIds = await _orderRepo.getBusyDriverIds(driverIds);
+      final busyDriverIds = busyIds.toSet();
+
+      final freeDriverCount =
+          driverIds.where((id) => !busyDriverIds.contains(id)).length;
+
       Logger.d('');
       Logger.d('📊 Driver Status:');
       Logger.d('   Online: ${driverIds.length}');
       Logger.d('   Busy: ${busyDriverIds.length}');
       Logger.d('   Free: $freeDriverCount');
-      
+
       for (var driver in onlineDrivers) {
         final id = driver['id'] as String;
         final name = driver['name'];
         final isBusy = busyDriverIds.contains(id);
         Logger.d('   ${isBusy ? "🔴" : "🟢"} $name - ${isBusy ? "BUSY" : "FREE"}');
       }
-      
+
       Logger.d('');
       Logger.d('🔄 Updating UI state...');
       Logger.d('   Current count: $_onlineDriversCount');
       Logger.d('   New count: $freeDriverCount');
       Logger.d('   Mounted: $mounted');
-      
+
       if (mounted) {
         setState(() {
           _onlineDriversCount = freeDriverCount;
@@ -812,7 +774,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
       } else {
         Logger.d('❌ Widget not mounted - UI NOT updated');
       }
-      
+
       Logger.d('═══════════════════════════════════════');
       Logger.d('');
     } catch (e, stackTrace) {
@@ -822,7 +784,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
       Logger.d('Type: ${e.runtimeType}');
       Logger.d('Stack: $stackTrace');
       Logger.d('');
-      
+
       if (mounted) {
         setState(() {
           _checkingDrivers = false;
@@ -837,13 +799,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> with OrderFormBui
       if (merchantId == null) return;
 
       // Check if merchant has active orders with assigned drivers
-      final activeOrders = await Supabase.instance.client
-          .from('orders')
-          .select('id, driver_id, driver:users!driver_id(id, name)')
-          .eq('merchant_id', merchantId)
-          .inFilter('status', ['pending', 'accepted', 'on_the_way'])
-          .not('driver_id', 'is', null)
-          .order('created_at', ascending: false);
+      final activeOrders =
+          await _orderRepo.getActiveOrdersWithDrivers(merchantId);
 
       if (mounted && activeOrders.isNotEmpty) {
         // Extract unique drivers (in case merchant has multiple orders with same driver)

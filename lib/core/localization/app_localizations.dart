@@ -1251,6 +1251,60 @@ class AppLocalizations {
       'otp_unexpected_error': 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
       'otp_verify_failed': 'فشل التحقق من رمز التحقق',
       'otp_invalid_code': 'رمز التحقق غير صحيح',
+
+      // L10n sweep — order_provider.dart error strings
+      'err_cannot_connect_server': 'لا يمكن الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت',
+      'err_connection_timeout': 'انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى',
+      'err_network_connection_problem': 'مشكلة في الاتصال بالشبكة. يرجى التحقق من اتصال الإنترنت',
+      'err_loading_orders': 'حدث خطأ أثناء تحميل الطلبات. يرجى المحاولة مرة أخرى',
+      'err_user_not_logged_in': 'المستخدم غير مسجل الدخول',
+      'err_create_order': 'حدث خطأ في إنشاء الطلب. يرجى المحاولة مرة أخرى.',
+      'err_system_maintenance_no_orders': 'النظام حالياً في وضع الصيانة. لا يمكن إنشاء طلبات جديدة.',
+      'err_update_order_status': 'تعذر تحديث حالة الطلب.',
+      'err_accept_order': 'تعذر قبول الطلب.',
+      'err_low_wallet_balance': 'رصيد محفظتك بالسالب. يرجى شحن المحفظة أولاً لتسديد العمولة ثم حاول مرة أخرى.',
+      'err_reject_order': 'تعذر رفض الطلب.',
+      'err_upload_timeout': 'انتهت مهلة الرفع. يرجى المحاولة مرة أخرى',
+      'err_repost_failed': 'فشل إعادة نشر الطلب',
+      'err_unexpected_server_response': 'استجابة غير متوقعة من الخادم',
+      'order_not_found_msg': 'الطلب غير موجود',
+      'no_driver_available_msg': 'لا يوجد سائق متاح',
+      'order_already_assigned_msg': 'الطلب مخصص بالفعل',
+      'invalid_status_transition_msg': 'تغيير الحالة غير صحيح',
+      'unexpected_error_msg': 'حدث خطأ غير متوقع',
+      'no_motorbike_drivers_online': 'لا يوجد سائقي دراجة نارية متصلين حالياً. يرجى المحاولة لاحقاً.',
+      'no_car_drivers_online': 'لا يوجد سائقي سيارة متصلين حالياً. يرجى المحاولة لاحقاً.',
+      'no_truck_drivers_online': 'لا يوجد سائقي شاحنة متصلين حالياً. يرجى المحاولة لاحقاً.',
+      'no_vehicle_drivers_online': 'لا يوجد سائقي مركبة متصلين حالياً. يرجى المحاولة لاحقاً.',
+
+      // L10n sweep — merchant_dashboard.dart
+      'err_connection_error': 'خطأ في الاتصال',
+      'offline_status': 'غير متصل',
+      'err_cannot_connect_server_retry': 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.',
+      'session_expired_login_again': 'انتهت جلسة العمل. يرجى تسجيل الدخول مرة أخرى.',
+      'no_permission_data': 'لا تملك الصلاحية للوصول إلى هذه البيانات.',
+      'unexpected_error_retry': 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى لاحقاً.',
+      'help_solve_problem': 'مساعدة في حل المشكلة',
+      'try_these_steps': 'جرب الخطوات التالية:',
+      'check_internet': 'تأكد من اتصال الإنترنت',
+      'close_reopen_app': 'أغلق التطبيق وأعد فتحه',
+      'check_app_update': 'تحقق من تحديث التطبيق',
+      'restart_device': 'أعد تشغيل جهازك إذا استمرت المشكلة',
+      'contact_support_if_persists': 'إذا استمرت المشكلة، تواصل مع الدعم الفني.',
+      'location_required_title': 'الموقع مطلوب',
+      'location_required_message': 'يرجى تحديد موقع المتجر وعنوانه المكتوب للمتابعة.\nهذا يضمن وصول السائقين إليك بدقة.',
+      'update_location': 'تحديث الموقع',
+
+      // L10n sweep — user_registration_screen.dart
+      'national_id_must_be_12_digits_extracted': 'رقم الهوية الوطني يجب أن يكون 12 رقمًا بالضبط. الرقم المستخرج: {id}',
+      'document_type_required': 'نوع الوثيقة مطلوب',
+      'business_type_label': 'نوع النشاط التجاري',
+      'business_type_hint': 'ما نوع عملك؟',
+      'select_business_type': 'اختر نوع النشاط التجاري',
+      'business_type_required': 'نوع النشاط التجاري مطلوب',
+      'driving_license_front': 'رخصة القيادة - الجانب الأمامي',
+      'passport_main_page': 'جواز السفر - الصفحة الرئيسية',
+      'national_id_front': 'الهوية الوطنية - الجانب الأمامي',
     },
     'en': {
       'app_title': 'Hur Delivery',
@@ -2266,6 +2320,60 @@ class AppLocalizations {
       'otp_unexpected_error': 'An unexpected error occurred. Please try again.',
       'otp_verify_failed': 'Verification code check failed',
       'otp_invalid_code': 'Invalid verification code',
+
+      // L10n sweep — order_provider.dart error strings
+      'err_cannot_connect_server': 'Cannot connect to server. Please check your internet connection.',
+      'err_connection_timeout': 'Connection timed out. Please try again.',
+      'err_network_connection_problem': 'Network connection problem. Please check your internet connection.',
+      'err_loading_orders': 'Error loading orders. Please try again.',
+      'err_user_not_logged_in': 'User is not logged in.',
+      'err_create_order': 'Error creating order. Please try again.',
+      'err_system_maintenance_no_orders': 'System is under maintenance. Cannot create orders right now.',
+      'err_update_order_status': 'Could not update order status.',
+      'err_accept_order': 'Could not accept order.',
+      'err_low_wallet_balance': 'Your wallet balance is negative. Please top up your wallet first, then try again.',
+      'err_reject_order': 'Could not reject order.',
+      'err_upload_timeout': 'Upload timed out. Please try again.',
+      'err_repost_failed': 'Failed to repost order.',
+      'err_unexpected_server_response': 'Unexpected response from server.',
+      'order_not_found_msg': 'Order not found.',
+      'no_driver_available_msg': 'No driver available.',
+      'order_already_assigned_msg': 'Order is already assigned.',
+      'invalid_status_transition_msg': 'Invalid status transition.',
+      'unexpected_error_msg': 'An unexpected error occurred.',
+      'no_motorbike_drivers_online': 'No motorbike drivers are online right now. Please try again later.',
+      'no_car_drivers_online': 'No car drivers are online right now. Please try again later.',
+      'no_truck_drivers_online': 'No truck drivers are online right now. Please try again later.',
+      'no_vehicle_drivers_online': 'No vehicle drivers are online right now. Please try again later.',
+
+      // L10n sweep — merchant_dashboard.dart
+      'err_connection_error': 'Connection error',
+      'offline_status': 'Offline',
+      'err_cannot_connect_server_retry': 'Could not connect to server. Check your internet connection and try again.',
+      'session_expired_login_again': 'Session expired. Please log in again.',
+      'no_permission_data': 'You do not have permission to access this data.',
+      'unexpected_error_retry': 'An unexpected error occurred. Please try again later.',
+      'help_solve_problem': 'Help resolve the issue',
+      'try_these_steps': 'Try these steps:',
+      'check_internet': 'Check your internet connection',
+      'close_reopen_app': 'Close and reopen the app',
+      'check_app_update': 'Check for app updates',
+      'restart_device': 'Restart your device if the issue persists',
+      'contact_support_if_persists': 'If the issue persists, contact technical support.',
+      'location_required_title': 'Location Required',
+      'location_required_message': 'Please set your store location and address to continue. This ensures drivers can find you accurately.',
+      'update_location': 'Update Location',
+
+      // L10n sweep — user_registration_screen.dart
+      'national_id_must_be_12_digits_extracted': 'National ID must be exactly 12 digits. Extracted number: {id}',
+      'document_type_required': 'Document type is required.',
+      'business_type_label': 'Business Type',
+      'business_type_hint': 'What type of business?',
+      'select_business_type': 'Select business type',
+      'business_type_required': 'Business type is required.',
+      'driving_license_front': 'Driver\'s License - Front',
+      'passport_main_page': 'Passport - Main Page',
+      'national_id_front': 'National ID - Front',
     },
   };
 
@@ -3337,6 +3445,61 @@ class AppLocalizations {
   String get driverPickupReceivedButton => _get('driver_pickup_received_button');
   String get driverDeliverCompleteButton => _get('driver_deliver_complete_button');
   String get orderValue => _get('order_value');
+
+  // L10n sweep — order_provider.dart
+  String get errCannotConnectServer => _get('err_cannot_connect_server');
+  String get errConnectionTimeout => _get('err_connection_timeout');
+  String get errNetworkConnectionProblem => _get('err_network_connection_problem');
+  String get errLoadingOrders => _get('err_loading_orders');
+  String get errUserNotLoggedIn => _get('err_user_not_logged_in');
+  String get errCreateOrder => _get('err_create_order');
+  String get errSystemMaintenanceNoOrders => _get('err_system_maintenance_no_orders');
+  String get errUpdateOrderStatus => _get('err_update_order_status');
+  String get errAcceptOrder => _get('err_accept_order');
+  String get errLowWalletBalance => _get('err_low_wallet_balance');
+  String get errRejectOrder => _get('err_reject_order');
+  String get errUploadTimeout => _get('err_upload_timeout');
+  String get errRepostFailed => _get('err_repost_failed');
+  String get errUnexpectedServerResponse => _get('err_unexpected_server_response');
+  String get orderNotFoundMsg => _get('order_not_found_msg');
+  String get noDriverAvailableMsg => _get('no_driver_available_msg');
+  String get orderAlreadyAssignedMsg => _get('order_already_assigned_msg');
+  String get invalidStatusTransitionMsg => _get('invalid_status_transition_msg');
+  String get unexpectedErrorMsg => _get('unexpected_error_msg');
+  String get noMotorbikeDriversOnline => _get('no_motorbike_drivers_online');
+  String get noCarDriversOnline => _get('no_car_drivers_online');
+  String get noTruckDriversOnline => _get('no_truck_drivers_online');
+  String get noVehicleDriversOnline => _get('no_vehicle_drivers_online');
+
+  // L10n sweep — merchant_dashboard.dart
+  String get errConnectionError => _get('err_connection_error');
+  String get offlineStatus => _get('offline_status');
+  String get errCannotConnectServerRetry => _get('err_cannot_connect_server_retry');
+  String get sessionExpiredLoginAgain => _get('session_expired_login_again');
+  String get noPermissionData => _get('no_permission_data');
+  String get unexpectedErrorRetry => _get('unexpected_error_retry');
+  String get helpSolveProblem => _get('help_solve_problem');
+  String get tryTheseSteps => _get('try_these_steps');
+  String get checkInternet => _get('check_internet');
+  String get closeReopenApp => _get('close_reopen_app');
+  String get checkAppUpdate => _get('check_app_update');
+  String get restartDevice => _get('restart_device');
+  String get contactSupportIfPersists => _get('contact_support_if_persists');
+  String get locationRequiredTitle => _get('location_required_title');
+  String get locationRequiredMessage => _get('location_required_message');
+  String get updateLocation => _get('update_location');
+
+  // L10n sweep — user_registration_screen.dart
+  String nationalIdMustBe12DigitsExtracted(String id) =>
+      _get('national_id_must_be_12_digits_extracted').replaceAll('{id}', id);
+  String get documentTypeRequired => _get('document_type_required');
+  String get businessTypeLabel => _get('business_type_label');
+  String get businessTypeHint => _get('business_type_hint');
+  String get selectBusinessType => _get('select_business_type');
+  String get businessTypeRequired => _get('business_type_required');
+  String get drivingLicenseFront => _get('driving_license_front');
+  String get passportMainPage => _get('passport_main_page');
+  String get nationalIdFront => _get('national_id_front');
 }
 
 class _AppLocalizationsDelegate

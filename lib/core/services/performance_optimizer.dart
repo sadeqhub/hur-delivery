@@ -24,7 +24,7 @@ class PerformanceOptimizer {
     // Adjust request concurrency based on network quality
     _updateConcurrencySettings();
     
-    // Monitor network quality changes and update settings
+    // Intentional: measures real network RTT, not a server-state poll
     Timer.periodic(const Duration(seconds: 30), (_) {
       _updateConcurrencySettings();
     });

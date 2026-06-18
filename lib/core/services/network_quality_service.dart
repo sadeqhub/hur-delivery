@@ -54,7 +54,7 @@ class NetworkQualityService {
       }
     });
     
-    // Periodically check quality (every 30 seconds)
+    // Intentional: measures real network RTT, not a server-state poll
     _qualityCheckTimer?.cancel();
     _qualityCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _measureNetworkQuality();

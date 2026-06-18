@@ -1,34 +1,40 @@
-import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'error_manager.dart';
 import '../utils/logger.dart';
-import '../realtime/realtime_manager.dart';
 
-/// Service to check system status and handle maintenance mode
+/// Service to check system status and handle maintenance mode.
+/// Uses a Supabase Realtime subscription for instant change detection.
 class SystemStatusService {
   static final SystemStatusService _instance = SystemStatusService._internal();
   factory SystemStatusService() => _instance;
   SystemStatusService._internal();
 
   final _supabase = Supabase.instance.client;
-  
+
   bool _isSystemEnabled = true;
-  DateTime? _lastCheck;
-  Timer? _checkTimer;
+  /// Timestamp of the last successful fetch — used for cache-freshness checks.
+  DateTime? _cachedAt;
   RealtimeChannel? _statusChannel;
 
   // Callbacks for status changes
   final List<Function(bool)> _statusChangeCallbacks = [];
-  
+
   bool get isSystemEnabled => _isSystemEnabled;
 
+  /// Returns true when the cached status is less than 60 seconds old.
+  /// Callers can skip a fresh fetch when this is true (e.g. after waking from
+  /// background while the realtime channel reconnects).
+  bool get _isFresh =>
+      _cachedAt != null &&
+      DateTime.now().difference(_cachedAt!) < const Duration(seconds: 60);
+
   /// Start real-time listening for system_settings changes.
-  /// Falls back to a 30-second poll when Realtime is not available.
+  /// Fetches the current status immediately on subscribe so the value is
+  /// populated without waiting for the next change event.
   void startPeriodicChecking() {
-    if (_checkTimer != null || _statusChannel != null) return;
+    if (_statusChannel != null) return;
 
     Logger.d('🔄 Starting system status realtime listener...');
-    checkSystemStatus();
 
     // Primary: realtime change events on the system_settings row.
     _statusChannel = _supabase
@@ -42,44 +48,40 @@ class SystemStatusService {
             column: 'key',
             value: 'system_enabled',
           ),
-          callback: (payload) {
-            final newValue = payload.newRecord['value'] as String?;
-            final newStatus = newValue == 'true';
-            if (newStatus == _isSystemEnabled) return;
-            Logger.d('🔔 System status changed via realtime: ${newStatus ? "ENABLED" : "DISABLED"}');
-            _isSystemEnabled = newStatus;
-            _notifyStatusChange(newStatus);
-          },
+          callback: (payload) => _updateFromRecord(payload.newRecord),
         )
-        .subscribe((status, error) {
-          // Start fallback poll if the WebSocket fails to connect.
-          if ((error != null || status == 'CLOSED') &&
-              RealtimeManager.instance.isDisabled) {
-            _checkTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
-              checkSystemStatus();
-            });
-          }
-        });
+        .subscribe();
 
-    // Immediate fallback when realtime is known-disabled at startup.
-    if (RealtimeManager.instance.isDisabled) {
-      _checkTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-        checkSystemStatus();
-      });
-    }
+    // Fetch immediately so callers don't wait for a change event.
+    checkSystemStatus();
   }
 
-  /// Stop periodic checking and realtime subscription.
+  /// Apply a status update from a realtime payload record.
+  void _updateFromRecord(Map<String, dynamic> record) {
+    final newValue = record['value'] as String?;
+    final newStatus = newValue == 'true';
+    if (newStatus == _isSystemEnabled) return;
+    Logger.d(
+        '🔔 System status changed via realtime: ${newStatus ? "ENABLED" : "DISABLED"}');
+    _isSystemEnabled = newStatus;
+    _cachedAt = DateTime.now();
+    _notifyStatusChange(newStatus);
+  }
+
+  /// Stop realtime subscription.
   void stopPeriodicChecking() {
-    _checkTimer?.cancel();
-    _checkTimer = null;
     _statusChannel?.unsubscribe();
     _statusChannel = null;
     Logger.d('⏹️ Stopped system status checks');
   }
 
-  /// Check current system status
+  /// Check current system status.
+  /// Skips the network round-trip when the cached value is fresh (< 60 s old),
+  /// which avoids redundant fetches while the realtime channel reconnects after
+  /// the app wakes from background.
   Future<bool> checkSystemStatus() async {
+    if (_isFresh) return _isSystemEnabled;
+
     return await ErrorManager.safeExecute<bool>(
       operation: () async {
         final response = await _supabase
@@ -89,17 +91,17 @@ class SystemStatusService {
             .maybeSingle();
 
         final newStatus = response?['value'] == 'true';
-        
+
         // If status changed, notify callbacks
         if (newStatus != _isSystemEnabled) {
           Logger.d('🔔 System status changed: ${newStatus ? "ENABLED" : "DISABLED"}');
           _isSystemEnabled = newStatus;
           _notifyStatusChange(newStatus);
         }
-        
+
         _isSystemEnabled = newStatus;
-        _lastCheck = DateTime.now();
-        
+        _cachedAt = DateTime.now();
+
         return _isSystemEnabled;
       },
       operationName: 'check-system-status',

@@ -2,14 +2,14 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/logger.dart';
 
-/// Handles session lifecycle: restoration, token refresh, periodic validity checks,
+/// Handles session lifecycle: restoration, token refresh, auth-state listening,
 /// and the Supabase I/O side of force-logout.
 /// Holds no Flutter state — callers supply callbacks for state mutations.
 class SessionService {
   SessionService._();
   static final SessionService instance = SessionService._();
 
-  Timer? _sessionCheckTimer;
+  StreamSubscription<AuthState>? _authSub;
   bool _isLoggingOut = false;
 
   /// Checks the current session. If it is expired or about to expire, attempts
@@ -142,22 +142,43 @@ class SessionService {
     }
   }
 
-  /// Starts a 15-second polling timer that calls [checkStatusDirectly] to
-  /// detect whether the device session was invalidated by another login.
+  /// Starts listening to Supabase auth-state changes to detect token
+  /// refreshes and sign-out/deletion events.  Also performs a proactive token
+  /// refresh on startup when the session is close to expiry, and does an
+  /// immediate device-session validity check.
   void startPeriodicCheck({
     required String userId,
     required String deviceId,
     required void Function(String reason) onForceLogout,
   }) {
-    _sessionCheckTimer?.cancel();
-    _sessionCheckTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      checkStatusDirectly(
-        userId: userId,
-        deviceId: deviceId,
-        onForceLogout: onForceLogout,
-      );
+    _authSub?.cancel();
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      if (event == AuthChangeEvent.tokenRefreshed) {
+        Logger.d('✅ Auth token refreshed via stream');
+      } else if (event == AuthChangeEvent.signedOut ||
+                 event == AuthChangeEvent.userDeleted) {
+        if (!_isLoggingOut) {
+          Logger.d('⚠️ Signed out / user deleted via auth stream');
+          onForceLogout('session_expired'); // l10n key
+        }
+      }
     });
-    // Immediate check shortly after registration
+
+    // Proactive refresh if session is close to expiry.
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
+      final expiresAt = session.expiresAt;
+      if (expiresAt != null) {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        if (now >= expiresAt - 60000) {
+          Logger.d('🔄 Session expiring soon on startup, refreshing...');
+          attemptRefresh();
+        }
+      }
+    }
+
+    // Immediate device-session check shortly after registration.
     Future.delayed(const Duration(milliseconds: 500), () {
       checkStatusDirectly(
         userId: userId,
@@ -168,8 +189,8 @@ class SessionService {
   }
 
   void stopPeriodicCheck() {
-    _sessionCheckTimer?.cancel();
-    _sessionCheckTimer = null;
+    _authSub?.cancel();
+    _authSub = null;
   }
 
   /// Performs the Supabase I/O side of force-logout: marks the device session

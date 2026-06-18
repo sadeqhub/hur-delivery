@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/async_value_ext.dart';
+
 class ThemeNotifier extends AsyncNotifier<ThemeMode> {
   static const String _themeKey = 'theme_mode';
 

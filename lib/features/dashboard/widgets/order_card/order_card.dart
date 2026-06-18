@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/models/order_model.dart';
 import '../../../../shared/models/order_status.dart';
+import '../../../../shared/widgets/order_status_chip.dart';
 import 'order_card_actions.dart';
 import 'order_card_header.dart';
 import 'order_card_payment.dart';
@@ -52,6 +53,7 @@ class DriverOrderCard extends StatelessWidget {
             color: OrderCardTokens.cardOutline,
             width: OrderCardTokens.cardOutlineWidth,
           ),
+          boxShadow: OrderCardTokens.cardShadow,
         ),
         child: ClipRRect(
           borderRadius: OrderCardTokens.expandedTopRadius,
@@ -71,6 +73,13 @@ class DriverOrderCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: OrderStatusChip(status: order.status, compact: true),
                 ),
               ),
               Expanded(

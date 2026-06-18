@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/responsive_helper.dart';
+
+import '../../core/icons/hur_icons.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/utils/responsive_helper.dart';
+import 'hur_icon.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String text;
@@ -10,6 +13,7 @@ class PrimaryButton extends StatelessWidget {
   final double? width;
   final double? height;
   final IconData? icon;
+  final HurIconKind? hurIcon;
   final Color? backgroundColor;
   final Color? textColor;
 
@@ -22,16 +26,24 @@ class PrimaryButton extends StatelessWidget {
     this.width,
     this.height,
     this.icon,
+    this.hurIcon,
     this.backgroundColor,
     this.textColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final responsiveWidth = width ?? ResponsiveHelper.getFormElementWidth(context);
-    final responsiveHeight = height ?? ResponsiveHelper.getFormElementHeight(context);
-    final responsivePadding = ResponsiveHelper.getResponsivePadding(context, horizontal: 24, vertical: 12);
-    
+    final responsiveWidth =
+        width ?? ResponsiveHelper.getFormElementWidth(context);
+    final responsiveHeight =
+        height ?? ResponsiveHelper.getFormElementHeight(context);
+    final responsivePadding = ResponsiveHelper.getResponsivePadding(
+      context,
+      horizontal: 24,
+      vertical: 12,
+    );
+    final fg = textColor ?? Colors.white;
+
     return Center(
       child: SizedBox(
         width: responsiveWidth,
@@ -40,7 +52,7 @@ class PrimaryButton extends StatelessWidget {
           onPressed: isEnabled && !isLoading ? onPressed : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: backgroundColor ?? AppColors.primary,
-            foregroundColor: textColor ?? Colors.white,
+            foregroundColor: fg,
             elevation: 0,
             padding: responsivePadding,
             shape: RoundedRectangleBorder(
@@ -54,28 +66,52 @@ class PrimaryButton extends StatelessWidget {
                   height: ResponsiveHelper.getResponsiveIconSize(context, 20),
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(textColor ?? Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(fg),
                   ),
                 )
-              : icon != null
+              : hurIcon != null || icon != null
                   ? Row(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          icon,
-                          size: ResponsiveHelper.getResponsiveIconSize(context, 20),
-                          color: textColor ?? Colors.white,
+                        if (hurIcon != null)
+                          HurIcon(
+                            hurIcon!,
+                            dimension: ResponsiveHelper.getResponsiveIconSize(
+                              context,
+                              20,
+                            ),
+                            color: fg,
+                          )
+                        else
+                          Icon(
+                            icon,
+                            size: ResponsiveHelper.getResponsiveIconSize(
+                              context,
+                              20,
+                            ),
+                            color: fg,
+                          ),
+                        SizedBox(
+                          width: ResponsiveHelper.getResponsivePadding(
+                            context,
+                            horizontal: 8,
+                            vertical: 0,
+                          ).left,
                         ),
-                        SizedBox(width: ResponsiveHelper.getResponsivePadding(context, horizontal: 8, vertical: 0).left),
                         Flexible(
                           child: Text(
                             text,
-                            style: AppTextStyles.responsiveButtonLarge(context).copyWith(
+                            style:
+                                AppTextStyles.responsiveButtonLarge(context)
+                                    .copyWith(
                               color: textColor ?? AppColors.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
-                            maxLines: ResponsiveHelper.isVerySmallScreen(context) ? 2 : 1,
+                            maxLines:
+                                ResponsiveHelper.isVerySmallScreen(context)
+                                    ? 2
+                                    : 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                           ),
@@ -84,11 +120,13 @@ class PrimaryButton extends StatelessWidget {
                     )
                   : Text(
                       text,
-                      style: AppTextStyles.responsiveButtonLarge(context).copyWith(
+                      style: AppTextStyles.responsiveButtonLarge(context)
+                          .copyWith(
                         color: textColor ?? AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
-                      maxLines: ResponsiveHelper.isVerySmallScreen(context) ? 2 : 1,
+                      maxLines:
+                          ResponsiveHelper.isVerySmallScreen(context) ? 2 : 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                     ),

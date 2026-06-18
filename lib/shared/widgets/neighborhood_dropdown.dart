@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/data/neighborhoods_data.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_extensions.dart';
+import '../../core/icons/hur_icons.dart';
+import 'hur_icon.dart';
 
 class NeighborhoodDropdown extends StatefulWidget {
   final Neighborhood? selectedNeighborhood;
@@ -176,10 +178,14 @@ class _NeighborhoodDropdownState extends State<NeighborhoodDropdown> {
                     },
                     decoration: InputDecoration(
                       hintText: 'ابحث عن المنطقة...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: HurPrefixIcon(HurIconKind.search),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: HurIcon(
+                                HurIconKind.close,
+                                size: HurIconSize.sm,
+                                tone: HurIconTone.muted,
+                              ),
                               onPressed: () {
                                 _searchController.clear();
                                 setDialogState(() {
@@ -227,10 +233,10 @@ class _NeighborhoodDropdownState extends State<NeighborhoodDropdown> {
                                 );
                               }
                               return ListTile(
-                                leading: const Icon(
-                                  Icons.location_on,
-                                  color: AppColors.primary,
-                                  size: 20,
+                                leading: HurIcon(
+                                  HurIconKind.mapPin,
+                                  dimension: 20,
+                                  tone: HurIconTone.primary,
                                 ),
                                 title: Text(
                                   neighborhood.name,
@@ -337,12 +343,12 @@ class _NeighborhoodDropdownState extends State<NeighborhoodDropdown> {
                                 : AppColors.primary).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(
-                            Icons.location_on,
+                          child: HurIcon(
+                            HurIconKind.mapPin,
+                            dimension: 20,
                             color: widget.selectedNeighborhood != null
                                 ? AppColors.success
                                 : AppColors.primary,
-                            size: 20,
                           ),
                         ),
                       ),
@@ -366,20 +372,20 @@ class _NeighborhoodDropdownState extends State<NeighborhoodDropdown> {
                       // Search icon
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
-                        child: Icon(
-                          Icons.search,
-                          color: context.themeTextPrimary,
-                          size: 20,
+                        child: HurIcon(
+                          HurIconKind.search,
+                          dimension: 20,
+                          tone: HurIconTone.primary,
                         ),
                       ),
                       // Success indicator
                       if (widget.selectedNeighborhood != null)
                         const Padding(
                           padding: EdgeInsets.only(right: 8),
-                          child: Icon(
-                            Icons.check_circle,
+                          child: HurIcon(
+                            HurIconKind.check,
+                            dimension: 20,
                             color: AppColors.success,
-                            size: 20,
                           ),
                         ),
                     ],
@@ -405,10 +411,10 @@ class _NeighborhoodDropdownState extends State<NeighborhoodDropdown> {
                         width: 1,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.map,
+                    child: HurIcon(
+                      HurIconKind.navigation,
+                      dimension: 20,
                       color: Colors.white,
-                      size: 20,
                     ),
                   ),
                 ),

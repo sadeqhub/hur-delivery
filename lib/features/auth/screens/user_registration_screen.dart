@@ -12,11 +12,13 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/utils/responsive_extensions.dart';
 import '../../../shared/widgets/responsive_container.dart';
+import '../../../shared/widgets/shake_error_field.dart';
 import '../../../core/config/env.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../orders/screens/location_picker_screen.dart';
 import '../../../core/utils/logger.dart';
+import '../../../core/utils/app_haptics.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   final String role;
@@ -63,6 +65,11 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   bool _isLoading = false;
   String? _extractedLegalName; // Name extracted from ID
 
+  int _currentStep = 0;
+  static const _totalSteps = 4;
+  String? _stepError;
+  final _stepShakeKey = GlobalKey<ShakeErrorFieldState>();
+
   @override
   void dispose() {
     _storeNameController.dispose();
@@ -73,6 +80,92 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   String _getRoleDisplayName() {
     final loc = AppLocalizations.of(context);
     return widget.role == 'merchant' ? loc.merchant : loc.driver;
+  }
+
+  List<String> _getStepTitles() {
+    final loc = AppLocalizations.of(context);
+    return [
+      loc.city,
+      widget.role == 'merchant' ? loc.storeInformation : loc.vehicleInformation,
+      loc.howDidYouHear,
+      loc.requiredDocuments,
+    ];
+  }
+
+  void _showStepError(String message) {
+    setState(() => _stepError = message);
+    _stepShakeKey.currentState?.triggerError(message);
+  }
+
+  bool _validateCurrentStep() {
+    final loc = AppLocalizations.of(context);
+    setState(() => _stepError = null);
+
+    switch (_currentStep) {
+      case 0:
+        if (_selectedCity == null) {
+          _showStepError(loc.cityRequired);
+          return false;
+        }
+        return true;
+      case 1:
+        if (widget.role == 'merchant') {
+          if (_storeNameController.text.trim().isEmpty) {
+            _showStepError(loc.storeNameRequired);
+            return false;
+          }
+          if (_storeLatitude == null || _storeLongitude == null) {
+            _showStepError(loc.pleaseSelectStoreLocation);
+            return false;
+          }
+        }
+        return true;
+      case 2:
+        return true; // referral is optional
+      case 3:
+        if (_idCardFront == null) {
+          _showStepError(loc.pleaseUploadDocument);
+          return false;
+        }
+        if (_selectedDocumentType != 'passport' && _idCardBack == null) {
+          _showStepError(loc.pleaseUploadDocumentBack);
+          return false;
+        }
+        if (widget.role == 'driver' && _selfieWithId == null) {
+          _showStepError(loc.pleaseUploadSelfie);
+          return false;
+        }
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  void _nextStep() {
+    if (!_validateCurrentStep()) {
+      AppHaptics.error();
+      return;
+    }
+    AppHaptics.light();
+    if (_currentStep < _totalSteps - 1) {
+      setState(() {
+        _currentStep++;
+        _stepError = null;
+      });
+    } else {
+      _submitRegistration();
+    }
+  }
+
+  void _previousStep() {
+    if (_currentStep > 0) {
+      setState(() {
+        _currentStep--;
+        _stepError = null;
+      });
+    } else {
+      context.go('/role-selection');
+    }
   }
 
   Future<void> _pickImage(ImageSource source, String type) async {
@@ -484,208 +577,353 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final stepTitles = _getStepTitles();
+
     return Theme(
       data: ThemeData.light().copyWith(
         primaryColor: AppColors.primary,
       ),
       child: Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: Builder(
-          builder: (context) {
-            final loc = AppLocalizations.of(context);
-            return Text(loc.registeringAs(_getRoleDisplayName()));
-          },
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          title: Text(loc.registeringAs(_getRoleDisplayName())),
+          centerTitle: true,
+          backgroundColor: context.themePrimary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios),
+            onPressed: _previousStep,
+          ),
         ),
-        centerTitle: true,
-        backgroundColor: context.themePrimary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () {
-            context.go('/');
-          },
-        ),
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: context.rp(horizontal: 20, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Center(
-                child: Column(
-                  children: [
-                    // Removed circle icon for cleaner design
-                    Builder(
-                      builder: (context) {
-                        final loc = AppLocalizations.of(context);
-                        return Column(
-                          children: [
-                            ResponsiveText(
-                              loc.completeData(_getRoleDisplayName()),
-                              style: AppTextStyles.heading2
-                                  .copyWith(
-                                    color: context.themeTextPrimary,
-                                  )
-                                  .responsive(context),
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(height: context.rs(8)),
-                            ResponsiveText(
-                              loc.pleaseFillAllRequired,
-                              style: AppTextStyles.bodyMedium
-                                  .copyWith(
-                                    color: context.themeTextSecondary,
-                                    fontWeight: FontWeight.w400,
-                                  )
-                                  .responsive(context),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: context.rs(32)),
-
-              // City Selection (for both merchants and drivers)
-              Builder(
-                builder: (context) {
-                  final loc = AppLocalizations.of(context);
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader(loc.city, Icons.location_city),
-                      SizedBox(height: context.rs(16)),
-                      _buildCityDropdown(),
-                      SizedBox(height: context.rs(24)),
-                    ],
-                  );
-                },
-              ),
-
-              // Role-specific fields
-              if (widget.role == 'merchant')
-                ..._buildMerchantFields()
-              else if (widget.role == 'driver')
-                ..._buildDriverFields(),
-
-              SizedBox(height: context.rs(24)),
-
-              // Referral Source Section
-              Builder(
-                builder: (context) {
-                  final loc = AppLocalizations.of(context);
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader(loc.howDidYouHear, Icons.campaign),
-                      SizedBox(height: context.rs(16)),
-                      _buildReferralSourceDropdown(),
-                      SizedBox(height: context.rs(24)),
-                      // Documents Section
-                      _buildSectionHeader(loc.requiredDocuments, Icons.upload_file),
-                    ],
-                  );
-                },
-              ),
-              SizedBox(height: context.rs(16)),
-
-              // Document Type Selection (for all users)
-              _buildDocumentTypeDropdown(),
-
-              SizedBox(height: context.rs(16)),
-
-              // Document Front (always required)
-              _buildImageUpload(
-                title: _getDocumentFrontLabel(),
-                file: _idCardFront,
-                onTap: () => _showImagePicker('id_front'),
-                icon: Icons.credit_card,
-              ),
-
-              // Document Back (only for National ID and Driver License, NOT for Passport)
-              if (_selectedDocumentType != 'passport') ...[
-                SizedBox(height: context.rs(16)),
-                _buildImageUpload(
-                  title: _getDocumentBackLabel(),
-                  file: _idCardBack,
-                  onTap: () => _showImagePicker('id_back'),
-                  icon: Icons.credit_card,
-                ),
-              ],
-
-              // Selfie with document (Drivers only)
-              if (widget.role == 'driver') ...[
-                SizedBox(height: context.rs(16)),
-                _buildImageUpload(
-                  title: _getSelfieLabel(),
-                  file: _selfieWithId,
-                  onTap: () => _showImagePicker('selfie'),
-                  icon: Icons.face,
-                  isImportant: true,
-                ),
-              ],
-
-              SizedBox(height: context.rs(32)),
-
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                height: context.rh(60),
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _submitRegistration,
-                  icon: _isLoading
-                      ? SizedBox(
-                          width: context.ri(20),
-                          height: context.ri(20),
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Icon(Icons.check_circle,
-                          color: Colors.white, size: context.ri(22)),
-                  label: Builder(
-                    builder: (context) {
-                      final loc = AppLocalizations.of(context);
-                      return ResponsiveText(
-                        _isLoading ? loc.registering : loc.completeRegistration,
-                        style: AppTextStyles.buttonLarge.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: context.rf(16),
+        body: Column(
+          children: [
+            _buildStepIndicator(stepTitles),
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding: context.rp(horizontal: 20, vertical: 20),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.05, 0),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
                         ),
                       );
                     },
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.themePrimary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(context.rs(12)),
+                    child: KeyedSubtree(
+                      key: ValueKey(_currentStep),
+                      child: ShakeErrorField(
+                        key: _stepShakeKey,
+                        errorMessage: _stepError,
+                        onErrorCleared: () => setState(() => _stepError = null),
+                        child: _buildStepContent(loc),
+                      ),
                     ),
-                    padding: context.rp(horizontal: 20, vertical: 16),
-                    disabledBackgroundColor: context.themeTextTertiary,
                   ),
                 ),
               ),
-
-              SizedBox(height: context.rs(16)),
-            ],
-          ),
+            ),
+            _buildStepNavigation(loc),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStepIndicator(List<String> stepTitles) {
+    return Container(
+      width: double.infinity,
+      padding: context.rp(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: context.themePrimaryTint,
+        border: Border(
+          bottom: BorderSide(color: context.themeBorder.withValues(alpha: 0.5)),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: context.themePrimary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${_currentStep + 1} / $_totalSteps',
+              style: AppTextStyles.caption.copyWith(
+                color: context.themePrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          SizedBox(height: context.rs(14)),
+          Row(
+            children: List.generate(_totalSteps, (index) {
+              final isActive = index == _currentStep;
+              final isDone = index < _currentStep;
+              return Expanded(
+                child: Column(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: isDone
+                            ? context.themePrimary
+                            : isActive
+                                ? context.themePrimary.withValues(alpha: 0.15)
+                                : context.themeSurfaceVariant,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDone || isActive
+                              ? context.themePrimary
+                              : context.themeBorder,
+                          width: isActive ? 2 : 1,
+                        ),
+                      ),
+                      child: isDone
+                          ? const Icon(Icons.check, size: 16, color: Colors.white)
+                          : Center(
+                              child: Text(
+                                '${index + 1}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isActive
+                                      ? context.themePrimary
+                                      : context.themeTextTertiary,
+                                ),
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      stepTitles[index],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.caption.copyWith(
+                        color: isActive || isDone
+                            ? context.themeTextPrimary
+                            : context.themeTextTertiary,
+                        fontWeight:
+                            isActive ? FontWeight.w600 : FontWeight.w500,
+                        fontSize: 10,
+                      ),
+                    ),
+                    if (index < _totalSteps - 1)
+                      const SizedBox.shrink(),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepContent(AppLocalizations loc) {
+    switch (_currentStep) {
+      case 0:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStepHeader(
+              loc.completeData(_getRoleDisplayName()),
+              loc.pleaseFillAllRequired,
+            ),
+            SizedBox(height: context.rs(24)),
+            _buildSectionHeader(loc.city, Icons.location_city),
+            SizedBox(height: context.rs(16)),
+            _buildCityDropdown(),
+          ],
+        );
+      case 1:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStepHeader(
+              widget.role == 'merchant'
+                  ? loc.storeInformation
+                  : loc.vehicleInformation,
+              loc.pleaseFillAllRequired,
+            ),
+            SizedBox(height: context.rs(24)),
+            if (widget.role == 'merchant')
+              ..._buildMerchantFields()
+            else
+              ..._buildDriverFields(),
+          ],
+        );
+      case 2:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStepHeader(loc.howDidYouHear, loc.pleaseFillAllRequired),
+            SizedBox(height: context.rs(24)),
+            _buildSectionHeader(loc.howDidYouHear, Icons.campaign),
+            SizedBox(height: context.rs(16)),
+            _buildReferralSourceDropdown(),
+          ],
+        );
+      case 3:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStepHeader(loc.requiredDocuments, loc.pleaseFillAllRequired),
+            SizedBox(height: context.rs(24)),
+            _buildSectionHeader(loc.requiredDocuments, Icons.upload_file),
+            SizedBox(height: context.rs(16)),
+            _buildDocumentTypeDropdown(),
+            SizedBox(height: context.rs(16)),
+            _buildImageUpload(
+              title: _getDocumentFrontLabel(),
+              file: _idCardFront,
+              onTap: () => _showImagePicker('id_front'),
+              icon: Icons.credit_card,
+            ),
+            if (_selectedDocumentType != 'passport') ...[
+              SizedBox(height: context.rs(16)),
+              _buildImageUpload(
+                title: _getDocumentBackLabel(),
+                file: _idCardBack,
+                onTap: () => _showImagePicker('id_back'),
+                icon: Icons.credit_card,
+              ),
+            ],
+            if (widget.role == 'driver') ...[
+              SizedBox(height: context.rs(16)),
+              _buildImageUpload(
+                title: _getSelfieLabel(),
+                file: _selfieWithId,
+                onTap: () => _showImagePicker('selfie'),
+                icon: Icons.face,
+                isImportant: true,
+              ),
+            ],
+          ],
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildStepHeader(String title, String subtitle) {
+    return Center(
+      child: Column(
+        children: [
+          ResponsiveText(
+            title,
+            style: AppTextStyles.heading2
+                .copyWith(color: context.themeTextPrimary)
+                .responsive(context),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: context.rs(8)),
+          ResponsiveText(
+            subtitle,
+            style: AppTextStyles.bodyMedium
+                .copyWith(
+                  color: context.themeTextSecondary,
+                  fontWeight: FontWeight.w400,
+                )
+                .responsive(context),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepNavigation(AppLocalizations loc) {
+    final isLastStep = _currentStep == _totalSteps - 1;
+
+    return Container(
+      padding: context.rp(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: context.themeSurface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            if (_currentStep > 0)
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isLoading ? null : _previousStep,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.themePrimary,
+                    side: BorderSide(color: context.themePrimary),
+                    minimumSize: Size(0, context.rh(52)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(loc.back),
+                ),
+              ),
+            if (_currentStep > 0) SizedBox(width: context.rs(12)),
+            Expanded(
+              flex: _currentStep > 0 ? 2 : 1,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _nextStep,
+                icon: _isLoading
+                    ? SizedBox(
+                        width: context.ri(20),
+                        height: context.ri(20),
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : Icon(
+                        isLastStep ? Icons.check_circle : Icons.arrow_forward,
+                        color: Colors.white,
+                        size: context.ri(20),
+                      ),
+                label: ResponsiveText(
+                  _isLoading
+                      ? loc.registering
+                      : (isLastStep ? loc.completeRegistration : loc.continueText),
+                  style: AppTextStyles.buttonMedium.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.themePrimary,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(0, context.rh(52)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

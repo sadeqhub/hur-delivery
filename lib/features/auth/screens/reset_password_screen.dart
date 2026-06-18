@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../shared/widgets/auth_scaffold.dart';
+import '../../../shared/widgets/pressable_button.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String phoneE164;
   final String? prefilledCode;
 
-  const ResetPasswordScreen({super.key, required this.phoneE164, this.prefilledCode});
+  const ResetPasswordScreen({
+    super.key,
+    required this.phoneE164,
+    this.prefilledCode,
+  });
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -46,16 +54,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       newPassword: _passwordController.text.trim(),
     );
     if (!mounted) return;
+    final loc = AppLocalizations.of(context);
     if (ok) {
-      final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.passwordUpdatedSuccess)), 
+        SnackBar(content: Text(loc.passwordUpdatedSuccess)),
       );
-      Navigator.of(context).pushReplacementNamed('/');
+      context.go('/');
     } else {
-      final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.error ?? loc.passwordUpdateFailed), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text(auth.error ?? loc.passwordUpdateFailed),
+          backgroundColor: AppColors.error,
+        ),
       );
     }
   }
@@ -63,95 +73,112 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    return Theme(
-      data: ThemeData.light().copyWith(
-        primaryColor: AppColors.primary,
-      ),
-      child: Scaffold(
-      backgroundColor: AppColors.primary,
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).resetPassword),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.white,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(MediaQuery.sizeOf(context).width * 0.06),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(height: MediaQuery.sizeOf(context).height * 0.08),
-                Text(AppLocalizations.of(context).enterCodeNewPassword, style: AppTextStyles.responsiveHeading2(context).copyWith(color: Colors.white), textAlign: TextAlign.center),
-                SizedBox(height: MediaQuery.sizeOf(context).height * 0.04),
+    final loc = AppLocalizations.of(context);
+    final fieldWidth = ResponsiveHelper.getFormElementWidth(context);
 
-                // Code field
-                Container(
-                  width: ResponsiveHelper.getFormElementWidth(context),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                  child: TextFormField(
-                    controller: _codeController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    maxLength: 6,
-                    decoration: InputDecoration(border: InputBorder.none, hintText: AppLocalizations.of(context).verificationCode, counterText: '', contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)),
-                    validator: (v) {
-                      final loc = AppLocalizations.of(context);
-                      final val = (v ?? '').trim();
-                      if (val.length != 6) return loc.enter6DigitCode;
-                      return null;
-                    },
-                  ),
-                ),
-                SizedBox(height: MediaQuery.sizeOf(context).height * 0.02),
-
-                // Password field
-                Container(
-                  width: ResponsiveHelper.getFormElementWidth(context),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                  child: TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscure,
-                    textAlign: TextAlign.center,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: AppLocalizations.of(context).newPassword,
-                      suffixIcon: IconButton(onPressed: () => setState(() => _obscure = !_obscure), icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    ),
-                    validator: (v) {
-                      final loc = AppLocalizations.of(context);
-                      final val = (v ?? '').trim();
-                      if (val.isEmpty) return loc.passwordRequired;
-                      final ok = RegExp(r'^[A-Za-z0-9]{8,}$').hasMatch(val);
-                      if (!ok) return loc.lettersNumbersOnly8Min;
-                      return null;
-                    },
-                  ),
-                ),
-                SizedBox(height: MediaQuery.sizeOf(context).height * 0.03),
-
-                SizedBox(
-                  width: ResponsiveHelper.getFormElementWidth(context),
-                  height: ResponsiveHelper.getFormElementHeight(context),
-                  child: ElevatedButton(
-                    onPressed: auth.isLoading ? null : _submit,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                    child: auth.isLoading
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : Text(AppLocalizations.of(context).updatePassword),
-                  ),
-                ),
-              ],
+    return AuthScaffold(
+      title: loc.resetPassword,
+      onBack: () => context.pop(),
+      body: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              loc.enterCodeNewPassword,
+              style: AppTextStyles.heading2.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
+            const SizedBox(height: AppTokens.space2xl),
+            _AuthField(
+              width: fieldWidth,
+              child: TextFormField(
+                controller: _codeController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                maxLength: 6,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: loc.verificationCode,
+                  counterText: '',
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+                validator: (v) {
+                  final val = (v ?? '').trim();
+                  if (val.length != 6) return loc.enter6DigitCode;
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(height: AppTokens.spaceMd),
+            _AuthField(
+              width: fieldWidth,
+              child: TextFormField(
+                controller: _passwordController,
+                obscureText: _obscure,
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: loc.newPassword,
+                  suffixIcon: IconButton(
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                    icon: Icon(
+                      _obscure ? Icons.visibility : Icons.visibility_off,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+                validator: (v) {
+                  final val = (v ?? '').trim();
+                  if (val.isEmpty) return loc.passwordRequired;
+                  if (!RegExp(r'^[A-Za-z0-9]{8,}$').hasMatch(val)) {
+                    return loc.lettersNumbersOnly8Min;
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(height: AppTokens.spaceXl),
+            AuthPrimaryButton(
+              label: loc.updatePassword,
+              width: fieldWidth,
+              isLoading: auth.isLoading,
+              onPressed: auth.isLoading ? null : _submit,
+            ),
+          ],
         ),
-      ),
       ),
     );
   }
 }
 
+class _AuthField extends StatelessWidget {
+  final double width;
+  final Widget child;
 
+  const _AuthField({required this.width, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: width,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          boxShadow: AppTokens.elevationSm(),
+        ),
+        child: child,
+      ),
+    );
+  }
+}

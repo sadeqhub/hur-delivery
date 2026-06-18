@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../shared/models/order_model.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/icons/hur_icons.dart';
+import '../../shared/widgets/hur_icon.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/logger.dart';
 
@@ -111,10 +113,10 @@ class _DeliveryTimerWidgetState extends State<DeliveryTimerWidget> {
           ),
           title: Row(
             children: [
-              const Icon(
-                Icons.error_outline,
+              HurIcon(
+                HurIconKind.warning,
+                size: HurIconSize.lg,
                 color: AppColors.error,
-                size: 26,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -143,10 +145,10 @@ class _DeliveryTimerWidgetState extends State<DeliveryTimerWidget> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.info_outline,
+                    HurIcon(
+                      HurIconKind.info,
+                      size: HurIconSize.sm,
                       color: AppColors.warning,
-                      size: 20,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -220,16 +222,16 @@ class _DeliveryTimerWidgetState extends State<DeliveryTimerWidget> {
             width: 1,
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.check_circle,
+            HurIcon(
+              HurIconKind.check,
+              dimension: 16,
               color: AppColors.success,
-              size: 16,
             ),
-            SizedBox(width: 8),
-            Text(
+            const SizedBox(width: 8),
+            const Text(
               'وصلت إلى موقع التسليم',
               style: TextStyle(
                 color: AppColors.success,
@@ -252,14 +254,14 @@ class _DeliveryTimerWidgetState extends State<DeliveryTimerWidget> {
     final Color bgColor;
     final Color borderColor;
     final Color textColor;
-    final IconData icon;
+    final HurIconKind statusIcon;
     String text;
 
     if (isLate && lateSeconds > 0) {
       bgColor = AppColors.error.withOpacity(0.1);
       borderColor = AppColors.error.withOpacity(0.3);
       textColor = AppColors.error;
-      icon = Icons.error_outline;
+      statusIcon = HurIconKind.warning;
       text = '${loc.lateDurationLabel}${_formatTime(lateSeconds)}';
     } else {
       bgColor = isWarning
@@ -269,7 +271,7 @@ class _DeliveryTimerWidgetState extends State<DeliveryTimerWidget> {
           ? AppColors.warning.withOpacity(0.3)
           : AppColors.primary.withOpacity(0.3);
       textColor = isWarning ? AppColors.warning : AppColors.primary;
-      icon = Icons.timer_outlined;
+      statusIcon = HurIconKind.clock;
       text = '${loc.timeRemainingLabel}${_formatTime(remainingSeconds)}';
     }
 
@@ -288,11 +290,7 @@ class _DeliveryTimerWidgetState extends State<DeliveryTimerWidget> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: textColor,
-              size: 16,
-            ),
+            HurIcon(statusIcon, dimension: 16, color: textColor),
             const SizedBox(width: 8),
             Text(
               text,
@@ -320,10 +318,10 @@ class _DeliveryTimerWidgetState extends State<DeliveryTimerWidget> {
           ),
           title: Row(
             children: [
-              const Icon(
-                Icons.timer_outlined,
-                color: AppColors.primary,
-                size: 26,
+              HurIcon(
+                HurIconKind.clock,
+                size: HurIconSize.lg,
+                tone: HurIconTone.primary,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -352,10 +350,10 @@ class _DeliveryTimerWidgetState extends State<DeliveryTimerWidget> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.check_circle,
+                    HurIcon(
+                      HurIconKind.check,
+                      dimension: 20,
                       color: Colors.green,
-                      size: 20,
                     ),
                     const SizedBox(width: 8),
                     Expanded(

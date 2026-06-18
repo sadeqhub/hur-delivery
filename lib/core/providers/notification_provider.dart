@@ -10,7 +10,7 @@ import '../services/messaging_service.dart';
 import '../constants/app_constants.dart';
 import '../widgets/header_notification.dart';
 import '../utils/logger.dart';
-
+import '../../core/utils/async_value_ext.dart';
 class NotificationState {
   final List<Map<String, dynamic>> notifications;
   final bool isLoading;

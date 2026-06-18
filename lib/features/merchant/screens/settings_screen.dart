@@ -10,7 +10,10 @@ import '../../../shared/widgets/responsive_container.dart';
 import '../../../shared/widgets/language_switcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/riverpod/app_providers.dart';
+import '../../../core/utils/async_value_ext.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
 
 class MerchantSettingsScreen extends StatefulWidget {
   const MerchantSettingsScreen({super.key});
@@ -104,14 +107,11 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
       context: context,
       applicationName: 'Hur Delivery',
       applicationVersion: '1.0.0',
-      applicationIcon: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.local_shipping, color: Colors.white, size: 30),
+      applicationIcon: HurIconBadge(
+        icon: HurIconKind.bird,
+        dimension: 60,
+        iconSize: HurIconSize.lg,
+        borderRadius: 12,
       ),
       children: [
         Text(AppLocalizations.of(context).appDescription),
@@ -152,8 +152,10 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
                     child: Column(
                       children: [
                         SwitchListTile(
-                          secondary: Icon(
-                            _notificationsEnabled ? Icons.notifications_active : Icons.notifications_off,
+                          secondary: HurIcon(
+                            HurIconKind.notifications,
+                            size: HurIconSize.sm,
+                            tone: HurIconTone.muted,
                           ),
                           title: Text(loc.instantNotifications),
                           subtitle: Text(
@@ -188,24 +190,21 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
                   Card(
                     child: Column(
                       children: [
-                        ListTile(
-                          leading: Icon(Icons.info_outline, size: context.ri(24)),
-                          title: ResponsiveText(loc.aboutApp, style: TextStyle(fontSize: context.rf(16))),
-                          trailing: Icon(Icons.arrow_forward_ios, size: context.ri(16)),
+                        HurListTile(
+                          icon: HurIconKind.info,
+                          title: loc.aboutApp,
                           onTap: _showAboutDialog,
                         ),
                         const Divider(height: 1),
-                        ListTile(
-                          leading: Icon(Icons.policy_outlined, size: context.ri(24)),
-                          title: ResponsiveText(loc.privacyPolicy, style: TextStyle(fontSize: context.rf(16))),
-                          trailing: Icon(Icons.arrow_forward_ios, size: context.ri(16)),
+                        HurListTile(
+                          icon: HurIconKind.shield,
+                          title: loc.privacyPolicy,
                           onTap: () => context.push('/merchant-dashboard/privacy-policy'),
                         ),
                         const Divider(height: 1),
-                        ListTile(
-                          leading: Icon(Icons.description_outlined, size: context.ri(24)),
-                          title: ResponsiveText(loc.termsAndConditions, style: TextStyle(fontSize: context.rf(16))),
-                          trailing: Icon(Icons.arrow_forward_ios, size: context.ri(16)),
+                        HurListTile(
+                          icon: HurIconKind.document,
+                          title: loc.termsAndConditions,
                           onTap: () => context.push('/merchant-dashboard/terms-conditions'),
                         ),
                       ],

@@ -42,7 +42,7 @@ extension ThemeExtension on BuildContext {
   /// Get accent (gold) color — same across themes
   Color get themeAccent => AppColors.accent;
 
-  /// Get secondary (cool blue) color based on theme
+  /// Functional link/maps color — not a brand accent.
   Color get themeSecondary =>
       isDarkMode ? AppColors.secondaryDark : AppColors.secondary;
 

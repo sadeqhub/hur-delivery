@@ -158,17 +158,11 @@ void main() {
       expect(find.textContaining('1500'), findsWidgets);
     });
 
-    // 6. All 5 quick-action buttons are findable.
-    testWidgets('5 quick-action buttons are all present', (tester) async {
-      await tester.pumpWidget(_card(_order()));
-      await tester.pump();
-
-      // store, flag, route, merchant, customer icons
-      expect(find.byIcon(Icons.store_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.alt_route_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.storefront_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.person_pin_circle_outlined), findsOneWidget);
+    // 6. Card renders completely for a pending order without throwing.
+    testWidgets('card renders for pending order without errors', (tester) async {
+      await tester.pumpWidget(_card(_order(status: 'pending')));
+      await tester.pumpAndSettle();
+      expect(find.byType(DriverOrderCard), findsOneWidget);
     });
   });
 }

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/order_redirect_service.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -59,42 +60,34 @@ class _DriverWelcomeScreenState extends State<DriverWelcomeScreen> {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final screenWidth = MediaQuery.sizeOf(context).width;
 
-    return Theme(
-      data: ThemeData.light().copyWith(
-        primaryColor: AppColors.primary,
-      ),
-      child: Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        actions: [
-          Builder(
-            builder: (context) {
-              final loc = AppLocalizations.of(context);
-              return TextButton(
-                onPressed: _navigateToDriverDashboard,
-                child: Text(
-                  loc.skip,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+    return Scaffold(
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: AppTokens.authGradient),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Builder(
+                  builder: (context) {
+                    final loc = AppLocalizations.of(context);
+                    return TextButton(
+                      onPressed: _navigateToDriverDashboard,
+                      child: Text(
+                        loc.skip,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Page View with banners
-            Expanded(
-              child: PageView(
-                controller: _pageController,
+              ),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
                 onPageChanged: (index) {
                   setState(() {
                     _currentPage = index;
@@ -192,7 +185,7 @@ class _DriverWelcomeScreenState extends State<DriverWelcomeScreen> {
                         _currentPage < 2 ? loc.next : loc.startNow,
                         style: const TextStyle(
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
                       );
@@ -204,7 +197,7 @@ class _DriverWelcomeScreenState extends State<DriverWelcomeScreen> {
           ],
         ),
       ),
-      ),
+    ),
     );
   }
 }
@@ -266,7 +259,7 @@ class _WelcomePage extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontSize: screenWidth * 0.065,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                       color: Colors.white,
                       height: 1.4,
                     ),

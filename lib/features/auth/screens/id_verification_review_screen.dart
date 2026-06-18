@@ -10,6 +10,8 @@ import '../../../core/config/env.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/auth_scaffold.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../../core/utils/logger.dart';
 import '../data/auth_repository.dart';
 
@@ -292,24 +294,22 @@ class _IdVerificationReviewScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: ThemeData.light().copyWith(
-        primaryColor: AppColors.primary,
-      ),
-      child: Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).reviewIdData),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+    return AuthScaffold(
+      title: AppLocalizations.of(context).reviewIdData,
+      showLogo: false,
+      body: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppTokens.spaceLg),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppTokens.radiusLg),
+          boxShadow: AppTokens.elevationSm(),
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
                 // Info banner
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -524,8 +524,6 @@ class _IdVerificationReviewScreenState
             ),
           ),
         ),
-      ),
-      ),
     );
   }
 

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/icons/hur_icons.dart';
 import '../../core/riverpod/app_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
-
+import 'hur_icon.dart';
+import '../../core/utils/async_value_ext.dart';
 /// Language switcher widget that can be used in app bars or anywhere
 class LanguageSwitcher extends ConsumerWidget {
   final bool showLabel;
@@ -23,22 +26,24 @@ class LanguageSwitcher extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final locale = ref.watch(localeProvider).valueOrNull ?? const Locale('ar', 'IQ');
+    final locale =
+        ref.watch(localeProvider).valueOrNull ?? const Locale('ar', 'IQ');
     final loc = AppLocalizations.of(context);
     final isArabic = locale.languageCode == 'ar';
+    final fg = textColor ?? Colors.white;
 
     return TextButton.icon(
       onPressed: () => ref.read(localeProvider.notifier).toggleLocale(),
-      icon: Icon(
-        Icons.language,
-        color: iconColor ?? (textColor ?? Colors.white),
-        size: iconSize ?? 18,
+      icon: HurIcon(
+        HurIconKind.globe,
+        dimension: iconSize ?? 18,
+        color: iconColor ?? fg,
       ),
       label: Text(
         isArabic ? 'EN' : loc.arabicChar,
         style: TextStyle(
-          color: textColor ?? Colors.white,
-          fontWeight: FontWeight.bold,
+          color: fg,
+          fontWeight: FontWeight.w600,
           fontSize: fontSize ?? 14,
         ),
       ),
@@ -65,7 +70,7 @@ class LanguageSwitcherButton extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: backgroundColor ?? Colors.white.withOpacity(0.2),
+        color: backgroundColor ?? Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
       ),
       child: LanguageSwitcher(
@@ -82,12 +87,13 @@ class LanguageSwitcherTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final locale = ref.watch(localeProvider).valueOrNull ?? const Locale('ar', 'IQ');
+    final locale =
+        ref.watch(localeProvider).valueOrNull ?? const Locale('ar', 'IQ');
     final loc = AppLocalizations.of(context);
     final isArabic = locale.languageCode == 'ar';
 
     return ListTile(
-      leading: const Icon(Icons.language, color: AppColors.primary),
+      leading: HurIcon(HurIconKind.globe, tone: HurIconTone.primary),
       title: Text(loc.language),
       subtitle: Text(isArabic ? loc.languageArabic : loc.languageEnglish),
       trailing: Row(
@@ -96,22 +102,22 @@ class LanguageSwitcherTile extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               isArabic ? 'ع' : 'EN',
               style: const TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
                 color: AppColors.primary,
               ),
             ),
           ),
           const SizedBox(width: 8),
-          const Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: AppColors.textTertiary,
+          HurIcon(
+            HurIconKind.chevronRight,
+            size: HurIconSize.xs,
+            tone: HurIconTone.muted,
           ),
         ],
       ),

@@ -17,6 +17,8 @@ import '../../shared/widgets/primary_button.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../features/auth/screens/id_verification_review_screen.dart';
 import '../../core/utils/logger.dart';
+import '../../core/icons/hur_icons.dart';
+import 'hur_icon.dart';
 
 /// Guard widget that checks user verification status and blocks access
 /// if verification is pending or rejected
@@ -117,9 +119,9 @@ class _VerificationGuardState extends State<VerificationGuard> {
                     color: AppColors.warning.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(60),
                   ),
-                  child: const Icon(
-                    Icons.pending_actions_rounded,
-                    size: 64,
+                  child: HurIcon(
+                    HurIconKind.clock,
+                    dimension: 64,
                     color: AppColors.warning,
                   ),
                 ),
@@ -201,9 +203,9 @@ class _VerificationGuardState extends State<VerificationGuard> {
                     color: AppColors.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(60),
                   ),
-                  child: const Icon(
-                    Icons.block_rounded,
-                    size: 64,
+                  child: HurIcon(
+                    HurIconKind.close,
+                    dimension: 64,
                     color: AppColors.error,
                   ),
                 ),
@@ -235,7 +237,11 @@ class _VerificationGuardState extends State<VerificationGuard> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () => _contactAppOwner(),
-                    icon: const Icon(Icons.chat, size: 24),
+                    icon: HurIcon(
+                      HurIconKind.chat,
+                      dimension: 24,
+                      color: Colors.white,
+                    ),
                     label: Text(
                       loc.contactAppOwner,
                       style: const TextStyle(fontSize: 16),
@@ -291,7 +297,11 @@ class _VerificationGuardState extends State<VerificationGuard> {
         children: [
           Row(
             children: [
-              const Icon(Icons.upload_file, color: AppColors.warning),
+              HurIcon(
+                HurIconKind.document,
+                dimension: 24,
+                color: AppColors.warning,
+              ),
               const SizedBox(width: 8),
               Text(
                 loc.uploadNewDocuments,
@@ -364,8 +374,9 @@ class _VerificationGuardState extends State<VerificationGuard> {
         ),
         child: Row(
           children: [
-            Icon(
-              hasFile ? Icons.check_circle : Icons.add_photo_alternate,
+            HurIcon(
+              hasFile ? HurIconKind.check : HurIconKind.camera,
+              dimension: 24,
               color: hasFile ? AppColors.success : AppColors.textTertiary,
             ),
             const SizedBox(width: 12),
@@ -377,10 +388,10 @@ class _VerificationGuardState extends State<VerificationGuard> {
                 ),
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: AppColors.textTertiary,
+            HurIcon(
+              HurIconKind.arrowForward,
+              dimension: 16,
+              tone: HurIconTone.muted,
             ),
           ],
         ),
@@ -401,7 +412,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt),
+                leading: HurIcon(HurIconKind.camera, tone: HurIconTone.primary),
                 title: Text(AppLocalizations.of(context).takePhoto),
                 onTap: () {
                   Navigator.pop(context);
@@ -409,7 +420,7 @@ class _VerificationGuardState extends State<VerificationGuard> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library),
+                leading: HurIcon(HurIconKind.document, tone: HurIconTone.primary),
                 title: Text(AppLocalizations.of(context).chooseFromGallery),
                 onTap: () {
                   Navigator.pop(context);

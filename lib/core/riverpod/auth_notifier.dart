@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../../shared/models/user_model.dart';
@@ -44,7 +45,9 @@ class AuthNotifier extends ChangeNotifier {
 ///   ],
 /// )
 /// ```
-final authNotifierProvider = ChangeNotifierProvider<AuthNotifier>((ref) {
+// Riverpod 3 removed ChangeNotifierProvider — use plain Provider.
+// This must always be overridden in ProviderScope; the throw is intentional.
+final authNotifierProvider = Provider<AuthNotifier>((ref) {
   throw UnimplementedError(
       'Provide authNotifierProvider override in ProviderScope');
 });

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../icons/hur_icons.dart';
 import '../services/response_cache_service.dart';
 import '../services/network_quality_service.dart';
 import '../utils/logger.dart';
@@ -852,6 +853,23 @@ class WalletTransaction {
         return Icons.card_giftcard;
       default:
         return Icons.receipt;
+    }
+  }
+
+  HurIconKind get hurIcon {
+    switch (transactionType) {
+      case 'top_up':
+        return HurIconKind.add;
+      case 'order_fee':
+        return HurIconKind.package;
+      case 'refund':
+        return HurIconKind.refresh;
+      case 'adjustment':
+        return HurIconKind.settings;
+      case 'initial_gift':
+        return HurIconKind.check;
+      default:
+        return HurIconKind.orders;
     }
   }
   

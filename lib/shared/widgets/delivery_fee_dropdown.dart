@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_extensions.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/icons/hur_icons.dart';
+import 'hur_icon.dart';
 
 class DeliveryFeeDropdown extends StatefulWidget {
   final TextEditingController controller;
@@ -164,10 +166,10 @@ class _DeliveryFeeDropdownState extends State<DeliveryFeeDropdown> {
                       width: 1,
                     ),
                   ),
-                  child: const Icon(
-                    Icons.remove,
+                  child: HurIcon(
+                    HurIconKind.minus,
+                    dimension: 20,
                     color: Colors.white,
-                    size: 20,
                   ),
                 ),
               ),
@@ -197,7 +199,7 @@ class _DeliveryFeeDropdownState extends State<DeliveryFeeDropdown> {
                     color: context.themeTextSecondary,
                     fontSize: 14,
                   ),
-                  prefixIcon: Icon(Icons.local_shipping, color: context.themeTextSecondary, size: 20),
+                  prefixIcon: HurPrefixIcon(HurIconKind.package),
                   prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                   suffixIcon: Padding(
                     padding: const EdgeInsets.only(right: 12),
@@ -282,10 +284,10 @@ class _DeliveryFeeDropdownState extends State<DeliveryFeeDropdown> {
                       width: 1,
                     ),
                   ),
-                  child: const Icon(
-                    Icons.add,
+                  child: HurIcon(
+                    HurIconKind.add,
+                    dimension: 20,
                     color: Colors.white,
-                    size: 20,
                   ),
               ),
               ),
@@ -307,10 +309,10 @@ class _DeliveryFeeDropdownState extends State<DeliveryFeeDropdown> {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.warning_amber_rounded,
+                HurIcon(
+                  HurIconKind.warning,
+                  dimension: 20,
                   color: AppColors.error,
-                  size: 20,
                 ),
                 const SizedBox(width: 8),
                 Expanded(

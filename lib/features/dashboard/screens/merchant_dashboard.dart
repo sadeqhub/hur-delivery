@@ -5,8 +5,10 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/order_provider.dart';
 import '../../../core/providers/wallet_provider.dart';
 import '../../../core/widgets/header_notification.dart';
 import '../../wallet/widgets/wallet_balance_widget.dart';
@@ -19,8 +21,12 @@ import '../../../shared/widgets/maintenance_mode_dialog.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/screen_visibility_tracker.dart';
 import '../../../core/utils/logger.dart';
-import '../data/dashboard_repository.dart';
+import '../../../core/utils/responsive_extensions.dart';
+import '../../../shared/widgets/responsive_container.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
 import '../widgets/merchant_order_list.dart';
+import '../widgets/merchant_dashboard_header.dart';
 // Removed legacy stable_order_card_manager import
 
 class MerchantDashboard extends ConsumerStatefulWidget {
@@ -121,6 +127,7 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
     final loc = AppLocalizations.of(context);
 
     return Scaffold(
+<<<<<<< Updated upstream
       appBar: AppBar(
         title: const WalletBalanceWidget(),
         centerTitle: true,
@@ -157,66 +164,106 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: AppColors.error,
+=======
+      drawer: _buildDrawer(context, authProvider),
+      body: Column(
+        children: [
+          Builder(
+            builder: (scaffoldContext) => MerchantDashboardHeader(
+              onMenuTap: () => Scaffold.of(scaffoldContext).openDrawer(),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Consumer<OrderProvider>(
+                    builder: (context, orderProvider, _) {
+                      if (orderProvider.error != null) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Tooltip(
+                            message: loc.noInternetTitle,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: AppTokens.glassDecoration(
+                                radius: AppTokens.radiusFull,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.cloud_off_rounded,
+                                      size: 14,
+                                      color: Colors.white.withValues(alpha: 0.95)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    loc.offline,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.95),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+>>>>>>> Stashed changes
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: AppColors.success,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.success.withValues(alpha: 0.5),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: HurIcon(
+                      HurIconKind.notifications,
+                      size: HurIconSize.md,
+                      tone: HurIconTone.onPrimary,
                     ),
+                    onPressed: () =>
+                        context.push('/merchant-dashboard/notifications'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                final walletEnabled =
+                    context.select<WalletProvider, bool>((w) => w.isEnabled);
+                if (!walletEnabled) {
+                  return const MerchantOrdersTab();
+                }
+                return CreditLimitGuard(
+                  child: IndexedStack(
+                    index: _selectedIndex,
+                    children: const [
+                      MerchantOrdersTab(),
+                      WalletScreen(),
+                    ],
                   ),
                 );
-              }
-              // Connection is healthy - show subtle green dot
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Center(
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: AppColors.success,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.success.withOpacity(0.5),
-                          blurRadius: 4,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              context.push('/merchant-dashboard/notifications');
-            },
-          ),
-          // Support button removed from header - now in footer
-        ],
-      ),
-      drawer: _buildDrawer(context, authProvider),
-      body: Builder(
-        builder: (context) {
-          // select() so only isEnabled changes trigger a body rebuild,
-          // not every wallet balance/transaction update.
-          final walletEnabled =
-              context.select<WalletProvider, bool>((w) => w.isEnabled);
-          if (!walletEnabled) {
-            return const MerchantOrdersTab();
-          }
-          return CreditLimitGuard(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: [
-                const MerchantOrdersTab(),
-                const WalletScreen(),
-              ],
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Container(
@@ -249,8 +296,12 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
               context.push('/merchant-dashboard/create-order');
             },
             borderRadius: BorderRadius.circular(32),
-            child: const Center(
-              child: Icon(Icons.add_rounded, size: 32, color: Colors.white),
+            child: Center(
+              child: HurIcon(
+                HurIconKind.add,
+                size: HurIconSize.lg,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
@@ -274,7 +325,7 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
                   // Support button
                 Expanded(
                   child: _buildFooterButton(
-                      icon: Icons.support_agent,
+                      icon: HurIconKind.support,
                       label: loc.support,
                       isSelected: false,
                       onTap: () => _openSupportChat(context),
@@ -285,7 +336,7 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
                 // Voice order button
                 Expanded(
                   child: _buildFooterButton(
-                    icon: Icons.mic_rounded,
+                    icon: HurIconKind.mic,
                     label: loc.voice,
                     isSelected: false,
                     onTap: () {
@@ -312,11 +363,12 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
   }
 
   Widget _buildFooterButton({
-    required IconData icon,
+    required HurIconKind icon,
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final opacity = isSelected ? 1.0 : 0.6;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -325,12 +377,10 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            HurIcon(
               icon,
-              size: 24,
-              color: isSelected 
-                  ? Colors.white 
-                  : Colors.white.withOpacity(0.6),
+              size: HurIconSize.md,
+              color: Colors.white.withValues(alpha: opacity),
             ),
             const SizedBox(height: 4),
             Text(
@@ -338,9 +388,7 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected 
-                    ? Colors.white 
-                    : Colors.white.withOpacity(0.6),
+                color: Colors.white.withValues(alpha: opacity),
               ),
             ),
           ],
@@ -384,7 +432,7 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
                     title,
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -435,9 +483,9 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
                 CircleAvatar(
                   radius: context.rs(35),
                   backgroundColor: Colors.white,
-                  child: Icon(
-                    Icons.person,
-                    size: context.ri(35),
+                  child: HurIcon(
+                    HurIconKind.merchant,
+                    size: HurIconSize.lg,
                     color: AppColors.primary,
                   ),
                 ),
@@ -493,53 +541,53 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
                     final loc = AppLocalizations.of(context);
                     return Column(
                       children: [
-                        _buildDrawerItem(
-                          icon: Icons.edit_outlined,
+                        HurNavTile(
+                          icon: HurIconKind.edit,
                           title: loc.editProfile,
                           onTap: () {
                             Navigator.pop(context);
                             context.push('/merchant-dashboard/edit-profile');
                           },
                         ),
-                        _buildDrawerItem(
-                          icon: Icons.notifications_outlined,
+                        HurNavTile(
+                          icon: HurIconKind.notifications,
                           title: loc.notifications,
                           onTap: () {
                             Navigator.pop(context);
                             context.push('/merchant-dashboard/notifications');
                           },
                         ),
-                        _buildDrawerItem(
-                          icon: Icons.analytics_outlined,
+                        HurNavTile(
+                          icon: HurIconKind.analytics,
                           title: loc.analytics,
                           onTap: () {
                             Navigator.pop(context);
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => const MerchantAnalyticsScreen(),
+                                builder: (context) =>
+                                    const MerchantAnalyticsScreen(),
                               ),
                             );
                           },
                         ),
-                        // Support removed from drawer - now in footer
-                        _buildDrawerItem(
-                          icon: Icons.settings_outlined,
+                        HurNavTile(
+                          icon: HurIconKind.settings,
                           title: loc.settings,
                           onTap: () {
                             Navigator.pop(context);
                             context.push('/merchant-dashboard/settings');
                           },
                         ),
-                        _buildDrawerItem(
-                          icon: Icons.privacy_tip_outlined,
+                        HurNavTile(
+                          icon: HurIconKind.shield,
                           title: loc.privacyPolicy,
                           onTap: () {
                             Navigator.pop(context);
                             context.push('/merchant-dashboard/privacy-policy');
                           },
                         ),
-                        _buildDrawerItem(
-                          icon: Icons.description_outlined,
+                        HurNavTile(
+                          icon: HurIconKind.document,
                           title: loc.termsAndConditions,
                           onTap: () {
                             Navigator.pop(context);
@@ -554,14 +602,14 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
                 Builder(
                   builder: (context) {
                     final loc = AppLocalizations.of(context);
-                    return _buildDrawerItem(
-                  icon: Icons.logout,
+                    return HurNavTile(
+                      icon: HurIconKind.logout,
                       title: loc.logout,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _logout();
-                  },
-                  isDestructive: true,
+                      destructive: true,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _logout();
+                      },
                     );
                   },
                 ),
@@ -570,36 +618,6 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
           ),
         ],
       ),
-    );
-  }
-  
-  Widget _buildDrawerItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    return Builder(
-      builder: (context) {
-        return ListTile(
-          leading: Icon(
-            icon,
-            color: isDestructive ? AppColors.error : context.themeTextSecondary,
-          ),
-          title: Text(
-            title,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: isDestructive ? AppColors.error : context.themeTextPrimary,
-            ),
-          ),
-          trailing: Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 16,
-            color: isDestructive ? AppColors.error : context.themeTextTertiary,
-          ),
-          onTap: onTap,
-        );
-      },
     );
   }
 
@@ -635,8 +653,13 @@ class _MerchantDashboardState extends ConsumerState<MerchantDashboard> with Scre
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
+<<<<<<< Updated upstream
                 loc.tryTheseSteps,
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+=======
+                'جرب الخطوات التالية:',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+>>>>>>> Stashed changes
               ),
               const SizedBox(height: 12),
               Text('1️⃣ ${loc.checkInternet}'),

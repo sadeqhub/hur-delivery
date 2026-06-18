@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/icons/hur_icons.dart';
 import '../../core/riverpod/app_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/localization/app_localizations.dart';
-
+import 'hur_icon.dart';
+import '../../core/utils/async_value_ext.dart';
 /// Widget to toggle between light and dark theme
 class ThemeToggle extends ConsumerWidget {
   final bool showLabel;
@@ -18,6 +21,7 @@ class ThemeToggle extends ConsumerWidget {
     final loc = AppLocalizations.of(context);
     final themeMode = ref.watch(themeProvider).valueOrNull ?? ThemeMode.light;
     final isDarkMode = themeMode == ThemeMode.dark;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -25,7 +29,7 @@ class ThemeToggle extends ConsumerWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          color: primary.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -35,12 +39,10 @@ class ThemeToggle extends ConsumerWidget {
           if (showLabel) ...[
             Row(
               children: [
-                Icon(
-                  isDarkMode
-                      ? Icons.dark_mode_rounded
-                      : Icons.light_mode_rounded,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 24,
+                HurIcon(
+                  isDarkMode ? HurIconKind.moon : HurIconKind.sun,
+                  size: HurIconSize.md,
+                  color: primary,
                 ),
                 const SizedBox(width: 12),
                 Column(
@@ -55,7 +57,10 @@ class ThemeToggle extends ConsumerWidget {
                     Text(
                       isDarkMode ? loc.darkModeEnabled : loc.lightModeEnabled,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -84,8 +89,10 @@ class ThemeToggleIconButton extends ConsumerWidget {
     final isDarkMode = themeMode == ThemeMode.dark;
 
     return IconButton(
-      icon: Icon(
-        isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+      icon: HurIcon(
+        isDarkMode ? HurIconKind.sun : HurIconKind.moon,
+        size: HurIconSize.md,
+        tone: HurIconTone.primary,
       ),
       onPressed: () => ref.read(themeProvider.notifier).toggleTheme(),
       tooltip: isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',

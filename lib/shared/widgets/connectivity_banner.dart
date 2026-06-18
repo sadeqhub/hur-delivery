@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../core/icons/hur_icons.dart';
+import 'hur_icon.dart';
+
 /// A slim banner shown at the top of the screen when the device is offline.
-/// Automatically disappears when connectivity is restored (parent rebuilds).
 class ConnectivityBanner extends StatelessWidget {
   const ConnectivityBanner({super.key});
 
@@ -26,12 +28,16 @@ class ConnectivityBanner extends StatelessWidget {
               colors: [Colors.red.shade700, Colors.orange.shade700],
             ),
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.wifi_off_rounded, color: Colors.white, size: 16),
-              SizedBox(width: 8),
-              Text(
+              HurIcon(
+                HurIconKind.wifiOff,
+                size: HurIconSize.xs,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 8),
+              const Text(
                 'لا يوجد اتصال بالإنترنت',
                 style: TextStyle(
                   color: Colors.white,

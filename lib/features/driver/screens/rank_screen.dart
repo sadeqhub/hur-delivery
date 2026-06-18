@@ -282,7 +282,7 @@ class _DriverRankScreenState extends ConsumerState<DriverRankScreen> {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 32,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 16),
@@ -346,7 +346,7 @@ class _DriverRankScreenState extends ConsumerState<DriverRankScreen> {
                       walletProvider.isLoading ? '...' : walletProvider.formattedBalance,
                       style: TextStyle(
                         fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: context.themeTextPrimary,
                       ),
                     ),
@@ -379,7 +379,7 @@ class _DriverRankScreenState extends ConsumerState<DriverRankScreen> {
           loc.rankBenefits,
           style: TextStyle(
             fontSize: 20,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
             color: context.themeTextPrimary,
           ),
         ),
@@ -473,7 +473,7 @@ class _DriverRankScreenState extends ConsumerState<DriverRankScreen> {
                       rankName,
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: context.themeTextPrimary,
                       ),
                     ),
@@ -493,7 +493,7 @@ class _DriverRankScreenState extends ConsumerState<DriverRankScreen> {
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -550,7 +550,7 @@ class _DriverRankScreenState extends ConsumerState<DriverRankScreen> {
                     loc.trialPeriodTitle,
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                       color: context.themeTextPrimary,
                     ),
                   ),
@@ -594,7 +594,7 @@ class _DriverRankScreenState extends ConsumerState<DriverRankScreen> {
                 loc.topRankTitle,
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   color: context.themeTextPrimary,
                 ),
               ),
@@ -617,7 +617,7 @@ class _DriverRankScreenState extends ConsumerState<DriverRankScreen> {
             loc.progressToRank(nextRankName),
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               color: context.themeTextPrimary,
             ),
           ),
@@ -687,7 +687,7 @@ class _DriverRankScreenState extends ConsumerState<DriverRankScreen> {
                     loc.activeHoursNotice,
                     style: const TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                       color: Colors.white,
                       height: 1.4,
                     ),

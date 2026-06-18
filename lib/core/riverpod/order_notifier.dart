@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/order_provider.dart';
 import '../../shared/models/order_model.dart';
@@ -42,7 +43,9 @@ class OrderNotifier extends ChangeNotifier {
 ///   ],
 /// )
 /// ```
-final orderNotifierProvider = ChangeNotifierProvider<OrderNotifier>((ref) {
+// Riverpod 3 removed ChangeNotifierProvider — use plain Provider.
+// This must always be overridden in ProviderScope; the throw is intentional.
+final orderNotifierProvider = Provider<OrderNotifier>((ref) {
   throw UnimplementedError(
       'Provide orderNotifierProvider override in ProviderScope');
 });

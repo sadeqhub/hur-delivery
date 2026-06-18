@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/logger.dart';
 
@@ -169,10 +171,10 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
               ),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.payment,
+                  HurIcon(
+                    HurIconKind.payment,
+                    size: HurIconSize.md,
                     color: Colors.white,
-                    size: 24,
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
@@ -186,8 +188,9 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
-                      Icons.close,
+                    icon: HurIcon(
+                      HurIconKind.close,
+                      size: HurIconSize.sm,
                       color: Colors.white,
                     ),
                     onPressed: () {
@@ -225,10 +228,10 @@ class _PaymentWebViewDialogState extends State<PaymentWebViewDialog> {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: Colors.grey[600],
+                  HurIcon(
+                    HurIconKind.info,
+                    size: HurIconSize.xs,
+                    color: Colors.grey.shade600,
                   ),
                   const SizedBox(width: 8),
                   Expanded(

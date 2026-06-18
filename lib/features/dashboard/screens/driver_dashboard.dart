@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider, Provider;
@@ -15,6 +14,7 @@ import 'package:geolocator/geolocator.dart' as geo;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
+import '../../../core/utils/app_haptics.dart';
 import '../../../core/utils/responsive_extensions.dart';
 import '../../../core/utils/map_style_helper.dart';
 import '../../../shared/widgets/responsive_container.dart';
@@ -612,7 +612,7 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
   // are removed — all three concerns now live in DriverStatusProvider.
 
   Future<void> _acceptOrder(String orderId) async {
-    HapticFeedback.heavyImpact();
+    AppHaptics.heavy();
     try {
       final orderProvider = context.read<OrderProvider>();
       final authProvider = context.read<AuthProvider>();
@@ -680,7 +680,7 @@ class _DriverDashboardState extends ConsumerState<_DriverDashboardCore>
   }
 
   Future<void> _rejectOrder(String orderId) async {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       final orderProvider = context.read<OrderProvider>();
       final authProvider = context.read<AuthProvider>();
@@ -4279,7 +4279,7 @@ class _AcceptButtonWithLongPressState extends State<_AcceptButtonWithLongPress>
       _lastHapticStep = -1;
     });
     _animationController.forward();
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
 
     const duration = Duration(seconds: 1);
     const interval = Duration(milliseconds: 50);
@@ -4294,7 +4294,7 @@ class _AcceptButtonWithLongPressState extends State<_AcceptButtonWithLongPress>
               (timer.tick * interval.inMilliseconds / 500).floor();
           if (currentStep > _lastHapticStep && currentStep < 6) {
             _lastHapticStep = currentStep;
-            HapticFeedback.selectionClick();
+            AppHaptics.selection();
           }
 
           if (_progress >= 1.0) {
@@ -4322,7 +4322,7 @@ class _AcceptButtonWithLongPressState extends State<_AcceptButtonWithLongPress>
 
   void _completePress() {
     _pressTimer?.cancel();
-    HapticFeedback.heavyImpact();
+    AppHaptics.heavy();
     widget.onAccept();
     if (mounted) {
       setState(() {

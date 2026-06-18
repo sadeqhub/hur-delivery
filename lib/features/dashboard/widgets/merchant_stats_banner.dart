@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/icons/hur_icons.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/order_provider.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -86,7 +87,7 @@ class _MerchantAnalyticsBannerState extends State<MerchantAnalyticsBanner> {
                   const SizedBox(height: 12),
                   if (filteredOrders.isEmpty)
                     EmptyState(
-                      icon: Icons.bar_chart_outlined,
+                      hurIcon: HurIconKind.analytics,
                       title: AppLocalizations.of(context).noOrdersInPeriod,
                       accentColor: AppColors.primary,
                     )
@@ -254,7 +255,7 @@ class _MerchantAnalyticsBannerState extends State<MerchantAnalyticsBanner> {
               style: AppTextStyles.bodySmall.copyWith(
                 color: isSelected ? Colors.white : AppColors.textSecondary,
                 fontWeight:
-                    isSelected ? FontWeight.bold : FontWeight.normal,
+                    isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ),
@@ -315,7 +316,7 @@ class _MerchantAnalyticsBannerState extends State<MerchantAnalyticsBanner> {
       selectedColor: AppColors.primary,
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : AppColors.textPrimary,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
     );
   }
@@ -482,7 +483,7 @@ class _MerchantAnalyticsBannerState extends State<MerchantAnalyticsBanner> {
                   timeDisplay,
                   style: const TextStyle(
                     fontSize: 48,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
                 ),
@@ -602,7 +603,7 @@ class _MerchantAnalyticsBannerState extends State<MerchantAnalyticsBanner> {
               Text(
                 '${percentage.toStringAsFixed(1)}%',
                 style: AppTextStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   color: color,
                 ),
               ),
@@ -667,7 +668,7 @@ class _MerchantAnalyticsBannerState extends State<MerchantAnalyticsBanner> {
                 'الملخص المالي',
                 style: AppTextStyles.heading3.copyWith(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -693,14 +694,14 @@ class _MerchantAnalyticsBannerState extends State<MerchantAnalyticsBanner> {
                 'صافي الإيرادات',
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
                 '${(stats['totalRevenue'] - stats['totalDeliveryFees']).toStringAsFixed(0)} د.ع',
                 style: const TextStyle(
                   fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
               ),
@@ -725,7 +726,7 @@ class _MerchantAnalyticsBannerState extends State<MerchantAnalyticsBanner> {
           value,
           style: AppTextStyles.bodyLarge.copyWith(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -786,7 +787,7 @@ class _MerchantAnalyticsBannerState extends State<MerchantAnalyticsBanner> {
               Text(
                 '${order.grandTotal.toStringAsFixed(0)} د.ع',
                 style: AppTextStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.success,
                 ),
               ),
@@ -988,7 +989,7 @@ class MerchantModernStatCard extends StatelessWidget {
                     trend!,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.success,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -999,7 +1000,7 @@ class MerchantModernStatCard extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 28,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               color: context.themeTextPrimary,
             ),
           ),

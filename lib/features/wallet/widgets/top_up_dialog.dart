@@ -7,6 +7,8 @@ import '../../../core/providers/wallet_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
 import 'payment_webview_dialog.dart';
 import '../../../core/utils/logger.dart';
 
@@ -198,10 +200,10 @@ class _TopUpDialogState extends State<TopUpDialog> {
                       color: AppColors.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.account_balance_wallet,
-                      color: AppColors.primary,
-                      size: 28,
+                    child: HurIcon(
+                      HurIconKind.wallet,
+                      size: HurIconSize.lg,
+                      tone: HurIconTone.primary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -215,9 +217,10 @@ class _TopUpDialogState extends State<TopUpDialog> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.close,
-                      color: context.themeTextPrimary,
+                    icon: HurIcon(
+                      HurIconKind.close,
+                      size: HurIconSize.sm,
+                      tone: HurIconTone.muted,
                     ),
                   ),
                 ],
@@ -266,7 +269,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                         decoration: InputDecoration(
                           hintText: loc.minimumAmount(minAmount),
                           hintStyle: TextStyle(color: context.themeTextSecondary),
-                          prefixIcon: Icon(Icons.money, color: context.themeTextSecondary),
+                          prefixIcon: HurPrefixIcon(HurIconKind.wallet),
                           suffixText: 'IQD',
                           suffixStyle: TextStyle(color: context.themeTextSecondary),
                           filled: true,
@@ -319,7 +322,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                         method: 'wayl',
                         title: loc.onlineCheckout,
                         subtitle: loc.zainCashQiVisaMastercard,
-                        icon: Icons.payment,
+                        icon: HurIconKind.payment,
                         color: Colors.green,
                       ),
                       const SizedBox(height: 24),
@@ -327,7 +330,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                       PrimaryButton(
                         text: loc.continueText,
                         onPressed: _submitTopUp,
-                        icon: Icons.arrow_forward,
+                        hurIcon: HurIconKind.arrowForward,
                       ),
                     ],
                   );
@@ -344,7 +347,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
     required String method,
     required String title,
     required String subtitle,
-    required IconData icon,
+    required HurIconKind icon,
     required Color color,
   }) {
     final isSelected = _selectedMethod == method;
@@ -377,7 +380,7 @@ class _TopUpDialogState extends State<TopUpDialog> {
                 color: color.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: HurIcon(icon, size: HurIconSize.md, color: color),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -402,10 +405,10 @@ class _TopUpDialogState extends State<TopUpDialog> {
               ),
             ),
             if (isSelected)
-              Icon(
-                Icons.check_circle,
+              HurIcon(
+                HurIconKind.check,
+                dimension: 28,
                 color: color,
-                size: 28,
               ),
           ],
         ),

@@ -7,6 +7,9 @@ import '../../core/utils/responsive_helper.dart';
 import '../../core/utils/responsive_extensions.dart';
 import 'responsive_container.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/icons/hur_icons.dart';
+import 'hur_icon.dart';
+import '../../core/utils/async_value_ext.dart';
 import '../../core/riverpod/app_providers.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/global_order_notification_service.dart';
@@ -143,10 +146,10 @@ class _NoInternetScreenState extends ConsumerState<NoInternetScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.wifi_off,
-                size: context.ri(100),
-                color: Colors.white.withOpacity(0.9),
+              HurIcon(
+                HurIconKind.wifiOff,
+                dimension: context.ri(100),
+                color: Colors.white.withValues(alpha: 0.9),
               ),
               SizedBox(height: context.rs(24)),
               ResponsiveText(

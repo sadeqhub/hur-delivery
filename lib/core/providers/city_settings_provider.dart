@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/logger.dart';
-
+import '../../core/utils/async_value_ext.dart';
 /// City-specific settings model
 class CitySettings {
   final String city;

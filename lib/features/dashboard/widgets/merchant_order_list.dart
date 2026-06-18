@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/icons/hur_icons.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../shared/widgets/responsive_container.dart';
@@ -694,7 +695,7 @@ class _MerchantCompletedOrdersListState
 
         if (completedOrders.isEmpty) {
           return EmptyState(
-            icon: Icons.check_circle_outline,
+            hurIcon: HurIconKind.check,
             title: AppLocalizations.of(context).noPastOrders,
             subtitle: AppLocalizations.of(context).noOrdersInPeriod,
             accentColor: AppColors.statusCompleted,

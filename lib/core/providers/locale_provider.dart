@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/async_value_ext.dart';
 import '../localization/app_localizations.dart';
 
 class LocaleNotifier extends AsyncNotifier<Locale> {

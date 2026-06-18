@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/messaging_service.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/order_provider.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
+import '../../../shared/widgets/empty_state.dart';
 import 'messaging_thread_screen.dart';
 
 class MessagingListScreen extends StatefulWidget {
@@ -159,11 +163,11 @@ class _MessagingListScreenState extends State<MessagingListScreen> {
         title: Text(AppLocalizations.of(context).messages),
         actions: [
           IconButton(
-            icon: const Icon(Icons.support_agent_outlined),
+            icon: HurIcon(HurIconKind.support, tone: HurIconTone.primary),
             onPressed: () => _startSupportChat(),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: HurIcon(HurIconKind.refresh, tone: HurIconTone.primary),
             onPressed: _load,
           ),
         ],
@@ -174,14 +178,23 @@ class _MessagingListScreenState extends State<MessagingListScreen> {
           return _loading
               ? const Center(child: CircularProgressIndicator())
               : _conversations.isEmpty
-                  ? Center(child: Text(loc.noConversations))
+                  ? EmptyState(
+                      hurIcon: HurIconKind.chat,
+                      title: loc.noConversations,
+                    )
                   : ListView.separated(
                       itemBuilder: (context, index) {
                         final c = _conversations[index];
                         final title = _resolveDisplayTitle(c);
                         final orderId = c.orderId;
                         return ListTile(
-                          leading: const Icon(Icons.chat_bubble_outline),
+                          leading: HurIcon(
+                            c.isSupport
+                                ? HurIconKind.support
+                                : HurIconKind.chat,
+                            size: HurIconSize.sm,
+                            tone: HurIconTone.primary,
+                          ),
                           title: Text(title),
                           subtitle: orderId != null ? Text(loc.orderLabel(orderId)) : null,
                       onTap: () {
@@ -199,7 +212,11 @@ class _MessagingListScreenState extends State<MessagingListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _startSupportChat(),
-        child: const Icon(Icons.add_comment),
+        child: HurIcon(
+          HurIconKind.add,
+          size: HurIconSize.md,
+          tone: HurIconTone.onPrimary,
+        ),
       ),
     );
   }

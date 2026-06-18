@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/icons/hur_icons.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../shared/widgets/hur_icon.dart';
 import '../../../shared/widgets/navigation_bar_aware_footer_wrapper.dart';
 import '../providers/active_order_provider.dart';
 
 /// Bottom navigation bar shown when the driver has no active orders.
-///
-/// Uses a [Selector] on [ActiveOrderProvider] so it only rebuilds when
-/// the presence of active orders changes — not on every location tick.
 class DriverBottomNav extends StatelessWidget {
   final VoidCallback onOpenSupport;
   final VoidCallback onToggleSidebar;
   final bool showSidebar;
-
-  /// The online toggle widget, built by the shell so it retains access to
-  /// all the confirmation-dialog and permission-check logic there.
   final Widget toggleWidget;
 
   const DriverBottomNav({
@@ -28,7 +25,6 @@ class DriverBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Hide when there are active orders (order cards take the bottom area).
     return Selector<ActiveOrderProvider, bool>(
       selector: (_, ap) => ap.hasOrders,
       builder: (context, hasOrders, _) {
@@ -56,45 +52,37 @@ class DriverBottomNav extends StatelessWidget {
                       horizontal: 16,
                       vertical: vPad,
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
+                    decoration: const BoxDecoration(
+                      gradient: AppTokens.authGradient,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, -2),
+                          color: Color(0x33000000),
+                          blurRadius: 8,
+                          offset: Offset(0, -2),
                         ),
                       ],
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Support shortcut
-                        _SupportButton(
-                          onPrimaryBackground: true,
+                        HurIconButton(
+                          icon: HurIconKind.support,
                           onTap: onOpenSupport,
+                          tone: HurIconTone.onPrimary,
+                          backgroundColor: Colors.white.withValues(alpha: 0.15),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.5),
+                          ),
                         ),
-
-                        // Online toggle widget provided by the shell
                         Expanded(
                           child: Center(child: toggleWidget),
                         ),
-
-                        // Menu / home button
-                        IconButton(
-                          icon: Icon(
-                            showSidebar
-                                ? Icons.home_rounded
-                                : Icons.menu_rounded,
-                            color: Colors.white.withOpacity(0.85),
-                            size: 28,
-                          ),
-                          onPressed: onToggleSidebar,
-                          padding: const EdgeInsets.all(8),
-                          constraints: const BoxConstraints(
-                            minWidth: 40,
-                            minHeight: 40,
-                          ),
+                        HurIconButton(
+                          icon: showSidebar
+                              ? HurIconKind.home
+                              : HurIconKind.menu,
+                          onTap: onToggleSidebar,
+                          tone: HurIconTone.onPrimary,
                         ),
                       ],
                     ),
@@ -108,57 +96,3 @@ class DriverBottomNav extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Support shortcut button
-// ---------------------------------------------------------------------------
-
-class _SupportButton extends StatelessWidget {
-  final bool onPrimaryBackground;
-  final VoidCallback onTap;
-
-  const _SupportButton({
-    required this.onPrimaryBackground,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final backgroundColor =
-        onPrimaryBackground ? Colors.white.withOpacity(0.15) : Colors.white;
-    final iconColor = onPrimaryBackground ? Colors.white : AppColors.primary;
-    final border = onPrimaryBackground
-        ? Border.all(color: Colors.white.withOpacity(0.5))
-        : null;
-    final boxShadow = onPrimaryBackground
-        ? <BoxShadow>[]
-        : <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withOpacity(0.18),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ];
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(30),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            border: border,
-            shape: BoxShape.circle,
-            boxShadow: boxShadow,
-          ),
-          child: Icon(Icons.support_agent, color: iconColor, size: 24),
-        ),
-      ),
-    );
-  }
-}
-
-// _OnlineToggle removed — the online toggle widget is now built by the
-// dashboard shell via _buildOnlineToggleButton() and passed in as [toggleWidget].

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../legal/screens/terms_conditions_screen.dart';
@@ -86,18 +87,10 @@ class _DriverWalkthroughScreenState extends State<DriverWalkthroughScreen> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final loc = AppLocalizations.of(context);
 
-    return Theme(
-      data: ThemeData.light().copyWith(
-        primaryColor: AppColors.primary,
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          automaticallyImplyLeading: false,
-        ),
-        body: SafeArea(
+    return Scaffold(
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: AppTokens.authGradient),
+        child: SafeArea(
           child: Column(
             children: [
               // Page View with banners
@@ -248,7 +241,7 @@ class _DriverWalkthroughScreenState extends State<DriverWalkthroughScreen> {
                             _currentPage < 2 ? loc.next : loc.complete,
                             style: const TextStyle(
                               fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
                           ),

@@ -3,12 +3,13 @@ import '../utils/responsive_helper.dart';
 
 class AppColors {
   // Primary Hur Colors
-  static const Color primary = Color(0xFF008C95);
-  static const Color primaryDark = Color(0xFF0EA5B0);
-  static const Color primaryDeep = Color(0xFF005F65);
-  static const Color primaryTint = Color(0xFFE0F7F8);
-  static const Color secondary = Color(0xFF1E40AF);
-  static const Color secondaryDark = Color(0xFF3B82F6);
+  static const Color primary = Color(0xFF00797E);
+  static const Color primaryDark = Color(0xFF009BA1);
+  static const Color primaryDeep = Color(0xFF005A5E);
+  static const Color primaryTint = Color(0xFFE0F4F5);
+  // Functional colors (maps, links) — not brand accents
+  static const Color secondary = Color(0xFF3B82F6);
+  static const Color secondaryDark = Color(0xFF60A5FA);
   static const Color accent = Color(0xFFD97706);
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
@@ -37,7 +38,7 @@ class AppColors {
 
   // Border Colors — light
   static const Color border = Color(0xFFE5E7EB);
-  static const Color borderFocus = Color(0xFF008C95);
+  static const Color borderFocus = Color(0xFF00797E);
 
   // Border Colors — dark
   static const Color borderDark = Color(0xFF374151);
@@ -51,7 +52,7 @@ class AppColors {
   static const Color statusCancelled = Color(0xFFEF4444);
 
   // Map Colors
-  static const Color mapActiveRoute = Color(0xFF008C95);
+  static const Color mapActiveRoute = Color(0xFF00797E);
   static const Color mapCompletedDelivery = Color(0xFF10B981);
   static const Color mapDriverNearby = Color(0xFFF59E0B);
 }
@@ -88,7 +89,7 @@ class AppTextStyles {
   // Body Styles
   static const TextStyle bodyLarge = TextStyle(
     fontSize: 18,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w500,
     fontFamily: fontFamily,
     color: AppColors.textPrimary,
     height: 1.5,
@@ -96,7 +97,7 @@ class AppTextStyles {
   
   static const TextStyle bodyMedium = TextStyle(
     fontSize: 16,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w400,
     fontFamily: fontFamily,
     color: AppColors.textPrimary,
     height: 1.5,
@@ -104,7 +105,7 @@ class AppTextStyles {
   
   static const TextStyle bodySmall = TextStyle(
     fontSize: 14,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w400,
     fontFamily: fontFamily,
     color: AppColors.textSecondary,
     height: 1.4,
@@ -113,14 +114,14 @@ class AppTextStyles {
   // Button Styles
   static const TextStyle buttonLarge = TextStyle(
     fontSize: 18,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w600,
     fontFamily: fontFamily,
     color: Colors.white,
   );
   
   static const TextStyle buttonMedium = TextStyle(
     fontSize: 16,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w600,
     fontFamily: fontFamily,
     color: Colors.white,
   );
@@ -128,10 +129,30 @@ class AppTextStyles {
   // Caption Styles
   static const TextStyle caption = TextStyle(
     fontSize: 12,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w500,
     fontFamily: fontFamily,
     color: AppColors.textTertiary,
     height: 1.3,
+    letterSpacing: 0.02,
+  );
+
+  /// Emphasis body — use sparingly for highlighted inline text.
+  static const TextStyle bodyEmphasis = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    fontFamily: fontFamily,
+    color: AppColors.textPrimary,
+    height: 1.5,
+  );
+
+  /// Numeric display (fees, wallet balances).
+  static const TextStyle numericHero = TextStyle(
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    fontFamily: fontFamily,
+    color: AppColors.textPrimary,
+    height: 1.12,
+    letterSpacing: -0.02,
   );
   
   // Responsive text styles
@@ -325,20 +346,90 @@ class AppTheme {
       useMaterial3: true,
       fontFamily: AppTextStyles.fontFamily,
       brightness: Brightness.dark,
-      
-      // Dark theme colors would go here
-      // For now, we'll use the light theme as the app is designed for light mode
+      scaffoldBackgroundColor: AppColors.backgroundDark,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.secondary,
-        surface: Color(0xFF1F2937),
-        background: Color(0xFF111827),
+        primary: AppColors.primaryDark,
+        secondary: AppColors.secondaryDark,
+        surface: AppColors.surfaceDark,
+        background: AppColors.backgroundDark,
         error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
-        onSurface: Colors.white,
-        onBackground: Colors.white,
+        onSurface: AppColors.textPrimaryDark,
+        onBackground: AppColors.textPrimaryDark,
         onError: Colors.white,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.surfaceDark,
+        foregroundColor: AppColors.textPrimaryDark,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontFamily: AppTextStyles.fontFamily,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimaryDark,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.surfaceDark,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.borderDark),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryDark,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: AppTextStyles.buttonMedium,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surfaceVariantDark,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.borderDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.borderDark),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.borderFocusDark, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        labelStyle: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.textSecondaryDark,
+        ),
+        hintStyle: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.textTertiaryDark,
+        ),
+      ),
+      textTheme: TextTheme(
+        displayLarge: AppTextStyles.heading1.copyWith(color: AppColors.textPrimaryDark),
+        displayMedium: AppTextStyles.heading2.copyWith(color: AppColors.textPrimaryDark),
+        displaySmall: AppTextStyles.heading3.copyWith(color: AppColors.textPrimaryDark),
+        headlineLarge: AppTextStyles.heading2.copyWith(color: AppColors.textPrimaryDark),
+        headlineMedium: AppTextStyles.heading3.copyWith(color: AppColors.textPrimaryDark),
+        headlineSmall: AppTextStyles.heading3.copyWith(color: AppColors.textPrimaryDark),
+        titleLarge: AppTextStyles.heading3.copyWith(color: AppColors.textPrimaryDark),
+        titleMedium: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimaryDark),
+        titleSmall: AppTextStyles.bodyEmphasis.copyWith(color: AppColors.textPrimaryDark),
+        bodyLarge: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimaryDark),
+        bodyMedium: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimaryDark),
+        bodySmall: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondaryDark),
+        labelLarge: AppTextStyles.buttonMedium,
+        labelMedium: AppTextStyles.bodyEmphasis.copyWith(color: AppColors.textPrimaryDark),
+        labelSmall: AppTextStyles.caption.copyWith(color: AppColors.textTertiaryDark),
       ),
     );
   }

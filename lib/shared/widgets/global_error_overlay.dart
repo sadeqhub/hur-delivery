@@ -4,6 +4,8 @@ import '../../core/providers/global_error_provider.dart';
 import '../../core/riverpod/app_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/icons/hur_icons.dart';
+import 'hur_icon.dart';
 
 /// Wraps the app's root child in a [Stack] and renders an animated error toast
 /// at the bottom of the screen whenever [GlobalErrorNotifier] has an active entry.
@@ -176,12 +178,10 @@ class _ErrorToast extends ConsumerWidget {
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: const EdgeInsets.all(4),
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 16,
-                    color: isDark
-                        ? AppColors.textTertiaryDark
-                        : AppColors.textTertiary,
+                  child: HurIcon(
+                    HurIconKind.close,
+                    dimension: 16,
+                    tone: HurIconTone.muted,
                   ),
                 ),
               ),

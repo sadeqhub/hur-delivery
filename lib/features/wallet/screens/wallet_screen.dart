@@ -15,6 +15,9 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/driver_wallet_provider.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/hur_icon.dart';
 import '../widgets/top_up_dialog.dart';
 import '../../wallet/widgets/payment_webview_dialog.dart';
 import '../../../shared/widgets/skeletons.dart';
@@ -271,7 +274,8 @@ class _WalletScreenState extends State<WalletScreen> {
 
     final isCritical = walletProvider.balance < 0;
     final balanceColor = isCritical ? AppColors.error : context.themePrimary;
-    final balanceIcon = isCritical ? Icons.warning_amber_rounded : Icons.check_circle;
+    final balanceIcon =
+        isCritical ? HurIconKind.warning : HurIconKind.check;
     final balanceStatus = isCritical ? loc.pleaseTopUp : loc.balanceGood;
 
     return Container(
@@ -307,7 +311,7 @@ class _WalletScreenState extends State<WalletScreen> {
         children: [
           Row(
             children: [
-              Icon(balanceIcon, color: Colors.white, size: context.ri(28)),
+              HurIcon(balanceIcon, dimension: context.ri(28), color: Colors.white),
               SizedBox(width: context.rs(8)),
               ResponsiveText(
                 balanceStatus,
@@ -344,7 +348,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 onPressed: driverId == null
                     ? null
                     : () => _showDriverWaylTopUpDialog(walletProvider, driverId),
-                icon: Icons.add_circle_outline,
+                hurIcon: HurIconKind.add,
                 backgroundColor: Colors.white,
                 textColor: balanceColor,
               ),
@@ -357,24 +361,9 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Widget _buildDriverTransactionsList(DriverWalletProvider walletProvider) {
     if (walletProvider.transactions.isEmpty) {
-      return Container(
-        padding: context.rp(horizontal: 40, vertical: 40),
-        child: Column(
-          children: [
-            Icon(
-              Icons.receipt_long,
-              size: context.ri(64),
-              color: context.themeTextTertiary,
-            ),
-            SizedBox(height: context.rs(16)),
-            ResponsiveText(
-              AppLocalizations.of(context).noTransactions,
-              style: AppTextStyles.heading3.copyWith(
-                color: context.themeTextTertiary,
-              ).responsive(context),
-            ),
-          ],
-        ),
+      return EmptyState(
+        hurIcon: HurIconKind.wallet,
+        title: AppLocalizations.of(context).noTransactions,
       );
     }
 
@@ -426,7 +415,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 createdAt: tx.createdAt,
                 amountText: tx.formattedAmount,
                 amountColor: tx.color,
-                icon: tx.icon,
+                hurIcon: tx.hurIcon,
                 iconColor: tx.color,
                 balanceAfter: tx.balanceAfter,
                 orderId: tx.orderId,
@@ -448,20 +437,20 @@ class _WalletScreenState extends State<WalletScreen> {
   Widget _buildBalanceCard(WalletProvider walletProvider) {
     final loc = AppLocalizations.of(context);
     Color balanceColor;
-    IconData balanceIcon;
+    HurIconKind balanceIcon;
     String balanceStatus;
 
     if (walletProvider.isBalanceCritical) {
       balanceColor = AppColors.error;
-      balanceIcon = Icons.warning_amber_rounded;
+      balanceIcon = HurIconKind.warning;
       balanceStatus = loc.pleaseTopUp;
     } else if (walletProvider.isBalanceLow) {
       balanceColor = Colors.orange;
-      balanceIcon = Icons.warning_outlined;
+      balanceIcon = HurIconKind.warning;
       balanceStatus = loc.balanceLow;
     } else {
       balanceColor = context.themePrimary;
-      balanceIcon = Icons.check_circle;
+      balanceIcon = HurIconKind.check;
       balanceStatus = loc.balanceGood;
     }
 
@@ -498,7 +487,7 @@ class _WalletScreenState extends State<WalletScreen> {
         children: [
           Row(
             children: [
-              Icon(balanceIcon, color: Colors.white, size: context.ri(28)),
+              HurIcon(balanceIcon, dimension: context.ri(28), color: Colors.white),
               SizedBox(width: context.rs(8)),
               ResponsiveText(
                 balanceStatus,
@@ -543,7 +532,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   PrimaryButton(
                     text: loc.topUpWallet,
                     onPressed: _showTopUpDialog,
-                    icon: Icons.add_circle_outline,
+                    hurIcon: HurIconKind.add,
                     backgroundColor: Colors.white,
                     textColor: balanceColor,
                   ),
@@ -570,7 +559,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     child: _buildSummaryCard(
                       loc.totalOrders,
                       summary['total_orders']?.toString() ?? '0',
-                      Icons.shopping_bag,
+                      HurIconKind.package,
                       AppColors.primary,
                     ),
                   ),
@@ -579,7 +568,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     child: _buildSummaryCard(
                       loc.totalFees,
                       '${(summary['total_spent'] as num?)?.toStringAsFixed(0) ?? '0'} IQD',
-                      Icons.payments,
+                      HurIconKind.payment,
                       AppColors.error,
                     ),
                   ),
@@ -592,7 +581,12 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
+  Widget _buildSummaryCard(
+    String title,
+    String value,
+    HurIconKind icon,
+    Color color,
+  ) {
     return Container(
       padding: context.rp(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
@@ -621,7 +615,7 @@ class _WalletScreenState extends State<WalletScreen> {
               color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: context.ri(24)),
+            child: HurIcon(icon, dimension: context.ri(24), color: color),
           ),
           SizedBox(height: context.rs(12)),
           ResponsiveText(
@@ -678,10 +672,10 @@ class _WalletScreenState extends State<WalletScreen> {
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.celebration,
+            child: HurIcon(
+              HurIconKind.percent,
+              dimension: 24,
               color: Colors.white,
-              size: 24,
             ),
           ),
           SizedBox(width: context.rs(16)),
@@ -707,9 +701,9 @@ class _WalletScreenState extends State<WalletScreen> {
                   SizedBox(height: context.rs(8)),
                   Row(
                     children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: context.ri(14),
+                      HurIcon(
+                        HurIconKind.calendar,
+                        dimension: 14,
                         color: Colors.white.withOpacity(0.9),
                       ),
                       SizedBox(width: context.rs(6)),
@@ -733,24 +727,9 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Widget _buildTransactionsList(WalletProvider walletProvider) {
     if (walletProvider.transactions.isEmpty) {
-      return Container(
-        padding: context.rp(horizontal: 40, vertical: 40),
-        child: Column(
-          children: [
-            Icon(
-              Icons.receipt_long,
-              size: context.ri(64),
-              color: context.themeTextTertiary,
-            ),
-            SizedBox(height: context.rs(16)),
-            ResponsiveText(
-              AppLocalizations.of(context).noTransactions,
-              style: AppTextStyles.heading3.copyWith(
-                color: context.themeTextTertiary,
-              ).responsive(context),
-            ),
-          ],
-        ),
+      return EmptyState(
+        hurIcon: HurIconKind.wallet,
+        title: AppLocalizations.of(context).noTransactions,
       );
     }
 
@@ -802,7 +781,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 createdAt: transaction.createdAt,
                 amountText: transaction.formattedAmount,
                 amountColor: transaction.color,
-                icon: transaction.icon,
+                hurIcon: transaction.hurIcon,
                 iconColor: transaction.color,
                 balanceAfter: transaction.balanceAfter,
                 orderId: transaction.orderId,
@@ -837,7 +816,11 @@ class _WalletScreenState extends State<WalletScreen> {
                               .loadMoreTransactions(authProvider.user!.id);
                         }
                       },
-                      icon: const Icon(Icons.expand_more),
+                      icon: HurIcon(
+                        HurIconKind.chevronDown,
+                        size: HurIconSize.sm,
+                        tone: HurIconTone.primary,
+                      ),
                       label: Text(AppLocalizations.of(context).loadMoreTransactions),
                     ),
             ),
@@ -853,7 +836,7 @@ class _WalletScreenState extends State<WalletScreen> {
     required DateTime createdAt,
     required String amountText,
     required Color amountColor,
-    required IconData icon,
+    required HurIconKind hurIcon,
     required Color iconColor,
     required double balanceAfter,
     required String? orderId,
@@ -902,11 +885,11 @@ class _WalletScreenState extends State<WalletScreen> {
           };
 
     final metaParts = <_TxMetaPart>[
-      _TxMetaPart(icon: Icons.schedule, text: dateFormat.format(baghdadTime)),
+      _TxMetaPart(icon: HurIconKind.clock, text: dateFormat.format(baghdadTime)),
       if (commissionRateText != null)
-        _TxMetaPart(icon: Icons.percent, text: commissionRateText),
+        _TxMetaPart(icon: HurIconKind.percent, text: commissionRateText),
       if (orderAmountText != null)
-        _TxMetaPart(icon: Icons.receipt_long, text: orderAmountText),
+        _TxMetaPart(icon: HurIconKind.orders, text: orderAmountText),
     ];
 
     return Container(
@@ -928,7 +911,7 @@ class _WalletScreenState extends State<WalletScreen> {
               color: iconColor.withOpacity(0.10),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: iconColor, size: 20),
+            child: HurIcon(hurIcon, dimension: 20, color: iconColor),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -986,9 +969,10 @@ class _WalletScreenState extends State<WalletScreen> {
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         onPressed: onOpenOrder,
-                        icon: Icon(
-                          Icons.chevron_right,
-                          color: context.themeTextSecondary,
+                        icon: HurIcon(
+                          HurIconKind.chevronRight,
+                          size: HurIconSize.sm,
+                          tone: HurIconTone.muted,
                         ),
                       ),
                     ],
@@ -996,7 +980,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 ),
                 if (transactionType != 'top_up' && deliveryFeeText != null && orderAmountText == null) ...[
                   const SizedBox(height: 4),
-                  _TxMetaChip(icon: Icons.local_shipping_outlined, text: deliveryFeeText),
+                  _TxMetaChip(icon: HurIconKind.package, text: deliveryFeeText),
                 ],
               ],
             ),
@@ -1009,7 +993,7 @@ class _WalletScreenState extends State<WalletScreen> {
 }
 
 class _TxMetaPart {
-  final IconData icon;
+  final HurIconKind icon;
   final String text;
 
   const _TxMetaPart({
@@ -1019,7 +1003,7 @@ class _TxMetaPart {
 }
 
 class _TxMetaChip extends StatelessWidget {
-  final IconData icon;
+  final HurIconKind icon;
   final String text;
 
   const _TxMetaChip({
@@ -1041,10 +1025,10 @@ class _TxMetaChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          HurIcon(
             icon,
-            size: 14,
-            color: context.themeTextSecondary,
+            dimension: 14,
+            tone: HurIconTone.muted,
           ),
           const SizedBox(width: 6),
           Flexible(

@@ -5,6 +5,7 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../shared/models/order_model.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../shared/widgets/order_status_chip.dart';
 
 class OrderCard extends StatelessWidget {
   final OrderModel order;
@@ -85,7 +86,7 @@ class OrderCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    _StatusBadge(status: order.status),
+                    OrderStatusChip(status: order.status),
                   ],
                 ),
                 
@@ -401,82 +402,5 @@ class OrderCard extends StatelessWidget {
       final dayChar = loc.isArabic ? 'ي' : 'd';
       return '${difference.inDays}$dayChar';
     }
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  final String status;
-
-  const _StatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    Color backgroundColor;
-    Color textColor;
-    String text;
-
-    switch (status) {
-      case 'pending':
-        backgroundColor = AppColors.statusPending.withOpacity(0.12);
-        textColor = AppColors.statusPending;
-        text = loc.statusPending;
-        break;
-      case 'assigned':
-        backgroundColor = AppColors.statusAccepted.withOpacity(0.12);
-        textColor = AppColors.statusAccepted;
-        text = loc.statusAssigned;
-        break;
-      case 'accepted':
-        backgroundColor = AppColors.statusAccepted.withOpacity(0.12);
-        textColor = AppColors.statusAccepted;
-        text = loc.statusAccepted;
-        break;
-      case 'on_the_way':
-        backgroundColor = AppColors.statusInProgress.withOpacity(0.12);
-        textColor = AppColors.statusInProgress;
-        text = loc.statusOnTheWay;
-        break;
-      case 'delivered':
-        backgroundColor = AppColors.statusCompleted.withOpacity(0.12);
-        textColor = AppColors.statusCompleted;
-        text = loc.statusDelivered;
-        break;
-      case 'cancelled':
-        backgroundColor = AppColors.statusCancelled.withOpacity(0.12);
-        textColor = AppColors.statusCancelled;
-        text = loc.statusCancelled;
-        break;
-      case 'unassigned':
-        backgroundColor = AppColors.warning.withOpacity(0.12);
-        textColor = AppColors.warning;
-        text = loc.statusUnassigned;
-        break;
-      case 'rejected':
-        backgroundColor = AppColors.statusCancelled.withOpacity(0.12);
-        textColor = AppColors.statusCancelled;
-        text = loc.statusRejected;
-        break;
-      default:
-        backgroundColor = AppColors.textTertiary.withOpacity(0.12);
-        textColor = AppColors.textTertiary;
-        text = loc.statusUnknown;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(20), // Pill shape
-      ),
-      child: Text(
-        text,
-        style: AppTextStyles.bodySmall.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
   }
 }

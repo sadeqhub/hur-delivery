@@ -1,14 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/icons/hur_icons.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../shared/models/order_status.dart';
 import '../../../../core/providers/order_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/app_haptics.dart';
+import '../../../../shared/widgets/hur_icon.dart';
 import 'order_card_tokens.dart';
 
 /// Map + phone actions as labeled buttons inside the sheet.
@@ -69,6 +71,9 @@ class OrderCardQuickActions extends StatelessWidget {
   /// Call customer — success / end customer.
   ButtonStyle _customerCallButtonStyle() => _accentOutlined(AppColors.success);
 
+  Widget _actionIcon(HurIconKind kind, Color color) =>
+      HurIcon(kind, dimension: 18, color: color);
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -96,7 +101,7 @@ class OrderCardQuickActions extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: onPickupMaps,
-                  icon: const Icon(Icons.store_outlined, size: 18, color: AppColors.primary),
+                  icon: _actionIcon(HurIconKind.merchant, AppColors.primary),
                   label: Text(loc.store, maxLines: 1, overflow: TextOverflow.ellipsis, style: pickupLabelStyle),
                   style: _pickupPinButtonStyle(),
                 ),
@@ -105,7 +110,7 @@ class OrderCardQuickActions extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: onDropoffMaps,
-                  icon: const Icon(Icons.flag_outlined, size: 18, color: AppColors.warning),
+                  icon: _actionIcon(HurIconKind.mapPin, AppColors.warning),
                   label: Text(loc.delivery, maxLines: 1, overflow: TextOverflow.ellipsis, style: deliveryLabelStyle),
                   style: _deliveryPinButtonStyle(),
                 ),
@@ -114,8 +119,7 @@ class OrderCardQuickActions extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: onFullRouteMaps,
-                  icon: const Icon(Icons.alt_route_rounded,
-                      size: 18, color: AppColors.secondary),
+                  icon: _actionIcon(HurIconKind.navigation, AppColors.secondary),
                   label: Text(loc.showRoute, maxLines: 1,
                       overflow: TextOverflow.ellipsis, style: routeLabelStyle),
                   style: _routeButtonStyle(),
@@ -135,8 +139,7 @@ class OrderCardQuickActions extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: onMerchant,
-                  icon: const Icon(Icons.storefront_outlined,
-                      size: 18, color: AppColors.primaryDeep),
+                  icon: _actionIcon(HurIconKind.phone, AppColors.primaryDeep),
                   label: Text(loc.merchantButton, maxLines: 1,
                       overflow: TextOverflow.ellipsis, style: merchantLabelStyle),
                   style: _merchantCallButtonStyle(),
@@ -146,8 +149,7 @@ class OrderCardQuickActions extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: onCustomer,
-                  icon: const Icon(Icons.person_pin_circle_outlined,
-                      size: 18, color: AppColors.success),
+                  icon: _actionIcon(HurIconKind.profile, AppColors.success),
                   label: Text(loc.customerButton, maxLines: 1,
                       overflow: TextOverflow.ellipsis, style: customerLabelStyle),
                   style: _customerCallButtonStyle(),
@@ -378,7 +380,7 @@ class _AcceptOrderLongPressBarState extends State<AcceptOrderLongPressBar>
       _lastHapticStep = -1;
     });
     _animationController.forward();
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
 
     const duration = Duration(seconds: 3);
     const interval = Duration(milliseconds: 50);
@@ -395,7 +397,7 @@ class _AcceptOrderLongPressBarState extends State<AcceptOrderLongPressBar>
         final step = (timer.tick * interval.inMilliseconds / 400).floor();
         if (step > _lastHapticStep && step < 10) {
           _lastHapticStep = step;
-          HapticFeedback.selectionClick();
+          AppHaptics.selection();
         }
         if (_progress >= 1) {
           _progress = 1;
@@ -419,7 +421,7 @@ class _AcceptOrderLongPressBarState extends State<AcceptOrderLongPressBar>
 
   void _completePress() {
     _pressTimer?.cancel();
-    HapticFeedback.heavyImpact();
+    AppHaptics.heavy();
     widget.onAccept();
     if (mounted) {
       setState(() {

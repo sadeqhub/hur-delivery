@@ -3,12 +3,14 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/services/najaf_districts_service.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
 
 class OrderFormTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final String hint;
-  final IconData icon;
+  final HurIconKind hurIcon;
   final TextInputType keyboardType;
   final int maxLines;
   final bool isRequired;
@@ -20,7 +22,7 @@ class OrderFormTextField extends StatelessWidget {
     required this.controller,
     required this.label,
     required this.hint,
-    required this.icon,
+    required this.hurIcon,
     this.keyboardType = TextInputType.text,
     this.maxLines = 1,
     this.isRequired = false,
@@ -63,7 +65,7 @@ class OrderFormTextField extends StatelessWidget {
             hintStyle: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textTertiary,
             ),
-            prefixIcon: Icon(icon, color: AppColors.primary),
+            prefixIcon: HurPrefixIcon(hurIcon),
             suffixText: suffix,
             suffixStyle: AppTextStyles.bodyMedium.copyWith(
               color: context.themeTextSecondary,
@@ -98,12 +100,12 @@ class OrderFormTextField extends StatelessWidget {
 
 class OrderSectionHeader extends StatelessWidget {
   final String title;
-  final IconData icon;
+  final HurIconKind hurIcon;
 
   const OrderSectionHeader({
     super.key,
     required this.title,
-    required this.icon,
+    required this.hurIcon,
   });
 
   @override
@@ -116,10 +118,10 @@ class OrderSectionHeader extends StatelessWidget {
             color: context.themePrimary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: context.themePrimary,
-            size: 20,
+          child: HurIcon(
+            hurIcon,
+            dimension: 20,
+            tone: HurIconTone.primary,
           ),
         ),
         const SizedBox(width: 12),
@@ -140,7 +142,7 @@ class OrderLocationField extends StatelessWidget {
   final FocusNode focusNode;
   final String label;
   final String hint;
-  final IconData icon;
+  final HurIconKind hurIcon;
   final VoidCallback onMapTap;
   final VoidCallback onGeocode;
   final bool hasLocation;
@@ -155,7 +157,7 @@ class OrderLocationField extends StatelessWidget {
     required this.focusNode,
     required this.label,
     required this.hint,
-    required this.icon,
+    required this.hurIcon,
     required this.onMapTap,
     required this.onGeocode,
     required this.hasLocation,
@@ -217,10 +219,10 @@ class OrderLocationField extends StatelessWidget {
                             .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
-                        icon,
+                      child: HurIcon(
+                        hurIcon,
+                        dimension: 20,
                         color: hasLocation ? AppColors.success : AppColors.primary,
-                        size: 20,
                       ),
                     ),
                   ),
@@ -240,8 +242,11 @@ class OrderLocationField extends StatelessWidget {
                         ),
                         border: InputBorder.none,
                         suffixIcon: hasLocation
-                            ? const Icon(Icons.check_circle,
-                                color: AppColors.success, size: 20)
+                            ? HurIcon(
+                                HurIconKind.check,
+                                dimension: 20,
+                                color: AppColors.success,
+                              )
                             : null,
                       ),
                       onSubmitted: (_) => onGeocode(),
@@ -249,12 +254,20 @@ class OrderLocationField extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: onMapTap,
-                    icon: const Icon(Icons.map, color: AppColors.primary),
+                    icon: HurIcon(
+                      HurIconKind.navigation,
+                      dimension: 20,
+                      tone: HurIconTone.primary,
+                    ),
                     tooltip: loc.openMap,
                   ),
                   IconButton(
                     onPressed: onGeocode,
-                    icon: const Icon(Icons.search, color: AppColors.success),
+                    icon: HurIcon(
+                      HurIconKind.search,
+                      dimension: 20,
+                      color: AppColors.success,
+                    ),
                     tooltip: loc.searchAddress,
                   ),
                 ],
@@ -288,8 +301,11 @@ class OrderLocationField extends StatelessWidget {
                     final district = suggestions[index];
                     return ListTile(
                       dense: true,
-                      leading: const Icon(Icons.location_on,
-                          color: AppColors.primary, size: 20),
+                      leading: HurIcon(
+                        HurIconKind.mapPin,
+                        dimension: 20,
+                        tone: HurIconTone.primary,
+                      ),
                       title: Text(
                         district.name,
                         style: AppTextStyles.bodyMedium

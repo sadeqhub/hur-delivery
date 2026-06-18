@@ -11,6 +11,8 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/config/env.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/auth_scaffold.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../../core/localization/app_localizations.dart';
 import 'id_verification_review_screen.dart';
 import '../../../core/utils/logger.dart';
@@ -283,101 +285,80 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
         final user = authProvider.user;
         final isRejected = user?.verificationStatus == 'rejected';
         
-        return Theme(
-          data: ThemeData.light().copyWith(
-            primaryColor: AppColors.primary,
-          ),
-          child: Scaffold(
-          body: SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
+        final loc = AppLocalizations.of(context);
+
+        return AuthScaffold(
+          title: isRejected ? loc.verificationRejected : loc.verificationPending,
+          showLogo: false,
+          body: Column(
+            children: [
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  color: (isRejected ? AppColors.error : AppColors.warning)
+                      .withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(48),
+                ),
+                child: Icon(
+                  isRejected
+                      ? Icons.error_outline_rounded
+                      : Icons.pending_actions_rounded,
+                  size: 52,
+                  color: isRejected ? AppColors.error : AppColors.warning,
+                ),
+              ),
+              const SizedBox(height: AppTokens.spaceLg),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppTokens.spaceLg),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppTokens.radiusLg),
+                  boxShadow: AppTokens.elevationSm(),
+                ),
                 child: Column(
                   children: [
-                    const SizedBox(height: 40),
-                    
-                    // Status Icon
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: (isRejected ? AppColors.error : AppColors.warning).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(60),
+                    Text(
+                      isRejected
+                          ? loc.verificationRejectedMessage
+                          : loc.verificationReviewMessage,
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
                       ),
-                      child: Icon(
-                        isRejected ? Icons.error_outline_rounded : Icons.pending_actions_rounded,
-                        size: 64,
-                        color: isRejected ? AppColors.error : AppColors.warning,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppTokens.spaceSm),
+                    Text(
+                      isRejected
+                          ? loc.pleaseUploadClearIdImages
+                          : loc.verificationUnderReview,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Status Text
-                    Builder(
-                      builder: (context) {
-                        final loc = AppLocalizations.of(context);
-                        return Column(
-                          children: [
-                            Text(
-                              isRejected ? loc.verificationRejected : loc.verificationPending,
-                              style: AppTextStyles.heading2,
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              isRejected 
-                                ? loc.verificationRejectedMessage
-                                : loc.verificationReviewMessage,
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                color: context.themeTextSecondary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              isRejected
-                                ? loc.pleaseUploadClearIdImages
-                                : loc.verificationUnderReview,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textTertiary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    
-                    const SizedBox(height: 48),
-                    
+                    const SizedBox(height: AppTokens.spaceXl),
                     if (isRejected) ...[
-                      // Re-upload section for rejected users
                       _buildDocumentUploadSection(user!),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // Resubmit button
-                      Builder(
-                        builder: (context) {
-                          final loc = AppLocalizations.of(context);
-                          return PrimaryButton(
-                            text: _isResubmitting ? loc.verifying : loc.resubmitVerification,
-                            onPressed: _isResubmitting ? null : _resubmitVerification,
-                          );
-                        },
+                      const SizedBox(height: AppTokens.spaceLg),
+                      PrimaryButton(
+                        text: _isResubmitting
+                            ? loc.verifying
+                            : loc.resubmitVerification,
+                        onPressed:
+                            _isResubmitting ? null : _resubmitVerification,
                       ),
-                      
-                      const SizedBox(height: 16),
                     ] else ...[
-                      // Info card for pending users
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(AppTokens.spaceMd),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
+                          color: AppColors.primaryTint,
+                          borderRadius:
+                              BorderRadius.circular(AppTokens.radiusMd),
                           border: Border.all(
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha: 0.25),
                           ),
                         ),
                         child: Column(
@@ -385,65 +366,53 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
                             const Icon(
                               Icons.info_outline_rounded,
                               color: AppColors.primary,
-                              size: 32,
+                              size: 28,
                             ),
-                            const SizedBox(height: 16),
-                            Builder(
-                              builder: (context) {
-                                final loc = AppLocalizations.of(context);
-                                return Column(
-                                  children: [
-                                    Text(
-                                      loc.whatHappensNow,
-                                      style: AppTextStyles.heading3.copyWith(
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      loc.verificationProcessSteps,
-                                      style: AppTextStyles.bodyMedium.copyWith(
-                                        color: AppColors.primary,
-                                        height: 1.6,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                );
-                              },
+                            const SizedBox(height: AppTokens.spaceSm),
+                            Text(
+                              loc.whatHappensNow,
+                              style: AppTextStyles.heading3.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: AppTokens.spaceSm),
+                            Text(
+                              loc.verificationProcessSteps,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.primaryDeep,
+                                height: 1.6,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
                       ),
-                      
-                      const SizedBox(height: 24),
-                      
+                      const SizedBox(height: AppTokens.spaceMd),
                       TextButton(
                         onPressed: () {
-                          // Refresh status
                           context.read<AuthProvider>().initialize();
                         },
-                        child: Text(AppLocalizations.of(context).refreshStatus),
+                        child: Text(loc.refreshStatus),
                       ),
-                      
-                      const SizedBox(height: 16),
                     ],
-                    
-                    // Logout button
+                    const SizedBox(height: AppTokens.spaceMd),
                     OutlinedButton(
                       onPressed: _logout,
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 32,
+                        ),
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
                       ),
-                      child: Text(AppLocalizations.of(context).logout),
+                      child: Text(loc.logout),
                     ),
-                    
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
-            ),
-          ),
+            ],
           ),
         );
       },

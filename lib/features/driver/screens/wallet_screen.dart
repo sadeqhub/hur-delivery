@@ -6,6 +6,9 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/driver_wallet_provider.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/hur_icon.dart';
 import '../../wallet/widgets/payment_webview_dialog.dart';
 
 class DriverWalletScreen extends StatefulWidget {
@@ -155,7 +158,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
                   );
                 }
               },
-        icon: const Icon(Icons.payment),
+        icon: HurIcon(HurIconKind.payment, size: HurIconSize.sm, color: Colors.white),
         label: Text(
           walletProvider.balance < 0
               ? 'شحن المحفظة لتسديد العمولة'
@@ -187,34 +190,11 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.account_balance_wallet_outlined,
-                size: 64,
-                color: Colors.grey.shade400,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'المحفظة غير مفعلة حالياً',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: context.themeTextPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'يرجى التواصل مع الدعم لتفعيل المحفظة',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: context.themeTextSecondary,
-                ),
-              ),
-            ],
-          ),
+        body: EmptyState(
+          hurIcon: HurIconKind.wallet,
+          title: 'المحفظة غير مفعلة حالياً',
+          subtitle: 'يرجى التواصل مع الدعم لتفعيل المحفظة',
+          accentColor: Colors.grey.shade400,
         ),
       );
     }
@@ -251,7 +231,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
                       'المعاملات الأخيرة',
                       style: TextStyle(
                         fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: context.themeTextPrimary,
                       ),
                     ),
@@ -309,7 +289,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -318,35 +298,11 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
   }
 
   Widget _buildEmptyTransactions() {
-    return Container(
-      padding: const EdgeInsets.all(48),
-      child: Column(
-        children: [
-          Icon(
-            Icons.receipt_long_outlined,
-            size: 64,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'لا توجد معاملات',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: context.themeTextSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'ستظهر معاملاتك هنا عند استلام الأرباح',
-            style: TextStyle(
-              fontSize: 14,
-              color: context.themeTextTertiary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return EmptyState(
+      hurIcon: HurIconKind.orders,
+      title: 'لا توجد معاملات',
+      subtitle: 'ستظهر معاملاتك هنا عند استلام الأرباح',
+      accentColor: Colors.grey.shade400,
     );
   }
 
@@ -415,7 +371,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
             transaction.formattedAmount,
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               color: transaction.color,
             ),
           ),

@@ -3,81 +3,97 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
 import '../../../core/providers/wallet_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/localization/app_localizations.dart';
 
 class WalletBalanceWidget extends StatelessWidget {
-  const WalletBalanceWidget({super.key});
+  final bool onDarkBackground;
+
+  const WalletBalanceWidget({super.key, this.onDarkBackground = false});
 
   @override
   Widget build(BuildContext context) {
     return Consumer2<WalletProvider, AuthProvider>(
       builder: (context, walletProvider, authProvider, _) {
-        // Hide widget if wallet is disabled
         if (!walletProvider.isEnabled) {
           return const SizedBox.shrink();
         }
-        
+
         if (walletProvider.isLoading) {
-          return Container(
-            margin: const EdgeInsets.only(left: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-            ),
-            child: const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
+          return SizedBox(
+            height: onDarkBackground ? 56 : 48,
+            child: const Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
             ),
           );
         }
 
-        // Determine background color based on balance status
         final isDark = Theme.of(context).brightness == Brightness.dark;
         Color backgroundColor;
         Color textColor;
-        IconData icon;
-        
-        if (walletProvider.isBalanceCritical) {
+        HurIconKind statusIcon;
+
+        if (onDarkBackground) {
+          backgroundColor = Colors.white;
+          textColor = walletProvider.isBalanceCritical
+              ? AppColors.error
+              : walletProvider.isBalanceLow
+                  ? Colors.orange.shade700
+                  : AppColors.primary;
+          statusIcon = walletProvider.isBalanceCritical
+              ? HurIconKind.warning
+              : walletProvider.isBalanceLow
+                  ? HurIconKind.warning
+                  : HurIconKind.wallet;
+        } else if (walletProvider.isBalanceCritical) {
           backgroundColor = isDark ? AppColors.surfaceVariantDark : Colors.white;
           textColor = AppColors.error;
-          icon = Icons.warning_amber_rounded;
+          statusIcon = HurIconKind.warning;
         } else if (walletProvider.isBalanceLow) {
           backgroundColor = isDark ? AppColors.surfaceVariantDark : Colors.white;
           textColor = Colors.orange.shade700;
-          icon = Icons.warning_outlined;
+          statusIcon = HurIconKind.warning;
         } else {
           backgroundColor = isDark ? AppColors.surfaceVariantDark : Colors.white;
           textColor = isDark ? AppColors.primaryDark : AppColors.primary;
-          icon = Icons.account_balance_wallet;
+          statusIcon = HurIconKind.wallet;
         }
 
         return GestureDetector(
-          onTap: () {
-            // Navigate to full wallet screen
-            context.push('/merchant-wallet');
-          },
+          onTap: () => context.push('/merchant-wallet'),
           child: Container(
-            height: 48, // Fixed height to fit properly in AppBar
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            width: onDarkBackground ? double.infinity : null,
+            height: onDarkBackground ? 56 : 48,
+            padding: EdgeInsets.symmetric(
+              horizontal: onDarkBackground ? 20 : 16,
+              vertical: 8,
+            ),
             decoration: BoxDecoration(
               color: backgroundColor,
-              borderRadius: BorderRadius.circular(24), // Fully rounded (half of height)
+              borderRadius: BorderRadius.circular(onDarkBackground ? 16 : 24),
               border: Border.all(
-                color: textColor.withOpacity(0.3),
-                width: 2,
+                color: textColor.withValues(alpha: onDarkBackground ? 0.15 : 0.3),
+                width: onDarkBackground ? 1 : 2,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: onDarkBackground
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -88,7 +104,7 @@ class WalletBalanceWidget extends StatelessWidget {
                     color: textColor.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, size: 16, color: textColor),
+                  child: HurIcon(statusIcon, dimension: 16, color: textColor),
                 ),
                 const SizedBox(width: 10),
                 Column(
@@ -108,19 +124,18 @@ class WalletBalanceWidget extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       walletProvider.formattedBalance,
-                      style: AppTextStyles.bodyLarge.copyWith(
+                      style: AppTextStyles.numericHero.copyWith(
                         color: textColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                        fontSize: onDarkBackground ? 20 : 15,
                         height: 1.0,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_left,
-                  size: 16,
+                HurIcon(
+                  HurIconKind.chevronLeft,
+                  dimension: 16,
                   color: textColor.withOpacity(0.6),
                 ),
               ],

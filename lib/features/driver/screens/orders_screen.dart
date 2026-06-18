@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/icons/hur_icons.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/order_provider.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -133,7 +134,7 @@ class _DriverOrdersScreenState extends State<DriverOrdersScreen> {
 
                 if (orders.isEmpty) {
                   return EmptyState(
-                    icon: Icons.receipt_long_outlined,
+                    hurIcon: HurIconKind.orders,
                     title: _getEmptyMessage(_selectedFilter),
                     subtitle: AppLocalizations.of(context).noOrdersYet,
                   );

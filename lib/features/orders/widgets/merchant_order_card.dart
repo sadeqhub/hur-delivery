@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../../../core/utils/app_haptics.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../shared/models/order_model.dart';
 import '../../../shared/models/order_status.dart';
 import '../../../shared/widgets/delivery_timer_widget.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/logger.dart';
+import '../../../shared/widgets/order_status_chip.dart';
 
 /// Expandable order card specifically designed for merchant dashboard
 /// Shows minimal info when collapsed, full details when expanded
@@ -243,7 +247,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
 
   void _toggleExpanded() {
     if (!mounted) return;
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     setState(() {
       _isExpanded = !_isExpanded;
       if (_isExpanded) {
@@ -261,39 +265,17 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
       final order = _currentOrder;
       
       // Get status-specific colors
+      final statusAccent = _getStatusColor(order.status);
       final backgroundColor = _getBackgroundColor(order.status);
       
       return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _isExpanded 
-              ? backgroundColor
-              : context.themeBorder.withOpacity(0.4),
-          width: _isExpanded ? 3 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: backgroundColor.withOpacity(_isExpanded ? 0.2 : 0.15),
-            blurRadius: _isExpanded ? 12 : 8,
-            offset: Offset(0, _isExpanded ? 4 : 2),
-          ),
-        ],
-      ),
+      decoration: AppTokens.cardDecoration(radius: AppTokens.radiusLg),
       child: Column(
         children: [
-          // Collapsed View - Always visible (keeps colored background)
           Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  backgroundColor,
-                  backgroundColor.withOpacity(0.9),
-                ],
-              ),
+              color: AppTokens.surfaceWarm,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(14),
                 topRight: const Radius.circular(14),
@@ -302,7 +284,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
               ),
             ),
             child: InkWell(
-              onTap: () { HapticFeedback.lightImpact(); _toggleExpanded(); },
+              onTap: () { AppHaptics.light(); _toggleExpanded(); },
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(14),
                 topRight: const Radius.circular(14),
@@ -318,7 +300,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
                     width: 4,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: _getStatusColor(order.status),
+                      color: statusAccent,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -335,7 +317,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
                             Icon(
                               Icons.person_outline,
                               size: 18,
-                              color: Colors.white.withOpacity(0.9),
+                              color: context.themeTextSecondary,
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -343,7 +325,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
                                 order.customerName ?? AppLocalizations.of(context).customerNameFallback,
                                 style: AppTextStyles.bodyLarge.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                                  color: context.themeTextPrimary,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -359,13 +341,14 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
                             Icon(
                               Icons.phone_outlined,
                               size: 16,
-                              color: Colors.white.withOpacity(0.8),
+                              color: context.themeTextSecondary,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               order.customerPhone ?? AppLocalizations.of(context).phoneNotAvailable,
                               style: AppTextStyles.bodyMedium.copyWith(
-                                color: Colors.white.withOpacity(0.9),
+                                color: context.themeTextSecondary,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -412,7 +395,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
                               _MerchantTimerChip(order: order),
                             ],
                             const SizedBox(width: 8),
-                            _StatusBadge(status: order.status),
+                            OrderStatusChip(status: order.status, compact: true),
                           ],
                         ),
                       ],
@@ -425,9 +408,9 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
                   AnimatedRotation(
                     turns: _isExpanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 300),
-                    child: const Icon(
+                    child: Icon(
                       Icons.keyboard_arrow_down,
-                      color: Colors.white,
+                      color: context.themeTextSecondary,
                       size: 28,
                     ),
                   ),
@@ -465,7 +448,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
                             children: [
                               if (order.driverId != null) ...[
                                 _buildDetailRow(
-                                  icon: Icons.delivery_dining,
+                                  icon: HurIconKind.driver,
                                   label: loc.driver,
                                   value: order.driverName ?? loc.assignedStatus,
                                   valueColor: AppColors.success,
@@ -474,7 +457,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
                                     order.driverPhone!.isNotEmpty) ...[
                                   const SizedBox(height: 8),
                                   _buildDetailRow(
-                                    icon: Icons.phone,
+                                    icon: HurIconKind.phone,
                                     label: loc.driverPhone,
                                     value: order.driverPhone!,
                                   ),
@@ -488,13 +471,13 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
                               ],
                               // Compact Addresses
                               _buildCompactAddress(
-                                icon: Icons.store_outlined,
+                                icon: HurIconKind.merchant,
                                 address: order.pickupAddress ?? loc.pickupAddressFallback,
                                 color: AppColors.primary,
                               ),
                               const SizedBox(height: 8),
                               _buildCompactAddress(
-                                icon: Icons.location_on_outlined,
+                                icon: HurIconKind.mapPin,
                                 address: order.deliveryAddress ?? loc.deliveryAddressFallback,
                                 color: AppColors.success,
                               ),
@@ -652,14 +635,14 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
   }
 
   Widget _buildDetailRow({
-    required IconData icon,
+    required HurIconKind icon,
     required String label,
     required String value,
     Color? valueColor,
   }) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: context.themeTextSecondary),
+        HurIcon(icon, dimension: 16, tone: HurIconTone.muted),
         const SizedBox(width: 8),
         Flexible(
           child: Text(
@@ -688,14 +671,14 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
   }
 
   Widget _buildCompactAddress({
-    required IconData icon,
+    required HurIconKind icon,
     required String address,
     required Color color,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: color),
+        HurIcon(icon, dimension: 16, color: color),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -828,87 +811,7 @@ class _MerchantOrderCardState extends State<MerchantOrderCard>
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  final String status;
-
-  const _StatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    Color backgroundColor;
-    Color textColor;
-    String text;
-
-    switch (status) {
-      case 'pending':
-        backgroundColor = AppColors.statusPending.withOpacity(0.1);
-        textColor = AppColors.statusPending;
-        text = loc.statusPending;
-        break;
-      case 'assigned':
-        backgroundColor = AppColors.statusAccepted.withOpacity(0.1);
-        textColor = AppColors.statusAccepted;
-        text = loc.statusAssigned;
-        break;
-      case 'accepted':
-        backgroundColor = AppColors.statusAccepted.withOpacity(0.1);
-        textColor = AppColors.statusAccepted;
-        text = loc.statusAccepted;
-        break;
-      case 'on_the_way':
-        backgroundColor = AppColors.statusInProgress.withOpacity(0.1);
-        textColor = AppColors.statusInProgress;
-        text = loc.statusOnTheWay;
-        break;
-      case 'delivered':
-        backgroundColor = AppColors.statusCompleted.withOpacity(0.1);
-        textColor = AppColors.statusCompleted;
-        text = loc.statusDelivered;
-        break;
-      case 'cancelled':
-        backgroundColor = AppColors.statusCancelled.withOpacity(0.1);
-        textColor = AppColors.statusCancelled;
-        text = loc.statusCancelled;
-        break;
-      case 'rejected':
-        backgroundColor = AppColors.statusCancelled.withOpacity(0.1);
-        textColor = AppColors.statusCancelled;
-        text = loc.statusRejected;
-        break;
-      case 'scheduled':
-        backgroundColor = Colors.purple.withOpacity(0.1);
-        textColor = Colors.purple;
-        text = loc.statusScheduled;
-        break;
-      default:
-        backgroundColor = AppColors.textTertiary.withOpacity(0.1);
-        textColor = AppColors.textTertiary;
-        text = loc.statusUnknown;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: context.themeColor(
-          light: Colors.white.withOpacity(0.9),
-          dark: context.themeSurface.withOpacity(0.9),
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style: AppTextStyles.bodySmall.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w600,
-          fontSize: 11,
-        ),
-      ),
-    );
-  }
-}
-
-/// High-contrast timer chip for the merchant collapsed card (renders well on dark gradients).
+/// High-contrast timer chip for the merchant collapsed card.
 class _MerchantTimerChip extends StatelessWidget {
   final OrderModel order;
   const _MerchantTimerChip({required this.order});

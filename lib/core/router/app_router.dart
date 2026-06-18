@@ -7,7 +7,6 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/landing_screen.dart';
 import '../../features/auth/screens/role_selection_screen.dart';
 import '../../features/auth/screens/phone_input_screen.dart';
-import '../../features/auth/screens/otp_verification_screen.dart';
 import '../../features/auth/screens/reset_password_screen.dart';
 import '../../features/auth/screens/user_registration_screen.dart';
 import '../../features/auth/screens/id_verification_review_screen.dart';
@@ -73,7 +72,7 @@ class AppRouter {
         name: 'phone-input',
         builder: (context, state) {
           final role = state.extra as String?;
-          return PhoneInputScreen(role: role ?? 'merchant');
+          return PhoneInputScreen(role: role ?? 'signup');
         },
       ),
       // Login route (OTP-only): use phone input with login role
@@ -85,13 +84,7 @@ class AppRouter {
       GoRoute(
         path: '/otp-verification',
         name: 'otp-verification',
-        builder: (context, state) {
-          final data = state.extra as Map<String, String>?;
-          return OtpVerificationScreen(
-            phone: data?['phone'] ?? '',
-            role: data?['role'] ?? 'merchant',
-          );
-        },
+        redirect: (_, __) => '/phone-input',
       ),
       GoRoute(
         path: '/reset-password',

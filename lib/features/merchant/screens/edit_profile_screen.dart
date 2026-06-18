@@ -6,6 +6,8 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
 import '../../orders/screens/location_picker_screen.dart';
 import '../../../core/constants/app_constants.dart';
 import '../data/merchant_repository.dart';
@@ -152,9 +154,9 @@ class _MerchantEditProfileScreenState extends State<MerchantEditProfileScreen> {
                     CircleAvatar(
                       radius: 60,
                       backgroundColor: AppColors.primary.withOpacity(0.1),
-                      child: const Icon(
-                        Icons.person,
-                        size: 60,
+                      child: HurIcon(
+                        HurIconKind.profile,
+                        dimension: 60,
                         color: AppColors.primary,
                       ),
                     ),
@@ -165,7 +167,11 @@ class _MerchantEditProfileScreenState extends State<MerchantEditProfileScreen> {
                         radius: 20,
                         backgroundColor: AppColors.primary,
                         child: IconButton(
-                          icon: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
+                          icon: HurIcon(
+                            HurIconKind.camera,
+                            size: HurIconSize.sm,
+                            color: Colors.white,
+                          ),
                           onPressed: () {
                             // TODO: Implement image picker
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -194,7 +200,7 @@ class _MerchantEditProfileScreenState extends State<MerchantEditProfileScreen> {
                         style: TextStyle(color: context.themeTextPrimary),
                         decoration: InputDecoration(
                           labelText: loc.name,
-                          prefixIcon: Icon(Icons.person_outline, color: context.themeTextSecondary),
+                          prefixIcon: HurPrefixIcon(HurIconKind.profile),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -215,7 +221,7 @@ class _MerchantEditProfileScreenState extends State<MerchantEditProfileScreen> {
                         style: TextStyle(color: context.themeTextPrimary),
                         decoration: InputDecoration(
                           labelText: loc.storeName,
-                          prefixIcon: Icon(Icons.store_outlined, color: context.themeTextSecondary),
+                          prefixIcon: HurPrefixIcon(HurIconKind.merchant),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -236,7 +242,10 @@ class _MerchantEditProfileScreenState extends State<MerchantEditProfileScreen> {
                         style: TextStyle(color: context.themeTextTertiary),
                         decoration: InputDecoration(
                           labelText: loc.phoneNumberLabel,
-                          prefixIcon: Icon(Icons.phone_outlined, color: context.themeTextTertiary),
+                          prefixIcon: HurPrefixIcon(
+                            HurIconKind.phone,
+                            color: context.themeTextTertiary,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -256,9 +265,13 @@ class _MerchantEditProfileScreenState extends State<MerchantEditProfileScreen> {
                             style: TextStyle(color: context.themeTextPrimary),
                             decoration: InputDecoration(
                               labelText: loc.address,
-                              prefixIcon: Icon(Icons.location_on_outlined, color: context.themeTextSecondary),
+                              prefixIcon: HurPrefixIcon(HurIconKind.mapPin),
                               suffixIcon: IconButton(
-                                icon: Icon(Icons.map_outlined, color: context.themePrimary),
+                                icon: HurIcon(
+                                  HurIconKind.navigation,
+                                  size: HurIconSize.sm,
+                                  tone: HurIconTone.primary,
+                                ),
                                 onPressed: _pickLocationOnMap,
                                 tooltip: loc.pickOnMap,
                               ),
@@ -282,7 +295,11 @@ class _MerchantEditProfileScreenState extends State<MerchantEditProfileScreen> {
                               padding: const EdgeInsets.only(top: 8.0, left: 4),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.check_circle_outline, size: 14, color: AppColors.success),
+                                  HurIcon(
+                                    HurIconKind.check,
+                                    dimension: 14,
+                                    color: AppColors.success,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     loc.locationSavedOnMap,

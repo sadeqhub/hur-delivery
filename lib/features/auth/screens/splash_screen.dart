@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../../../core/theme/app_theme.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../shared/widgets/hur_icon.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/riverpod/app_providers.dart';
 import '../../../core/services/version_check_service.dart';
@@ -17,10 +19,23 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
   @override
   void initState() {
     super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: AppTokens.curveEnter,
+    );
+    _fadeController.forward();
     _initializeApp();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -34,6 +49,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
   Future<void> _initializeApp() async {
     try {
       final versionService = VersionCheckService();
@@ -43,14 +64,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
       if (updateRequired) {
         final currentVersion = await versionService.getCurrentAppVersion();
-        final minVersion = await versionService.getMinimumRequiredVersion() ?? '1.0.0';
+        final minVersion =
+            await versionService.getMinimumRequiredVersion() ?? '1.0.0';
         if (!mounted) return;
         await UpdateRequiredDialog.show(context, currentVersion, minVersion);
         return;
       }
 
       final authProvider = context.read<AuthProvider>();
-
       await authProvider.initialize();
 
       if (!mounted) return;
@@ -102,26 +123,31 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/icons/icon.png',
-              width: 100,
-              height: 100,
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: AppTokens.authGradient),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                HurIcon(
+                  HurIconKind.bird,
+                  dimension: 96,
+                  color: Colors.white,
+                ),
+                const SizedBox(height: 36),
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    strokeWidth: 2.5,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 32),
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2.5,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

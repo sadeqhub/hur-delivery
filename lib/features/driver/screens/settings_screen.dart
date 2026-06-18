@@ -7,7 +7,10 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/language_switcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/riverpod/app_providers.dart';
+import '../../../core/utils/async_value_ext.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
 
 class DriverSettingsScreen extends StatefulWidget {
   const DriverSettingsScreen({super.key});
@@ -92,14 +95,11 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
       context: context,
       applicationName: 'Hur Delivery',
       applicationVersion: '1.0.0',
-      applicationIcon: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.local_shipping, color: Colors.white, size: 30),
+      applicationIcon: HurIconBadge(
+        icon: HurIconKind.bird,
+        dimension: 60,
+        iconSize: HurIconSize.lg,
+        borderRadius: 12,
       ),
       children: [
         Text(loc.appDescriptionDriver),
@@ -139,8 +139,10 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
                     child: Column(
                       children: [
                         SwitchListTile(
-                          secondary: Icon(
-                            _notificationsEnabled ? Icons.notifications_active : Icons.notifications_off,
+                          secondary: HurIcon(
+                            HurIconKind.notifications,
+                            size: HurIconSize.sm,
+                            tone: HurIconTone.muted,
                           ),
                           title: Text(loc.instantNotifications),
                           subtitle: Text(
@@ -175,24 +177,21 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
                   Card(
                     child: Column(
                       children: [
-                        ListTile(
-                          leading: const Icon(Icons.info_outline),
-                          title: Text(loc.aboutApp),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        HurListTile(
+                          icon: HurIconKind.info,
+                          title: loc.aboutApp,
                           onTap: _showAboutDialog,
                         ),
                         const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.policy_outlined),
-                          title: Text(loc.privacyPolicy),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        HurListTile(
+                          icon: HurIconKind.shield,
+                          title: loc.privacyPolicy,
                           onTap: () => context.push('/driver/privacy-policy'),
                         ),
                         const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.description_outlined),
-                          title: Text(loc.termsAndConditions),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        HurListTile(
+                          icon: HurIconKind.document,
+                          title: loc.termsAndConditions,
                           onTap: () => context.push('/driver/terms-conditions'),
                         ),
                       ],

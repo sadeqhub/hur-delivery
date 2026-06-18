@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_tokens.dart';
 
 /// Minimal design tokens for the driver order bottom sheet card.
 abstract final class OrderCardTokens {
-  /// 1 dp black outlines for sheet + inner panels (driver order card).
-  static const Color cardOutline = Color(0xFF000000);
-  static const double cardOutlineWidth = 1;
+  static const Color cardOutline = AppTokens.surfaceBorder;
+  static const double cardOutlineWidth = 0.5;
 
-  /// Elegant soft white: brighter than greyed “paper” (avoids a faded look),
-  /// neutral-warm (no peach/cream cast), not pure #FFF (reduces screen glare).
-  static const Color elegantSheetWhite = Color(0xFFFAF9F8);
+  static const Color elegantSheetWhite = AppTokens.surfaceWarm;
 
   static const BorderRadius expandedTopRadius = BorderRadius.only(
     topLeft: Radius.circular(24),
@@ -23,6 +21,8 @@ abstract final class OrderCardTokens {
     color: cardOutline,
     width: cardOutlineWidth,
   );
+
+  static List<BoxShadow> get cardShadow => AppTokens.elevationMd();
 
   /// Shared compact layout for CTAs inside the constrained bottom sheet.
   static const double ctaButtonHeight = 48;

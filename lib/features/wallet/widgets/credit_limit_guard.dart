@@ -5,6 +5,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/providers/wallet_provider.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
 import 'top_up_dialog.dart';
 
 class CreditLimitGuard extends StatefulWidget {
@@ -58,9 +60,9 @@ class _CreditLimitGuardState extends State<CreditLimitGuard> {
           ),
           title: Column(
             children: [
-              const Icon(
-                Icons.account_balance_wallet_outlined,
-                size: 48,
+              HurIcon(
+                HurIconKind.wallet,
+                size: HurIconSize.hero,
                 color: AppColors.error,
               ),
               const SizedBox(height: 12),
@@ -135,7 +137,7 @@ class _CreditLimitGuardState extends State<CreditLimitGuard> {
                     children: [
                       Expanded(
                         child: _buildQuickInfo(
-                          Icons.flash_on,
+                          HurIconKind.payment,
                           loc.zainCashKi,
                           Colors.purple,
                         ),
@@ -143,7 +145,7 @@ class _CreditLimitGuardState extends State<CreditLimitGuard> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _buildQuickInfo(
-                          Icons.person,
+                          HurIconKind.profile,
                           loc.hurRep(1000),
                           Colors.orange,
                         ),
@@ -175,7 +177,7 @@ class _CreditLimitGuardState extends State<CreditLimitGuard> {
                     }
                   });
                 },
-                icon: const Icon(Icons.add_circle_outline),
+                icon: HurIcon(HurIconKind.add, size: HurIconSize.sm, color: Colors.white),
                 label: const Text('شحن المحفظة'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -195,7 +197,7 @@ class _CreditLimitGuardState extends State<CreditLimitGuard> {
     });
   }
   
-  Widget _buildQuickInfo(IconData icon, String text, Color color) {
+  Widget _buildQuickInfo(HurIconKind icon, String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
@@ -206,7 +208,7 @@ class _CreditLimitGuardState extends State<CreditLimitGuard> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
+          HurIcon(icon, dimension: 16, color: color),
           const SizedBox(width: 6),
           Flexible(
             child: Text(

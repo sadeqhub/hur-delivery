@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
+
+import '../../core/icons/hur_icons.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_extensions.dart';
+import 'hur_icon.dart';
 
 /// Reusable illustrated empty state for any list screen.
-///
-/// Usage:
-/// ```dart
-/// EmptyState(
-///   icon: Icons.receipt_long_outlined,
-///   title: 'لا توجد طلبات',
-///   subtitle: 'ستظهر طلباتك هنا فور إنشائها',
-/// )
-/// ```
 class EmptyState extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final HurIconKind? hurIcon;
   final String title;
   final String? subtitle;
   final String? actionLabel;
@@ -22,13 +17,14 @@ class EmptyState extends StatelessWidget {
 
   const EmptyState({
     super.key,
-    required this.icon,
+    this.icon,
+    this.hurIcon,
     required this.title,
     this.subtitle,
     this.actionLabel,
     this.onAction,
     this.accentColor,
-  });
+  }) : assert(icon != null || hurIcon != null);
 
   @override
   Widget build(BuildContext context) {
@@ -40,30 +36,33 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon inside a soft tinted circle
             Container(
               width: 96,
               height: 96,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: color.withAlpha(26), // ~10% opacity
+                color: color.withAlpha(26),
               ),
-              child: Icon(icon, size: 44, color: color.withAlpha(200)),
+              child: Center(
+                child: hurIcon != null
+                    ? HurIcon(
+                        hurIcon!,
+                        dimension: 44,
+                        color: color.withAlpha(200),
+                      )
+                    : Icon(icon!, size: 44, color: color.withAlpha(200)),
+              ),
             ),
             const SizedBox(height: 24),
-
-            // Title
             Text(
               title,
               textAlign: TextAlign.center,
               style: AppTextStyles.heading3.copyWith(
                 color: context.themeTextPrimary,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 height: 1.3,
               ),
             ),
-
-            // Subtitle
             if (subtitle != null) ...[
               const SizedBox(height: 8),
               Text(
@@ -75,8 +74,6 @@ class EmptyState extends StatelessWidget {
                 ),
               ),
             ],
-
-            // Optional CTA button
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
               FilledButton(

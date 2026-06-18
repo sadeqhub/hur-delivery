@@ -5,7 +5,10 @@ import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/icons/hur_icons.dart';
+import '../../../shared/widgets/hur_icon.dart';
 
 /// Sliding sidebar drawer for the driver dashboard.
 ///
@@ -104,15 +107,8 @@ class _SidebarContent extends StatelessWidget {
               20,
               20,
             ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary,
-                  AppColors.primary.withOpacity(0.7),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+            decoration: const BoxDecoration(
+              gradient: AppTokens.authGradient,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,9 +116,9 @@ class _SidebarContent extends StatelessWidget {
                 CircleAvatar(
                   radius: 35,
                   backgroundColor: context.themeOnPrimary,
-                  child: Icon(
-                    Icons.delivery_dining,
-                    size: 35,
+                  child: HurIcon(
+                    HurIconKind.driver,
+                    size: HurIconSize.lg,
                     color: context.themePrimary,
                   ),
                 ),
@@ -167,56 +163,56 @@ class _SidebarContent extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                _SidebarItem(
-                  icon: Icons.edit_outlined,
+                HurNavTile(
+                  icon: HurIconKind.edit,
                   title: loc.editProfile,
                   onTap: () {
                     onClose();
                     context.push('/driver/profile');
                   },
                 ),
-                _SidebarItem(
-                  icon: Icons.list_alt,
+                HurNavTile(
+                  icon: HurIconKind.orders,
                   title: loc.driverOrders,
                   onTap: () {
                     onClose();
                     context.push('/driver/orders');
                   },
                 ),
-                _SidebarItem(
-                  icon: Icons.analytics_outlined,
+                HurNavTile(
+                  icon: HurIconKind.wallet,
                   title: loc.driverEarnings,
                   onTap: () {
                     onClose();
                     context.push('/driver/earnings');
                   },
                 ),
-                _SidebarItem(
-                  icon: Icons.help_outline,
+                HurNavTile(
+                  icon: HurIconKind.support,
                   title: loc.helpSupport,
                   onTap: () {
                     onClose();
                     onOpenSupport();
                   },
                 ),
-                _SidebarItem(
-                  icon: Icons.settings_outlined,
+                HurNavTile(
+                  icon: HurIconKind.settings,
                   title: loc.settings,
                   onTap: () {
                     onClose();
                     context.push('/driver/settings');
                   },
                 ),
-                _SidebarItem(
-                  icon: Icons.privacy_tip_outlined,
+                HurNavTile(
+                  icon: HurIconKind.shield,
                   title: loc.privacyPolicy,
                   onTap: () {
                     onClose();
                     context.push('/driver/privacy-policy');
                   },
                 ),
-                _SidebarItem(
-                  icon: Icons.description_outlined,
+                HurNavTile(
+                  icon: HurIconKind.document,
                   title: loc.termsAndConditions,
                   onTap: () {
                     onClose();
@@ -224,64 +220,21 @@ class _SidebarContent extends StatelessWidget {
                   },
                 ),
                 const Divider(),
-                _SidebarItem(
-                  icon: Icons.logout,
+                HurNavTile(
+                  icon: HurIconKind.logout,
                   title: loc.logout,
+                  destructive: true,
                   onTap: () {
                     onClose();
                     context.read<AuthProvider>().logout();
                     context.go('/');
                   },
-                  isDestructive: true,
                 ),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Reusable list tile for sidebar menu items
-// ---------------------------------------------------------------------------
-
-class _SidebarItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-  final bool isDestructive;
-
-  const _SidebarItem({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.isDestructive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive ? context.themeError : context.themeTextSecondary,
-      ),
-      title: Text(
-        title,
-        style: AppTextStyles.bodyMedium.copyWith(
-          color:
-              isDestructive ? context.themeError : context.themeTextPrimary,
-        ),
-      ),
-      trailing: Icon(
-        Icons.arrow_forward_ios_rounded,
-        size: 16,
-        color: isDestructive
-            ? context.themeError
-            : context.themeTextTertiary,
-      ),
-      onTap: onTap,
     );
   }
 }
